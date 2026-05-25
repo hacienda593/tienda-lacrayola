@@ -1,0 +1,157 @@
+'use client'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { getCarrito, totalCarrito, vaciarCarrito } from '@/lib/carrito'
+import { supabase } from '@/lib/supabase'
+import { Loader2, CheckCircle } from 'lucide-react'
+
+function fmt(n: number) { return '$' + n.toFixed(2) }
+
+export default function CheckoutPage() {
+  const router = useRouter()
+  const [form, setForm] = useState({
+    nombre: '', email: '', telefono: '',
+    direccion: '', ciudad: 'Quito', referencias: '', notas: ''
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState('')
+
+  const items = getCarrito()
+  const total = totalCarrito(items)
+
+  function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
+
+  async function confirmar(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.nombre || !form.telefono) { setError('Nombre y teléfono son obligatorios'); return }
+    if (items.length === 0) { setError('El carrito está vacío'); return }
+    setError('')
+    setLoading(true)
+    try {
+      // 1. Crear pedido
+      const { data: pedido, error: errP } = await supabase
+        .from('ol_pedidos')
+        .insert({
+          nombre_cliente: form.nombre.trim(),
+          email_cliente:  form.email.trim() || null,
+          telefono:       form.telefono.trim(),
+          direccion:      form.direccion.trim() || null,
+          ciudad:         form.ciudad.trim(),
+          referencias:    form.referencias.trim() || null,
+          notas:          form.notas.trim() || null,
+          total,
+          total_items: items.reduce((s, i) => s + i.cantidad, 0),
+          estado: 'pendiente',
+        })
+        .select('id,numero')
+        .single()
+
+      if (errP || !pedido) throw new Error(errP?.message || 'Error al crear pedido')
+
+      // 2. Insertar items
+      const { error: errI } = await supabase.from('ol_pedido_items').insert(
+        items.map(i => ({
+          pedido_id:      pedido.id,
+          codigo:         i.codigo,
+          descripcion:    i.descripcion,
+          categoria:      i.categoria,
+          precio_unitario: i.precio_unitario,
+          cantidad:       i.cantidad,
+        }))
+      )
+      if (errI) throw new Error(errI.message)
+
+      vaciarCarrito()
+      router.push(`/pedido/${pedido.id}`)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al procesar pedido')
+      setLoading(false)
+    }
+  }
+
+  if (items.length === 0) {
+    router.replace('/carrito')
+    return null
+  }
+
+  return (
+    <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
+      <h1 className="text-base font-bold">Confirmar pedido</h1>
+
+      <form onSubmit={confirmar} className="space-y-4">
+        {/* Datos personales */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tus datos</div>
+          {[
+            { k: 'nombre',    label: 'Nombre completo *', type: 'text',  placeholder: 'Juan Pérez' },
+            { k: 'telefono',  label: 'Teléfono / WhatsApp *', type: 'tel', placeholder: '0991234567' },
+            { k: 'email',     label: 'Email (opcional)', type: 'email', placeholder: 'juan@email.com' },
+          ].map(({ k, label, type, placeholder }) => (
+            <div key={k}>
+              <label className="text-xs text-gray-400 block mb-1">{label}</label>
+              <input type={type} value={(form as Record<string, string>)[k]}
+                onChange={e => set(k, e.target.value)} placeholder={placeholder}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500" />
+            </div>
+          ))}
+        </div>
+
+        {/* Entrega */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dirección de entrega</div>
+          <div>
+            <label className="text-xs text-gray-400 block mb-1">Ciudad</label>
+            <input value={form.ciudad} onChange={e => set('ciudad', e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500" />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 block mb-1">Dirección</label>
+            <input value={form.direccion} onChange={e => set('direccion', e.target.value)}
+              placeholder="Calle, número, sector..."
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500" />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 block mb-1">Referencias</label>
+            <input value={form.referencias} onChange={e => set('referencias', e.target.value)}
+              placeholder="Cerca de, color de casa..."
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500" />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 block mb-1">Notas del pedido</label>
+            <textarea value={form.notas} onChange={e => set('notas', e.target.value)}
+              rows={2} placeholder="Instrucciones especiales..."
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500 resize-none" />
+          </div>
+        </div>
+
+        {/* Resumen */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Resumen</div>
+          <div className="space-y-1 mb-3">
+            {items.map(i => (
+              <div key={i.codigo} className="flex justify-between text-xs text-gray-300">
+                <span className="truncate flex-1">{i.descripcion} ×{i.cantidad}</span>
+                <span className="ml-2 shrink-0">{fmt(i.precio_unitario * i.cantidad)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between font-bold text-white border-t border-gray-700 pt-2">
+            <span>Total</span>
+            <span className="text-green-400">{fmt(total)}</span>
+          </div>
+        </div>
+
+        {error && <p className="text-red-400 text-xs text-center">{error}</p>}
+
+        <button type="submit" disabled={loading}
+          className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition text-sm">
+          {loading ? <><Loader2 size={16} className="animate-spin" /> Procesando...</> : <>✅ Confirmar pedido · {fmt(total)}</>}
+        </button>
+
+        <p className="text-center text-xs text-gray-600">
+          Te contactaremos por WhatsApp para coordinar la entrega y el pago.
+        </p>
+      </form>
+    </div>
+  )
+}

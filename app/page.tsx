@@ -1,65 +1,71 @@
-import Image from "next/image";
+'use client'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
+import { ShoppingBag, ChevronRight } from 'lucide-react'
+
+const CAT_EMOJI: Record<string, string> = {
+  'Escolar':'📚','Arte':'🎨','Oficina':'🖊️','Tecnologia':'💻','Juguetes':'🧸',
+  'Papeleria':'📄','Pintura':'🖌️','Manualidades':'✂️','Libros':'📖',
+}
 
 export default function Home() {
+  const [cats, setCats] = useState<{ categoria: string; n: number }[]>([])
+
+  useEffect(() => {
+    supabase.from('catalogo_productos').select('categoria').gt('stock', 0)
+      .then(({ data }) => {
+        if (!data) return
+        const map = new Map<string, number>()
+        data.forEach((d: { categoria: string }) => {
+          if (d.categoria) map.set(d.categoria, (map.get(d.categoria) || 0) + 1)
+        })
+        setCats(Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([categoria, n]) => ({ categoria, n })))
+      })
+  }, [])
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="max-w-lg mx-auto px-4 py-6 space-y-8">
+
+      {/* Hero */}
+      <div className="bg-gradient-to-br from-green-900 to-green-950 border border-green-800 rounded-2xl p-6 text-center">
+        <div className="text-5xl mb-2">🖍️</div>
+        <h1 className="text-2xl font-bold text-white">La Crayola</h1>
+        <p className="text-green-300 text-sm mt-1">Útiles escolares · Arte · Papelería</p>
+        <Link href="/productos"
+          className="mt-5 inline-flex items-center gap-2 bg-green-500 hover:bg-green-400 text-white text-sm font-bold px-6 py-3 rounded-xl transition">
+          <ShoppingBag size={16} /> Ver catálogo
+        </Link>
+      </div>
+
+      {/* Categorías */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-bold text-gray-200">Categorías</h2>
+          <Link href="/productos" className="text-xs text-green-400 flex items-center gap-0.5">
+            Ver todo <ChevronRight size={12} />
+          </Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        {cats.length === 0 ? (
+          <div className="grid grid-cols-3 gap-2">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-3 h-20 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-2">
+            {cats.map(({ categoria, n }) => (
+              <Link key={categoria} href={`/productos?cat=${encodeURIComponent(categoria)}`}
+                className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center hover:border-green-700 active:scale-95 transition">
+                <div className="text-2xl mb-1">{CAT_EMOJI[categoria] || '📦'}</div>
+                <div className="text-xs font-medium text-white leading-tight">{categoria}</div>
+                <div className="text-[10px] text-gray-500 mt-0.5">{n} items</div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
     </div>
-  );
+  )
 }
