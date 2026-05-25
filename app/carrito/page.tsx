@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getCarrito, cambiarCantidad, vaciarCarrito, totalCarrito, ItemCarrito } from '@/lib/carrito'
+import { getCarrito, cambiarCantidad, vaciarCarrito, totalCarrito } from '@/lib/carrito'
+import { ItemCarrito } from '@/lib/types'
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react'
 
 function fmt(n: number) { return '$' + n.toFixed(2) }
