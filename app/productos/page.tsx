@@ -45,6 +45,16 @@ function ProductosContent() {
   const [visibles, setVisibles] = useState(40)
   const fuseRef = useRef<Fuse<Producto> | null>(null)
 
+  // Sincronizar filtros cuando cambia la URL (clicks en menú de categorías)
+  useEffect(() => {
+    const newCat = params.get('cat') || ''
+    const newQ   = params.get('q')   || ''
+    setCat(newCat)
+    if (newQ) setQuery(newQ)
+    setMarca('')
+    setVisibles(40)
+  }, [params])
+
   // Carga única
   useEffect(() => {
     async function cargar() {
@@ -90,7 +100,7 @@ function ProductosContent() {
       pool = base
     }
     return pool.filter(p => {
-      if (cat && p.categoria !== cat) return false
+      if (cat && p.categoria?.toLowerCase() !== cat.toLowerCase()) return false
       if (marca && p.marca !== marca) return false
       if (stockFiltro === 'disponible' && p.stock <= 0) return false
       return true
@@ -145,14 +155,17 @@ function ProductosContent() {
             <div>
               <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Categoría</div>
               <div className="space-y-0.5 max-h-64 overflow-y-auto">
-                {catsCtx.map(([c, n]) => (
-                  <button key={c} onClick={() => { setCat(cat === c ? '' : c); setMarca(''); setVisibles(40) }}
+                {catsCtx.map(([c, n]) => {
+                  const activa = cat.toLowerCase() === c.toLowerCase()
+                  return (
+                  <button key={c} onClick={() => { setCat(activa ? '' : c); setMarca(''); setVisibles(40) }}
                     className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition flex justify-between items-center
-                      ${cat === c ? 'bg-green-50 text-green-700 font-semibold border border-green-200' : 'text-gray-600 hover:bg-gray-100'}`}>
+                      ${activa ? 'bg-green-50 text-green-700 font-semibold border border-green-200' : 'text-gray-600 hover:bg-gray-100'}`}>
                     <span className="flex items-center gap-1.5">{CAT_EMOJI[c] && <span className="text-base">{CAT_EMOJI[c]}</span>}{c}</span>
                     <span className="text-xs text-gray-400">{n}</span>
                   </button>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
