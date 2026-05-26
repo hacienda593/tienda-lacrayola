@@ -53,7 +53,7 @@ function ProductosContent() {
       let desde = 0
       let hayMas = true
       while (hayMas) {
-        const { data } = await supabase.from('catalogo_productos')
+        const { data } = await supabase.from('ol_productos')
           .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva')
           .gt('precio_publico', 0)
           .order('descripcion')
