@@ -37,7 +37,7 @@ export default function Home() {
 
   useEffect(() => {
     // Categorías con stock
-    supabase.from('catalogo_productos').select('categoria').gt('stock', 0)
+    supabase.from('ol_productos').select('categoria').gt('stock', 0)
       .then(({ data }) => {
         if (!data) return
         const map = new Map<string, number>()
@@ -47,7 +47,7 @@ export default function Home() {
         setCats(Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 9).map(([categoria, n]) => ({ categoria, n })))
       })
     // Productos destacados: los de mayor precio con stock (los más premium)
-    supabase.from('catalogo_productos')
+    supabase.from('ol_productos')
       .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva')
       .gt('stock', 0).gt('precio_publico', 5).order('precio_publico', { ascending: false }).limit(8)
       .then(({ data }) => { if (data) setDestacados(data as Producto[]) })
