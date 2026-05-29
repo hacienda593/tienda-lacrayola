@@ -26,7 +26,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       {/* Top bar */}
       <div className="bg-green-700 text-white text-xs text-center py-1.5 px-4">
-        🚚 Envíos a domicilio en Quito · Pedidos por WhatsApp
+        🚚 Envíos a domicilio en S. M  de Los Bancos · Pedidos por WhatsApp
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
