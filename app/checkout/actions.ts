@@ -19,11 +19,14 @@ export interface DatosCliente {
   ciudad: string
   referencias: string
   notas: string
+  geo_lat?: number | null
+  geo_lng?: number | null
 }
 
 export interface ResultadoPedido {
   ok: boolean
   pedidoId?: string
+  numeroPedido?: number
   error?: string
 }
 
@@ -82,11 +85,13 @@ export async function crearPedido(
       ciudad:         cliente.ciudad.trim(),
       referencias:    cliente.referencias.trim() || null,
       notas:          cliente.notas.trim() || null,
+      geo_lat:        cliente.geo_lat ?? null,
+      geo_lng:        cliente.geo_lng ?? null,
       total,
       total_items,
       estado: 'pendiente',
     })
-    .select('id')
+    .select('id, numero')
     .single()
 
   if (errPed || !pedido) {
@@ -116,5 +121,5 @@ export async function crearPedido(
     return { ok: false, error: errItems.message }
   }
 
-  return { ok: true, pedidoId: pedido.id }
+  return { ok: true, pedidoId: pedido.id, numeroPedido: pedido.numero }
 }

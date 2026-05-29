@@ -1,11 +1,32 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCarrito, totalCarrito, vaciarCarrito } from '@/lib/carrito'
 import { crearPedido } from './actions'
-import { Loader2 } from 'lucide-react'
+import { Loader2, MapPin } from 'lucide-react'
+import { ItemCarrito } from '@/lib/types'
+
+const WA_NUMERO = '593984341953'
 
 function fmt(n: number) { return '$' + n.toFixed(2) }
+
+function abrirWhatsApp(numero: string, nombre: string, items: ItemCarrito[], total: number, direccion: string, ciudad: string, referencias: string, numeroPedido: number) {
+  const lineas = items.map(i => `  • ${i.descripcion} ×${i.cantidad} = ${fmt(i.precio_unitario * i.cantidad)}`).join('\n')
+  const entrega = [direccion, ciudad, referencias].filter(Boolean).join(', ')
+  const msg = [
+    `🛒 *Nuevo pedido #${String(numeroPedido).padStart(4,'0')}*`,
+    `👤 ${nombre}`,
+    ``,
+    `*Productos:*`,
+    lineas,
+    ``,
+    `*Total: ${fmt(total)}*`,
+    entrega ? `📍 ${entrega}` : '',
+  ].filter(l => l !== undefined).join('\n')
+
+  const url = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`
+  window.open(url, '_blank')
+}
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -13,6 +34,8 @@ export default function CheckoutPage() {
     nombre: '', email: '', telefono: '',
     direccion: '', ciudad: 'Quito', referencias: '', notas: ''
   })
+  const [geo, setGeo]       = useState<{ lat: number; lng: number } | null>(null)
+  const [geoMsg, setGeoMsg] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
 
@@ -20,6 +43,19 @@ export default function CheckoutPage() {
   const total = totalCarrito(items)
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
+
+  // Solicitar geolocalización al montar
+  useEffect(() => {
+    if (!navigator.geolocation) return
+    setGeoMsg('Obteniendo ubicación...')
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setGeoMsg('✓ Ubicación obtenida')
+      },
+      () => setGeoMsg('')
+    )
+  }, [])
 
   async function confirmar(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -29,7 +65,7 @@ export default function CheckoutPage() {
     setLoading(true)
 
     const resultado = await crearPedido(
-      form,
+      { ...form, geo_lat: geo?.lat, geo_lng: geo?.lng },
       items.map(i => ({ codigo: i.codigo, cantidad: i.cantidad }))
     )
 
@@ -40,6 +76,19 @@ export default function CheckoutPage() {
     }
 
     vaciarCarrito()
+
+    // Abrir WhatsApp con el resumen del pedido
+    abrirWhatsApp(
+      WA_NUMERO,
+      form.nombre,
+      items,
+      total,
+      form.direccion,
+      form.ciudad,
+      form.referencias,
+      resultado.numeroPedido!
+    )
+
     router.push(`/pedido/${resultado.pedidoId}`)
   }
 
@@ -57,9 +106,9 @@ export default function CheckoutPage() {
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tus datos</div>
           {[
-            { k: 'nombre',    label: 'Nombre completo *', type: 'text',  placeholder: 'Juan Pérez' },
-            { k: 'telefono',  label: 'Teléfono / WhatsApp *', type: 'tel', placeholder: '0991234567' },
-            { k: 'email',     label: 'Email (opcional)', type: 'email', placeholder: 'juan@email.com' },
+            { k: 'nombre',   label: 'Nombre completo *', type: 'text',  placeholder: 'Juan Pérez' },
+            { k: 'telefono', label: 'Teléfono / WhatsApp *', type: 'tel', placeholder: '0991234567' },
+            { k: 'email',    label: 'Email (opcional)', type: 'email', placeholder: 'juan@email.com' },
           ].map(({ k, label, type, placeholder }) => (
             <div key={k}>
               <label className="text-xs text-gray-400 block mb-1">{label}</label>
@@ -72,7 +121,14 @@ export default function CheckoutPage() {
 
         {/* Entrega */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dirección de entrega</div>
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dirección de entrega</div>
+            {geoMsg && (
+              <span className={`flex items-center gap-1 text-[10px] ${geo ? 'text-green-400' : 'text-gray-500'}`}>
+                <MapPin size={10}/>{geoMsg}
+              </span>
+            )}
+          </div>
           <div>
             <label className="text-xs text-gray-400 block mb-1">Ciudad</label>
             <input value={form.ciudad} onChange={e => set('ciudad', e.target.value)}
@@ -123,7 +179,7 @@ export default function CheckoutPage() {
         </button>
 
         <p className="text-center text-xs text-gray-600">
-          Te contactaremos por WhatsApp para coordinar la entrega y el pago.
+          Al confirmar se abrirá WhatsApp para coordinar la entrega y el pago.
         </p>
       </form>
     </div>
