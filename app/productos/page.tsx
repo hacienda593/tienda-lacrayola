@@ -1,11 +1,12 @@
 'use client'
 import { useEffect, useState, useMemo, useRef, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Fuse from 'fuse.js'
 import { supabase } from '@/lib/supabase'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
+import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto } from '@/lib/types'
-import { Search, X, ShoppingCart, Plus, Minus } from 'lucide-react'
+import { Search, X, ShoppingCart, Plus, Minus, Heart, ArrowUpDown } from 'lucide-react'
 
 function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
 
@@ -14,6 +15,38 @@ const CAT_EMOJI: Record<string, string> = {
   'Manualidades':'✂️','Libros':'📖','Pintura':'🖌️','Papeleria':'📄',
 }
 
+type Orden = 'relevancia' | 'precio_asc' | 'precio_desc' | 'nombre_asc'
+
+// ── Skeleton card ──────────────────────────────────────────────────
+function SkeletonCard() {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-3.5 animate-pulse">
+      <div className="bg-gray-100 h-28 rounded-xl mb-3" />
+      <div className="h-2.5 bg-gray-100 rounded w-1/3 mb-2" />
+      <div className="h-3.5 bg-gray-100 rounded mb-1" />
+      <div className="h-3 bg-gray-100 rounded w-2/3 mb-3" />
+      <div className="h-5 bg-gray-100 rounded w-1/4 mb-2" />
+      <div className="h-8 bg-gray-100 rounded-lg" />
+    </div>
+  )
+}
+
+// ── Badge de producto ──────────────────────────────────────────────
+function Badge({ tipo }: { tipo: 'nuevo' | 'oferta' | 'popular' | 'ultimas' }) {
+  const cfg = {
+    nuevo:   { label: '✨ Nuevo',   cls: 'bg-blue-500 text-white' },
+    oferta:  { label: '🏷️ Oferta',  cls: 'bg-red-500 text-white' },
+    popular: { label: '🔥 Popular', cls: 'bg-orange-500 text-white' },
+    ultimas: { label: '⚡ Últimas', cls: 'bg-yellow-500 text-white' },
+  }[tipo]
+  return (
+    <span className={`absolute top-2 left-2 text-[9px] font-bold px-2 py-0.5 rounded-full z-10 ${cfg.cls}`}>
+      {cfg.label}
+    </span>
+  )
+}
+
+// ── Botón agregar con contador ─────────────────────────────────────
 function BtnAgregar({ prod }: { prod: Producto }) {
   const [cantidad, setCantidad] = useState(() => {
     const items = getCarrito()
@@ -22,12 +55,14 @@ function BtnAgregar({ prod }: { prod: Producto }) {
 
   function agregar(e: React.MouseEvent) {
     e.stopPropagation()
+    e.preventDefault()
     agregarItem(prod)
     setCantidad((c: number) => c + 1)
   }
 
   function cambiar(e: React.MouseEvent, delta: number) {
     e.stopPropagation()
+    e.preventDefault()
     const nueva = cantidad + delta
     cambiarCantidad(prod.codigo, nueva)
     setCantidad(Math.max(0, nueva))
@@ -37,51 +72,127 @@ function BtnAgregar({ prod }: { prod: Producto }) {
     return (
       <button onClick={agregar}
         className="w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent">
-        <ShoppingCart size={12}/>Agregar
+        <ShoppingCart size={12} /> Agregar
       </button>
     )
   }
 
   return (
     <div className="flex items-center justify-between bg-green-600 rounded-lg overflow-hidden">
-      <button onClick={e => cambiar(e, -1)}
-        className="px-3 py-2 text-white hover:bg-green-700 transition font-bold">
-        <Minus size={12}/>
+      <button onClick={e => cambiar(e, -1)} className="px-3 py-2 text-white hover:bg-green-700 transition font-bold">
+        <Minus size={12} />
       </button>
       <span className="text-white text-xs font-bold">{cantidad}</span>
-      <button onClick={e => cambiar(e, +1)}
-        className="px-3 py-2 text-white hover:bg-green-700 transition font-bold">
-        <Plus size={12}/>
+      <button onClick={e => cambiar(e, +1)} className="px-3 py-2 text-white hover:bg-green-700 transition font-bold">
+        <Plus size={12} />
       </button>
     </div>
   )
 }
 
+// ── Botón favorito ─────────────────────────────────────────────────
+function BtnFavorito({ prod }: { prod: Producto }) {
+  const [fav, setFav] = useState(() => esFavorito(prod.codigo))
+
+  useEffect(() => {
+    const sync = () => setFav(esFavorito(prod.codigo))
+    window.addEventListener('favoritos-update', sync)
+    return () => window.removeEventListener('favoritos-update', sync)
+  }, [prod.codigo])
+
+  function toggle(e: React.MouseEvent) {
+    e.stopPropagation()
+    e.preventDefault()
+    const result = toggleFavorito({ codigo: prod.codigo, descripcion: prod.descripcion, categoria: prod.categoria, precio_publico: prod.precio_publico })
+    setFav(result)
+  }
+
+  return (
+    <button onClick={toggle}
+      className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition z-10
+        ${fav ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-300 hover:text-red-400'}`}>
+      <Heart size={13} className={fav ? 'fill-white' : ''} />
+    </button>
+  )
+}
+
+// ── Card de producto ───────────────────────────────────────────────
+function ProductCard({ p, badge }: { p: Producto; badge?: 'nuevo' | 'oferta' | 'popular' | 'ultimas' }) {
+  const router = useRouter()
+  const agotado = p.stock <= 0
+  const badgeTipo = agotado ? undefined : (p.stock < 5 ? 'ultimas' : badge)
+
+  return (
+    <div
+      onClick={() => router.push(`/producto/${encodeURIComponent(p.codigo)}`)}
+      className="bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col group cursor-pointer"
+    >
+      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-28 flex items-center justify-center mb-3 text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors">
+        {CAT_EMOJI[p.categoria] || '📦'}
+        {badgeTipo && <Badge tipo={badgeTipo} />}
+        <BtnFavorito prod={p} />
+        {agotado && (
+          <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+            <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">AGOTADO</span>
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1">
+        <div className="text-[10px] font-semibold text-green-600 uppercase tracking-wide mb-0.5">{p.categoria}</div>
+        <div className="text-xs font-semibold text-gray-800 leading-snug line-clamp-2 mb-1">{p.descripcion}</div>
+        {p.marca && <div className="text-[10px] text-gray-400">{p.marca}</div>}
+      </div>
+
+      <div className="mt-2.5">
+        <div className="text-lg font-extrabold text-gray-900 mb-1.5">{fmt(p.precio_publico)}</div>
+        {p.stock > 0 && <BtnAgregar prod={p} />}
+      </div>
+    </div>
+  )
+}
+
+// ── Estado vacío ───────────────────────────────────────────────────
+function EstadoVacio({ query, onLimpiar }: { query: string; onLimpiar: () => void }) {
+  return (
+    <div className="text-center py-20 space-y-3">
+      <div className="text-6xl">🔍</div>
+      <p className="text-gray-700 font-semibold text-lg">Sin resultados</p>
+      <p className="text-gray-400 text-sm max-w-xs mx-auto">
+        No encontramos productos para <strong>"{query}"</strong>.<br/>Intenta con otro término o limpia los filtros.
+      </p>
+      <button onClick={onLimpiar}
+        className="mt-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+        Limpiar filtros
+      </button>
+    </div>
+  )
+}
+
+// ── Contenido principal ────────────────────────────────────────────
 function ProductosContent() {
-  const params = useSearchParams()
+  const params       = useSearchParams()
   const catInicial   = params.get('cat') || ''
   const queryInicial = params.get('q')   || ''
 
-  const [base, setBase]     = useState<Producto[]>([])
-  const [loadingState, setLoadingState] = useState(true)
-  const [query, setQuery]   = useState(queryInicial)
-  const [cat, setCat]       = useState(catInicial)
-  const [marca, setMarca]   = useState('')
+  const [base, setBase]             = useState<Producto[]>([])
+  const [loadingState, setLoading]  = useState(true)
+  const [query, setQuery]           = useState(queryInicial)
+  const [cat, setCat]               = useState(catInicial)
+  const [marca, setMarca]           = useState('')
   const [stockFiltro, setStockFiltro] = useState<'todos'|'disponible'>('disponible')
-  const [visibles, setVisibles] = useState(40)
+  const [orden, setOrden]           = useState<Orden>('relevancia')
+  const [visibles, setVisibles]     = useState(40)
+  const [showOrden, setShowOrden]   = useState(false)
   const fuseRef = useRef<Fuse<Producto> | null>(null)
 
-  // Sincronizar filtros cuando cambia la URL (clicks en menú de categorías)
   useEffect(() => {
-    const newCat = params.get('cat') || ''
-    const newQ   = params.get('q')   || ''
-    setCat(newCat)
-    if (newQ) setQuery(newQ)
-    setMarca('')
-    setVisibles(40)
+    setCat(params.get('cat') || '')
+    const q = params.get('q') || ''
+    if (q) setQuery(q)
+    setMarca(''); setVisibles(40)
   }, [params])
 
-  // Carga única
   useEffect(() => {
     async function cargar() {
       const LOTE = 1000
@@ -103,37 +214,37 @@ function ProductosContent() {
       fuseRef.current = new Fuse(todos, {
         keys: [
           { name: 'descripcion', weight: 0.6 },
-          { name: 'codigo', weight: 0.2 },
-          { name: 'marca', weight: 0.1 },
-          { name: 'categoria', weight: 0.1 },
+          { name: 'codigo',      weight: 0.2 },
+          { name: 'marca',       weight: 0.1 },
+          { name: 'categoria',   weight: 0.1 },
         ],
-        threshold: 0.35,
-        ignoreLocation: true,
-        minMatchCharLength: 2,
+        threshold: 0.35, ignoreLocation: true, minMatchCharLength: 2,
       })
-      setLoadingState(false)
+      setLoading(false)
     }
     cargar()
   }, [])
 
-  // Filtrado
   const filtrados = useMemo(() => {
     const q = query.trim()
     let pool: Producto[]
     if (q.length >= 2 && fuseRef.current) {
       pool = fuseRef.current.search(q).map(r => r.item)
     } else {
-      pool = base
+      pool = [...base]
     }
-    return pool.filter(p => {
+    pool = pool.filter(p => {
       if (cat && p.categoria?.toLowerCase() !== cat.toLowerCase()) return false
       if (marca && p.marca !== marca) return false
       if (stockFiltro === 'disponible' && p.stock <= 0) return false
       return true
     })
-  }, [base, query, cat, marca, stockFiltro])
+    if (orden === 'precio_asc')  pool.sort((a, b) => a.precio_publico - b.precio_publico)
+    if (orden === 'precio_desc') pool.sort((a, b) => b.precio_publico - a.precio_publico)
+    if (orden === 'nombre_asc')  pool.sort((a, b) => a.descripcion.localeCompare(b.descripcion))
+    return pool
+  }, [base, query, cat, marca, stockFiltro, orden])
 
-  // Cats contextuales
   const catsCtx = useMemo(() => {
     const q = query.trim()
     let pool = q.length >= 2 && fuseRef.current ? fuseRef.current.search(q).map(r => r.item) : base
@@ -145,7 +256,6 @@ function ProductosContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [base, query, marca, stockFiltro])
 
-  // Marcas contextuales
   const marcasCtx = useMemo(() => {
     const q = query.trim()
     let pool = q.length >= 2 && fuseRef.current ? fuseRef.current.search(q).map(r => r.item) : base
@@ -157,14 +267,26 @@ function ProductosContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [base, query, cat, stockFiltro])
 
-  function limpiar() { setQuery(''); setCat(''); setMarca(''); setVisibles(40) }
-  const hayFiltros = !!(query || cat || marca || stockFiltro !== 'disponible')
+  function limpiar() { setQuery(''); setCat(''); setMarca(''); setOrden('relevancia'); setVisibles(40) }
+  const hayFiltros = !!(query || cat || marca || stockFiltro !== 'disponible' || orden !== 'relevancia')
+
+  // Asignar badges: primeros 4 = popular, últimos en stock = ultimas (ya en ProductCard)
+  function badgePara(_: Producto, idx: number): 'popular' | undefined {
+    return idx < 4 ? 'popular' : undefined
+  }
+
+  const ORDENES: { key: Orden; label: string }[] = [
+    { key: 'relevancia',  label: 'Relevancia' },
+    { key: 'precio_asc',  label: 'Menor precio' },
+    { key: 'precio_desc', label: 'Mayor precio' },
+    { key: 'nombre_asc',  label: 'A → Z' },
+  ]
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-5">
       <div className="flex flex-col md:flex-row gap-5">
 
-        {/* ── SIDEBAR FILTROS (desktop) ── */}
+        {/* ── SIDEBAR filtros (desktop) ── */}
         <aside className="hidden md:block w-52 shrink-0 space-y-5">
           <div>
             <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Stock</div>
@@ -177,6 +299,18 @@ function ProductosContent() {
             ))}
           </div>
 
+          {/* Ordenamiento sidebar */}
+          <div>
+            <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Ordenar por</div>
+            {ORDENES.map(o => (
+              <button key={o.key} onClick={() => setOrden(o.key)}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition font-medium
+                  ${orden === o.key ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+
           {catsCtx.length > 0 && (
             <div>
               <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Categoría</div>
@@ -184,12 +318,12 @@ function ProductosContent() {
                 {catsCtx.map(([c, n]) => {
                   const activa = cat.toLowerCase() === c.toLowerCase()
                   return (
-                  <button key={c} onClick={() => { setCat(activa ? '' : c); setMarca(''); setVisibles(40) }}
-                    className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition flex justify-between items-center
-                      ${activa ? 'bg-green-50 text-green-700 font-semibold border border-green-200' : 'text-gray-600 hover:bg-gray-100'}`}>
-                    <span className="flex items-center gap-1.5">{CAT_EMOJI[c] && <span className="text-base">{CAT_EMOJI[c]}</span>}{c}</span>
-                    <span className="text-xs text-gray-400">{n}</span>
-                  </button>
+                    <button key={c} onClick={() => { setCat(activa ? '' : c); setMarca(''); setVisibles(40) }}
+                      className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition flex justify-between items-center
+                        ${activa ? 'bg-green-50 text-green-700 font-semibold border border-green-200' : 'text-gray-600 hover:bg-gray-100'}`}>
+                      <span className="flex items-center gap-1.5">{CAT_EMOJI[c] && <span>{CAT_EMOJI[c]}</span>}{c}</span>
+                      <span className="text-xs text-gray-400">{n}</span>
+                    </button>
                   )
                 })}
               </div>
@@ -221,7 +355,7 @@ function ProductosContent() {
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input value={query}
               onChange={e => { setQuery(e.target.value); setCat(''); setMarca(''); setVisibles(40) }}
-              placeholder="Buscar por nombre, código, marca o precio..."
+              placeholder="Buscar por nombre, código, marca..."
               className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-10 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 shadow-sm" />
             {hayFiltros && (
               <button onClick={limpiar} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -230,7 +364,7 @@ function ProductosContent() {
             )}
           </div>
 
-          {/* Filtros móvil — horizontal */}
+          {/* Filtros móvil */}
           <div className="md:hidden space-y-2">
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
               {(['disponible','todos'] as const).map(v => (
@@ -240,7 +374,7 @@ function ProductosContent() {
                   {v === 'disponible' ? '✅ Con stock' : '📦 Todos'}
                 </button>
               ))}
-              {catsCtx.slice(0,8).map(([c]) => (
+              {catsCtx.slice(0, 8).map(([c]) => (
                 <button key={c} onClick={() => { setCat(cat === c ? '' : c); setMarca(''); setVisibles(40) }}
                   className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition
                     ${cat === c ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-200'}`}>
@@ -250,7 +384,7 @@ function ProductosContent() {
             </div>
             {marcasCtx.length > 1 && (query.trim() || cat) && (
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {marcasCtx.slice(0,10).map(([m]) => (
+                {marcasCtx.slice(0, 10).map(([m]) => (
                   <button key={m} onClick={() => { setMarca(marca === m ? '' : m); setVisibles(40) }}
                     className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition
                       ${marca === m ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200'}`}>
@@ -261,78 +395,58 @@ function ProductosContent() {
             )}
           </div>
 
-          {/* Estado / filtros activos */}
+          {/* Barra estado + ordenamiento */}
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2 flex-wrap">
               {cat && (
                 <span className="flex items-center gap-1 bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">
                   {CAT_EMOJI[cat] || ''} {cat}
-                  <button onClick={() => setCat('')} className="ml-0.5 hover:text-green-900"><X size={11}/></button>
+                  <button onClick={() => setCat('')}><X size={11} /></button>
                 </span>
               )}
               {marca && (
                 <span className="flex items-center gap-1 bg-purple-100 text-purple-700 text-xs font-semibold px-2.5 py-1 rounded-full">
                   {marca}
-                  <button onClick={() => setMarca('')} className="ml-0.5 hover:text-purple-900"><X size={11}/></button>
+                  <button onClick={() => setMarca('')}><X size={11} /></button>
                 </span>
               )}
             </div>
-            {!loadingState && (
-              <p className="text-xs text-gray-400 ml-auto">
-                {filtrados.length.toLocaleString()} productos
-              </p>
-            )}
+            <div className="flex items-center gap-2 ml-auto">
+              {!loadingState && (
+                <p className="text-xs text-gray-400">{filtrados.length.toLocaleString()} productos</p>
+              )}
+              {/* Ordenar (móvil + desktop) */}
+              <div className="relative md:hidden">
+                <button onClick={() => setShowOrden(s => !s)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 border border-gray-200 bg-white px-3 py-1.5 rounded-xl hover:bg-gray-50 transition">
+                  <ArrowUpDown size={13} /> Ordenar
+                </button>
+                {showOrden && (
+                  <div className="absolute right-0 top-9 bg-white border border-gray-100 rounded-xl shadow-lg z-30 min-w-[160px] py-1">
+                    {ORDENES.map(o => (
+                      <button key={o.key} onClick={() => { setOrden(o.key); setShowOrden(false) }}
+                        className={`w-full text-left px-4 py-2.5 text-sm transition ${orden === o.key ? 'text-green-700 font-bold bg-green-50' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Grid */}
           {loadingState ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse">
-                  <div className="bg-gray-100 h-32 rounded-xl mb-3" />
-                  <div className="h-3 bg-gray-100 rounded mb-2" />
-                  <div className="h-3 bg-gray-100 rounded w-2/3 mb-3" />
-                  <div className="h-6 bg-gray-100 rounded" />
-                </div>
-              ))}
+              {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : filtrados.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="text-5xl mb-3">🔍</div>
-              <p className="text-gray-500 font-medium">Sin resultados para "{query}"</p>
-              <button onClick={limpiar} className="mt-3 text-sm text-green-600 underline">Limpiar filtros</button>
-            </div>
+            <EstadoVacio query={query || cat || marca} onLimpiar={limpiar} />
           ) : (
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {filtrados.slice(0, visibles).map((p) => (
-                  <div key={p.codigo} className="bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col group">
-                    {/* Imagen */}
-                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-28 flex items-center justify-center mb-3 text-4xl relative overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors">
-                      {CAT_EMOJI[p.categoria] || '📦'}
-                      {p.stock <= 0 && (
-                        <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-                          <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">AGOTADO</span>
-                        </div>
-                      )}
-                      {p.stock > 0 && p.stock < 5 && (
-                        <div className="absolute top-1.5 right-1.5 bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                          ¡Últimas {p.stock}!
-                        </div>
-                      )}
-                    </div>
-                    {/* Info */}
-                    <div className="flex-1">
-                      <div className="text-[10px] font-semibold text-green-600 uppercase tracking-wide mb-0.5">{p.categoria}</div>
-                      <div className="text-xs font-semibold text-gray-800 leading-snug line-clamp-2 mb-1">{p.descripcion}</div>
-                      {p.marca && <div className="text-[10px] text-gray-400">{p.marca}</div>}
-                    </div>
-                    {/* Precio + botón */}
-                    <div className="mt-2.5">
-                      <div className="text-lg font-extrabold text-gray-900 mb-1.5">{fmt(p.precio_publico)}</div>
-                      {p.stock > 0 && <BtnAgregar prod={p} />}
-                    </div>
-                  </div>
+                {filtrados.slice(0, visibles).map((p, idx) => (
+                  <ProductCard key={p.codigo} p={p} badge={badgePara(p, idx)} />
                 ))}
               </div>
               {visibles < filtrados.length && (
@@ -352,12 +466,10 @@ function ProductosContent() {
 export default function ProductosPage() {
   return (
     <Suspense fallback={
-      <div className="max-w-5xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[...Array(8)].map((_, i) => (
-          <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse">
-            <div className="bg-gray-100 h-32 rounded-xl mb-3" /><div className="h-3 bg-gray-100 rounded mb-2" /><div className="h-6 bg-gray-100 rounded" />
-          </div>
-        ))}
+      <div className="max-w-5xl mx-auto px-4 py-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
+        </div>
       </div>
     }>
       <ProductosContent />
