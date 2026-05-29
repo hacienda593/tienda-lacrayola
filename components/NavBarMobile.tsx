@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, ShoppingBag, ShoppingCart, User } from 'lucide-react'
+import { Home, ShoppingBag, ShoppingCart, Heart, Package } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getCarrito } from '@/lib/carrito'
 
@@ -17,10 +17,11 @@ export default function NavBarMobile() {
   }, [])
 
   const TABS = [
-    { href: '/',          label: 'Inicio',    icon: Home },
-    { href: '/productos', label: 'Productos', icon: ShoppingBag },
-    { href: '/carrito',   label: 'Carrito',   icon: ShoppingCart, badge: n },
-    { href: '/cuenta',    label: 'Cuenta',    icon: User },
+    { href: '/',           label: 'Inicio',    icon: Home },
+    { href: '/productos',  label: 'Productos', icon: ShoppingBag },
+    { href: '/carrito',    label: 'Carrito',   icon: ShoppingCart, badge: n },
+    { href: '/favoritos',  label: 'Favoritos', icon: Heart },
+    { href: '/pedidos',    label: 'Pedidos',   icon: Package },
   ]
 
   return (

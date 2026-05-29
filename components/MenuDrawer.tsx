@@ -1,13 +1,13 @@
 'use client'
-import { useState } from 'react'
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
-  X, User, ShoppingBag, Tag, Settings, HelpCircle,
-  ChevronRight, Search, Home, Package,
-  Palette, BookOpen, Cpu, Gamepad2, Scissors, Pencil, Brush,
-  MessageCircle
+  X, User, Tag, Settings, HelpCircle,
+  ChevronRight, Search, Heart, Package,
+  MessageCircle, Star, Trophy,
 } from 'lucide-react'
+import { getPuntos, progresoNivel, EstadoPuntos } from '@/lib/puntos'
+import { getPerfil } from '@/lib/perfil'
 
 const CATEGORIAS = [
   { label: 'Escolar',      emoji: '📚', slug: 'Escolar' },
@@ -28,11 +28,22 @@ interface Props {
 }
 
 export default function MenuDrawer({ open, onClose }: Props) {
-  const [tab, setTab] = useState<Tab>('cuenta')
-  const [q, setQ] = useState('')
+  const [tab, setTab]         = useState<Tab>('cuenta')
+  const [q, setQ]             = useState('')
+  const [puntos, setPuntos]   = useState<EstadoPuntos | null>(null)
+  const [nombre, setNombre]   = useState<string | null>(null)
   const router = useRouter()
 
-  function buscar(e: React.FormEvent) {
+  useEffect(() => {
+    if (!open) return
+    setPuntos(getPuntos())
+    setNombre(getPerfil()?.nombre ?? null)
+    const sync = () => setPuntos(getPuntos())
+    window.addEventListener('puntos-update', sync)
+    return () => window.removeEventListener('puntos-update', sync)
+  }, [open])
+
+  function buscar(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (q.trim()) {
       router.push(`/productos?q=${encodeURIComponent(q.trim())}`)
@@ -44,6 +55,8 @@ export default function MenuDrawer({ open, onClose }: Props) {
     router.push(href)
     onClose()
   }
+
+  const progreso = puntos ? progresoNivel(puntos.total) : null
 
   return (
     <>
@@ -65,14 +78,47 @@ export default function MenuDrawer({ open, onClose }: Props) {
                 🖍️
               </div>
               <div>
-                <div className="font-bold text-base leading-tight">La Crayola</div>
-                <div className="text-green-200 text-xs">Librería & Papelería</div>
+                <div className="font-bold text-base leading-tight">
+                  {nombre ? nombre.split(' ')[0] : 'La Crayola'}
+                </div>
+                <div className="text-green-200 text-xs">
+                  {nombre ? 'Bienvenido de nuevo' : 'Librería & Papelería'}
+                </div>
               </div>
             </div>
             <button onClick={onClose} className="p-1.5 hover:bg-white/10 rounded-lg transition">
               <X size={20} />
             </button>
           </div>
+
+          {/* Tarjeta de puntos */}
+          {puntos !== null && (
+            <div className="bg-white/15 rounded-xl px-3 py-2.5 mb-3 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Trophy size={13} className="text-yellow-300" />
+                  <span className="text-xs font-bold text-white">Nivel {puntos.nivel}</span>
+                </div>
+                <span className="text-xs font-bold text-yellow-300">{puntos.disponibles} pts</span>
+              </div>
+              {progreso && progreso.faltan > 0 && (
+                <>
+                  <div className="w-full bg-white/20 rounded-full h-1.5">
+                    <div
+                      className="bg-yellow-300 h-1.5 rounded-full transition-all duration-700"
+                      style={{ width: `${Math.min(100, progreso.porcentaje)}%` }}
+                    />
+                  </div>
+                  <div className="text-[10px] text-green-200">
+                    {progreso.faltan} pts para nivel {progreso.siguiente}
+                  </div>
+                </>
+              )}
+              {progreso?.faltan === 0 && (
+                <div className="text-[10px] text-yellow-300 font-semibold">🏆 ¡Nivel máximo alcanzado!</div>
+              )}
+            </div>
+          )}
 
           {/* Tabs */}
           <div className="flex gap-1 bg-green-800/40 rounded-xl p-1">
@@ -97,29 +143,34 @@ export default function MenuDrawer({ open, onClose }: Props) {
           {/* ── PESTAÑA CUENTA ── */}
           {tab === 'cuenta' && (
             <div className="py-2">
-              {/* ID de usuario anónimo */}
               <div className="mx-4 my-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                     <User size={18} className="text-green-700" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-gray-800">Cliente</div>
-                    <div className="text-xs text-gray-400">Sin sesión activa</div>
+                    <div className="text-sm font-semibold text-gray-800">{nombre ?? 'Cliente'}</div>
+                    <div className="text-xs text-gray-400">
+                      {puntos && puntos.total > 0
+                        ? `${puntos.total} puntos acumulados · ${puntos.nivel}`
+                        : 'Sin compras aún'}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <ItemMenu icon={<ShoppingBag size={18} />} label="Mis pedidos" sub="Ver historial de órdenes" onClick={() => navegar('/pedidos')} />
-              <ItemMenu icon={<Tag size={18} />} label="Cupones y códigos" sub="Descuentos disponibles" onClick={() => navegar('/cupones')} badge="Próx." />
+              <ItemMenu icon={<Package size={18} />}      label="Mis pedidos"         sub="Historial y recompra"          onClick={() => navegar('/pedidos')} />
+              <ItemMenu icon={<Heart size={18} />}        label="Mis favoritos"        sub="Lista de deseos"               onClick={() => navegar('/favoritos')} />
+              <ItemMenu icon={<Star size={18} />}         label="Mis puntos"           sub={puntos ? `${puntos.disponibles} pts disponibles · ${puntos.nivel}` : 'Gana puntos comprando'} onClick={() => navegar('/puntos')} badge="Próx." />
+              <ItemMenu icon={<Tag size={18} />}          label="Cupones y códigos"    sub="Descuentos disponibles"        onClick={() => navegar('/cupones')}  badge="Próx." />
               <Divider />
-              <ItemMenu icon={<Settings size={18} />} label="Configuración" sub="Preferencias de la app" onClick={() => navegar('/configuracion')} badge="Próx." />
-              <ItemMenu icon={<HelpCircle size={18} />} label="Ayuda y soporte" sub="WhatsApp · Preguntas frecuentes" onClick={() => navegar('/ayuda')} />
+              <ItemMenu icon={<Settings size={18} />}     label="Configuración"        sub="Preferencias"                  onClick={() => navegar('/configuracion')} badge="Próx." />
+              <ItemMenu icon={<HelpCircle size={18} />}   label="Ayuda y soporte"      sub="Preguntas frecuentes"          onClick={() => navegar('/ayuda')} />
               <ItemMenu
                 icon={<MessageCircle size={18} className="text-green-600" />}
-                label="Contactar por WhatsApp"
-                sub="+593 999 999 999"
-                onClick={() => { window.open('https://wa.me/593999999999', '_blank'); onClose() }}
+                label="WhatsApp"
+                sub="Escríbenos directamente"
+                onClick={() => { window.open('https://wa.me/593984341953', '_blank'); onClose() }}
               />
             </div>
           )}
@@ -127,7 +178,6 @@ export default function MenuDrawer({ open, onClose }: Props) {
           {/* ── PESTAÑA EXPLORAR ── */}
           {tab === 'explorar' && (
             <div className="py-3 px-4 space-y-4">
-              {/* Buscador */}
               <form onSubmit={buscar}>
                 <div className="relative">
                   <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -140,18 +190,16 @@ export default function MenuDrawer({ open, onClose }: Props) {
                 </div>
               </form>
 
-              {/* Accesos rápidos */}
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Acceso rápido</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <QuickBtn emoji="🏠" label="Inicio" onClick={() => navegar('/')} />
-                  <QuickBtn emoji="🛍️" label="Todo" onClick={() => navegar('/productos')} />
-                  <QuickBtn emoji="⭐" label="Destacados" onClick={() => navegar('/productos?destacado=true')} />
-                  <QuickBtn emoji="🏷️" label="Ofertas" onClick={() => navegar('/productos?oferta=true')} />
+                  <QuickBtn emoji="🏠" label="Inicio"      onClick={() => navegar('/')} />
+                  <QuickBtn emoji="🛍️" label="Todo"        onClick={() => navegar('/productos')} />
+                  <QuickBtn emoji="❤️" label="Favoritos"   onClick={() => navegar('/favoritos')} />
+                  <QuickBtn emoji="📦" label="Mis pedidos" onClick={() => navegar('/pedidos')} />
                 </div>
               </div>
 
-              {/* Categorías */}
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Categorías</p>
                 <div className="space-y-1">
@@ -172,7 +220,7 @@ export default function MenuDrawer({ open, onClose }: Props) {
           )}
         </div>
 
-        {/* Footer del drawer */}
+        {/* Footer */}
         <div className="border-t border-gray-100 px-4 py-3">
           <p className="text-[10px] text-gray-400 text-center">La Crayola · V 1.0 · Librería & Papelería</p>
         </div>
@@ -182,11 +230,7 @@ export default function MenuDrawer({ open, onClose }: Props) {
 }
 
 function ItemMenu({ icon, label, sub, onClick, badge }: {
-  icon: React.ReactNode
-  label: string
-  sub?: string
-  onClick: () => void
-  badge?: string
+  icon: React.ReactNode; label: string; sub?: string; onClick: () => void; badge?: string
 }) {
   return (
     <button onClick={onClick} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left">

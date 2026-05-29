@@ -1,9 +1,11 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCarrito, totalCarrito, vaciarCarrito } from '@/lib/carrito'
+import { getPerfil, guardarPerfil, guardarPedidoLocal } from '@/lib/perfil'
+import { sumarPuntos } from '@/lib/puntos'
 import { crearPedido } from './actions'
-import { Loader2, MapPin } from 'lucide-react'
+import { Loader2, MapPin, Star, CheckCircle } from 'lucide-react'
 import { ItemCarrito } from '@/lib/types'
 
 const WA_NUMERO = '593984341953'
@@ -23,21 +25,36 @@ function abrirWhatsApp(numero: string, nombre: string, items: ItemCarrito[], tot
     `*Total: ${fmt(total)}*`,
     entrega ? `📍 ${entrega}` : '',
   ].filter(l => l !== undefined).join('\n')
-
-  const url = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`
-  window.open(url, '_blank')
+  window.open(`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, '_blank')
 }
 
 export default function CheckoutPage() {
   const router = useRouter()
   const [form, setForm] = useState({
     nombre: '', email: '', telefono: '',
-    direccion: '', ciudad: 'Quito', referencias: '', notas: ''
+    direccion: '', ciudad: 'Los Bancos', referencias: '', notas: ''
   })
   const [geo, setGeo]       = useState<{ lat: number; lng: number } | null>(null)
   const [geoMsg, setGeoMsg] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState('')
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState('')
+  const [puntosGanados, setPuntosGanados] = useState<number | null>(null)
+
+  // Pre-rellenar datos del cliente guardados
+  useEffect(() => {
+    const perfil = getPerfil()
+    if (perfil) {
+      setForm(f => ({
+        ...f,
+        nombre:     perfil.nombre     || f.nombre,
+        email:      perfil.email      || f.email,
+        telefono:   perfil.telefono   || f.telefono,
+        direccion:  perfil.direccion  || f.direccion,
+        ciudad:     perfil.ciudad     || f.ciudad,
+        referencias:perfil.referencias|| f.referencias,
+      }))
+    }
+  }, [])
 
   const items = getCarrito()
   const total = totalCarrito(items)
@@ -74,26 +91,55 @@ export default function CheckoutPage() {
       return
     }
 
+    // Guardar perfil para próximas compras
+    guardarPerfil({
+      nombre:      form.nombre,
+      email:       form.email,
+      telefono:    form.telefono,
+      direccion:   form.direccion,
+      ciudad:      form.ciudad,
+      referencias: form.referencias,
+    })
+
+    // Guardar pedido en historial local
+    guardarPedidoLocal({
+      id:     resultado.pedidoId!,
+      numero: resultado.numeroPedido!,
+      fecha:  new Date().toISOString(),
+      total,
+      estado: 'pendiente',
+      items:  items.map(i => ({ codigo: i.codigo, descripcion: i.descripcion, cantidad: i.cantidad, precio_unitario: i.precio_unitario })),
+    })
+
+    // Sumar puntos de fidelización
+    const ganados = sumarPuntos(total)
+    setPuntosGanados(ganados)
+
     vaciarCarrito()
 
-    // Abrir WhatsApp con el resumen del pedido
-    abrirWhatsApp(
-      WA_NUMERO,
-      form.nombre,
-      items,
-      total,
-      form.direccion,
-      form.ciudad,
-      form.referencias,
-      resultado.numeroPedido!
-    )
+    abrirWhatsApp(WA_NUMERO, form.nombre, items, total, form.direccion, form.ciudad, form.referencias, resultado.numeroPedido!)
 
-    router.push(`/pedido/${resultado.pedidoId}`)
+    setTimeout(() => router.push(`/pedido/${resultado.pedidoId}`), 1800)
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && !puntosGanados) {
     router.replace('/carrito')
     return null
+  }
+
+  // Pantalla de éxito brevemente antes de redirigir
+  if (puntosGanados !== null) {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-16 flex flex-col items-center gap-4 text-center">
+        <CheckCircle size={56} className="text-green-500" />
+        <h2 className="text-xl font-bold text-gray-800">¡Pedido enviado!</h2>
+        <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-5 py-3">
+          <Star size={18} className="text-yellow-500 fill-yellow-400" />
+          <span className="text-sm font-semibold text-yellow-800">+{puntosGanados} puntos ganados</span>
+        </div>
+        <p className="text-sm text-gray-500">Redirigiendo al seguimiento...</p>
+      </div>
+    )
   }
 
   return (
@@ -103,7 +149,12 @@ export default function CheckoutPage() {
       <form onSubmit={confirmar} className="space-y-4">
         {/* Datos personales */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tus datos</div>
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tus datos</div>
+            {getPerfil()?.nombre && (
+              <span className="text-[10px] text-green-400">✓ Datos guardados</span>
+            )}
+          </div>
           {[
             { k: 'nombre',   label: 'Nombre completo *', type: 'text',  placeholder: 'Juan Pérez' },
             { k: 'telefono', label: 'Teléfono / WhatsApp *', type: 'tel', placeholder: '0991234567' },
@@ -123,9 +174,7 @@ export default function CheckoutPage() {
           <div className="flex items-center justify-between">
             <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dirección de entrega</div>
             {geo ? (
-              <span className="flex items-center gap-1 text-[10px] text-green-400">
-                <MapPin size={10}/>Ubicación obtenida
-              </span>
+              <span className="flex items-center gap-1 text-[10px] text-green-400"><MapPin size={10}/>Ubicación obtenida</span>
             ) : (
               <button type="button" onClick={pedirUbicacion}
                 className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-green-400 transition">
@@ -133,29 +182,32 @@ export default function CheckoutPage() {
               </button>
             )}
           </div>
-          <div>
-            <label className="text-xs text-gray-400 block mb-1">Ciudad</label>
-            <input value={form.ciudad} onChange={e => set('ciudad', e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500" />
-          </div>
-          <div>
-            <label className="text-xs text-gray-400 block mb-1">Dirección</label>
-            <input value={form.direccion} onChange={e => set('direccion', e.target.value)}
-              placeholder="Calle, número, sector..."
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500" />
-          </div>
-          <div>
-            <label className="text-xs text-gray-400 block mb-1">Referencias</label>
-            <input value={form.referencias} onChange={e => set('referencias', e.target.value)}
-              placeholder="Cerca de, color de casa..."
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500" />
-          </div>
+          {[
+            { k: 'ciudad',      label: 'Ciudad',      placeholder: 'Los Bancos' },
+            { k: 'direccion',   label: 'Dirección',   placeholder: 'Calle, número, sector...' },
+            { k: 'referencias', label: 'Referencias', placeholder: 'Cerca de, color de casa...' },
+          ].map(({ k, label, placeholder }) => (
+            <div key={k}>
+              <label className="text-xs text-gray-400 block mb-1">{label}</label>
+              <input value={(form as Record<string, string>)[k]} onChange={e => set(k, e.target.value)}
+                placeholder={placeholder}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500" />
+            </div>
+          ))}
           <div>
             <label className="text-xs text-gray-400 block mb-1">Notas del pedido</label>
             <textarea value={form.notas} onChange={e => set('notas', e.target.value)}
               rows={2} placeholder="Instrucciones especiales..."
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500 resize-none" />
           </div>
+        </div>
+
+        {/* Puntos a ganar */}
+        <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2.5">
+          <Star size={15} className="text-yellow-500 fill-yellow-400 shrink-0" />
+          <span className="text-xs text-yellow-800">
+            Ganarás <strong>+{Math.floor(total)} puntos</strong> con esta compra
+          </span>
         </div>
 
         {/* Resumen */}
@@ -179,10 +231,10 @@ export default function CheckoutPage() {
 
         <button type="submit" disabled={loading}
           className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition text-sm">
-          {loading ? <><Loader2 size={16} className="animate-spin" /> Procesando...</> : <>✅ Confirmar pedido · {fmt(total)}</>}
+          {loading ? <><Loader2 size={16} className="animate-spin" />Procesando...</> : <>✅ Confirmar pedido · {fmt(total)}</>}
         </button>
 
-        <p className="text-center text-xs text-gray-600">
+        <p className="text-center text-xs text-gray-500">
           Al confirmar se abrirá WhatsApp para coordinar la entrega y el pago.
         </p>
       </form>
