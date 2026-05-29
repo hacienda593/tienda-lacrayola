@@ -173,12 +173,14 @@ function EstadoVacio({ query, onLimpiar }: { query: string; onLimpiar: () => voi
 function ProductosContent() {
   const params       = useSearchParams()
   const catInicial   = params.get('cat') || ''
+  const subInicial   = params.get('sub') || ''
   const queryInicial = params.get('q')   || ''
 
   const [base, setBase]             = useState<Producto[]>([])
   const [loadingState, setLoading]  = useState(true)
   const [query, setQuery]           = useState(queryInicial)
   const [cat, setCat]               = useState(catInicial)
+  const [sub, setSub]               = useState(subInicial)
   const [marca, setMarca]           = useState('')
   const [stockFiltro, setStockFiltro] = useState<'todos'|'disponible'>('disponible')
   const [orden, setOrden]           = useState<Orden>('relevancia')
@@ -188,6 +190,7 @@ function ProductosContent() {
 
   useEffect(() => {
     setCat(params.get('cat') || '')
+    setSub(params.get('sub') || '')
     const q = params.get('q') || ''
     if (q) setQuery(q)
     setMarca(''); setVisibles(40)
@@ -235,6 +238,7 @@ function ProductosContent() {
     }
     pool = pool.filter(p => {
       if (cat && p.categoria?.toLowerCase() !== cat.toLowerCase()) return false
+      if (sub && p.subcategoria?.toLowerCase() !== sub.toLowerCase()) return false
       if (marca && p.marca !== marca) return false
       if (stockFiltro === 'disponible' && p.stock <= 0) return false
       return true
@@ -267,8 +271,8 @@ function ProductosContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [base, query, cat, stockFiltro])
 
-  function limpiar() { setQuery(''); setCat(''); setMarca(''); setOrden('relevancia'); setVisibles(40) }
-  const hayFiltros = !!(query || cat || marca || stockFiltro !== 'disponible' || orden !== 'relevancia')
+  function limpiar() { setQuery(''); setCat(''); setSub(''); setMarca(''); setOrden('relevancia'); setVisibles(40) }
+  const hayFiltros = !!(query || cat || sub || marca || stockFiltro !== 'disponible' || orden !== 'relevancia')
 
   // Asignar badges: primeros 4 = popular, últimos en stock = ultimas (ya en ProductCard)
   function badgePara(_: Producto, idx: number): 'popular' | undefined {
@@ -401,7 +405,13 @@ function ProductosContent() {
               {cat && (
                 <span className="flex items-center gap-1 bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">
                   {CAT_EMOJI[cat] || ''} {cat}
-                  <button onClick={() => setCat('')}><X size={11} /></button>
+                  <button onClick={() => { setCat(''); setSub('') }}><X size={11} /></button>
+                </span>
+              )}
+              {sub && (
+                <span className="flex items-center gap-1 bg-teal-100 text-teal-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                  📂 {sub}
+                  <button onClick={() => setSub('')}><X size={11} /></button>
                 </span>
               )}
               {marca && (
