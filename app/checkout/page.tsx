@@ -2,8 +2,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCarrito, totalCarrito, vaciarCarrito } from '@/lib/carrito'
-import { supabase } from '@/lib/supabase'
-import { Loader2, CheckCircle } from 'lucide-react'
+import { crearPedido } from './actions'
+import { Loader2 } from 'lucide-react'
 
 function fmt(n: number) { return '$' + n.toFixed(2) }
 
@@ -21,52 +21,26 @@ export default function CheckoutPage() {
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
 
-  async function confirmar(e: React.FormEvent) {
+  async function confirmar(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!form.nombre || !form.telefono) { setError('Nombre y teléfono son obligatorios'); return }
     if (items.length === 0) { setError('El carrito está vacío'); return }
     setError('')
     setLoading(true)
-    try {
-      // 1. Crear pedido
-      const { data: pedido, error: errP } = await supabase
-        .from('ol_pedidos')
-        .insert({
-          nombre_cliente: form.nombre.trim(),
-          email_cliente:  form.email.trim() || null,
-          telefono:       form.telefono.trim(),
-          direccion:      form.direccion.trim() || null,
-          ciudad:         form.ciudad.trim(),
-          referencias:    form.referencias.trim() || null,
-          notas:          form.notas.trim() || null,
-          total,
-          total_items: items.reduce((s, i) => s + i.cantidad, 0),
-          estado: 'pendiente',
-        })
-        .select('id,numero')
-        .single()
 
-      if (errP || !pedido) throw new Error(errP?.message || 'Error al crear pedido')
+    const resultado = await crearPedido(
+      form,
+      items.map(i => ({ codigo: i.codigo, cantidad: i.cantidad }))
+    )
 
-      // 2. Insertar items
-      const { error: errI } = await supabase.from('ol_pedido_items').insert(
-        items.map(i => ({
-          pedido_id:      pedido.id,
-          codigo:         i.codigo,
-          descripcion:    i.descripcion,
-          categoria:      i.categoria,
-          precio_unitario: i.precio_unitario,
-          cantidad:       i.cantidad,
-        }))
-      )
-      if (errI) throw new Error(errI.message)
-
-      vaciarCarrito()
-      router.push(`/pedido/${pedido.id}`)
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al procesar pedido')
+    if (!resultado.ok) {
+      setError(resultado.error ?? 'Error al procesar pedido')
       setLoading(false)
+      return
     }
+
+    vaciarCarrito()
+    router.push(`/pedido/${resultado.pedidoId}`)
   }
 
   if (items.length === 0) {
