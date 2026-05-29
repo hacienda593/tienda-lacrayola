@@ -102,7 +102,10 @@ function PanelRegistrado() {
   }, [user])
 
   if (!user) return null
-  const nombre  = user.user_metadata?.full_name || user.email || 'Usuario'
+  const rawNombre = user.user_metadata?.full_name || user.user_metadata?.name || ''
+  const nombre    = rawNombre
+    ? rawNombre.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7EÀ-ɏ]/g, '').trim() || rawNombre
+    : (user.email?.split('@')[0] || 'Usuario')
   const avatar  = user.user_metadata?.avatar_url
   const progreso = puntos ? progresoNivel(puntos.total) : null
 

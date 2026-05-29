@@ -43,21 +43,22 @@ export default function CheckoutPage() {
   const [error, setError]       = useState('')
   const [puntosGanados, setPuntosGanados] = useState<number | null>(null)
 
-  // Pre-rellenar datos del cliente guardados
+  // Pre-rellenar: Google tiene prioridad, luego perfil local guardado
   useEffect(() => {
     const perfil = getPerfil()
-    if (perfil) {
-      setForm(f => ({
-        ...f,
-        nombre:     perfil.nombre     || f.nombre,
-        email:      perfil.email      || f.email,
-        telefono:   perfil.telefono   || f.telefono,
-        direccion:  perfil.direccion  || f.direccion,
-        ciudad:     perfil.ciudad     || f.ciudad,
-        referencias:perfil.referencias|| f.referencias,
-      }))
-    }
-  }, [])
+    const nombreGoogle = user?.user_metadata?.full_name || user?.user_metadata?.name || ''
+    const emailGoogle  = user?.email || ''
+    setForm(f => ({
+      ...f,
+      nombre:      nombreGoogle || perfil?.nombre      || f.nombre,
+      email:       emailGoogle  || perfil?.email       || f.email,
+      telefono:    perfil?.telefono   || f.telefono,
+      direccion:   perfil?.direccion  || f.direccion,
+      ciudad:      perfil?.ciudad     || f.ciudad,
+      referencias: perfil?.referencias|| f.referencias,
+    }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   const items = getCarrito()
   const total = totalCarrito(items)
@@ -159,15 +160,37 @@ export default function CheckoutPage() {
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tus datos</div>
-            {getPerfil()?.nombre && (
-              <span className="text-[10px] text-green-400">✓ Datos guardados</span>
-            )}
+            {user
+              ? <span className="flex items-center gap-1 text-[10px] text-green-400">
+                  <CheckCircle size={10} /> Cuenta Google
+                </span>
+              : getPerfil()?.nombre
+                ? <span className="text-[10px] text-green-400">✓ Datos guardados</span>
+                : null
+            }
           </div>
+
+          {/* Avatar Google si está logueado */}
+          {user && (
+            <div className="flex items-center gap-3 bg-gray-800 rounded-xl px-3 py-2.5">
+              {user.user_metadata?.avatar_url
+                ? <img src={user.user_metadata.avatar_url} className="w-8 h-8 rounded-full" alt="" />
+                : <div className="w-8 h-8 bg-green-700 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    {form.nombre?.[0]?.toUpperCase() || 'U'}
+                  </div>
+              }
+              <div>
+                <div className="text-sm font-semibold text-white">{form.nombre || user.email}</div>
+                <div className="text-[10px] text-gray-400">{user.email}</div>
+              </div>
+            </div>
+          )}
+
           {[
-            { k: 'nombre',   label: 'Nombre completo *', type: 'text',  placeholder: 'Juan Pérez' },
-            { k: 'telefono', label: 'Teléfono / WhatsApp *', type: 'tel', placeholder: '0991234567' },
-            { k: 'email',    label: 'Email (opcional)', type: 'email', placeholder: 'juan@email.com' },
-          ].map(({ k, label, type, placeholder }) => (
+            { k: 'nombre',   label: 'Nombre completo *',      type: 'text',  placeholder: 'Juan Pérez',    hidden: !!user },
+            { k: 'telefono', label: 'Teléfono / WhatsApp *',  type: 'tel',   placeholder: '0991234567',    hidden: false },
+            { k: 'email',    label: 'Email (opcional)',        type: 'email', placeholder: 'juan@email.com', hidden: !!user },
+          ].filter(f => !f.hidden).map(({ k, label, type, placeholder }) => (
             <div key={k}>
               <label className="text-xs text-gray-400 block mb-1">{label}</label>
               <input type={type} value={(form as Record<string, string>)[k]}

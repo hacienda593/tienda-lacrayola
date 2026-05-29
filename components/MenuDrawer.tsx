@@ -6,8 +6,10 @@ import {
   ChevronRight, Search, Heart, Package,
   MessageCircle, Star, Trophy,
 } from 'lucide-react'
-import { getPuntos, progresoNivel, EstadoPuntos } from '@/lib/puntos'
+import { getPuntos, progresoNivel } from '@/lib/puntos'
+import { getPuntosCloud, EstadoPuntosCloud } from '@/lib/puntosCloud'
 import { getPerfil } from '@/lib/perfil'
+import { useAuth } from '@/context/AuthContext'
 
 const CATEGORIAS = [
   { label: 'Escolar',      emoji: '📚', slug: 'Escolar' },
@@ -28,20 +30,33 @@ interface Props {
 }
 
 export default function MenuDrawer({ open, onClose }: Props) {
-  const [tab, setTab]         = useState<Tab>('cuenta')
-  const [q, setQ]             = useState('')
-  const [puntos, setPuntos]   = useState<EstadoPuntos | null>(null)
-  const [nombre, setNombre]   = useState<string | null>(null)
+  const [tab, setTab]       = useState<Tab>('cuenta')
+  const [q, setQ]           = useState('')
+  const [puntos, setPuntos] = useState<EstadoPuntosCloud | null>(null)
+  const { user, logout }    = useAuth()
   const router = useRouter()
+
+  // Nombre a mostrar: Google > perfil local > null
+  const rawNombre = user?.user_metadata?.full_name || user?.user_metadata?.name || ''
+  const nombre = user
+    ? (rawNombre.trim() || user.email?.split('@')[0] || 'Usuario')
+    : (getPerfil()?.nombre ?? null)
+  const avatar = user?.user_metadata?.avatar_url
 
   useEffect(() => {
     if (!open) return
-    setPuntos(getPuntos())
-    setNombre(getPerfil()?.nombre ?? null)
-    const sync = () => setPuntos(getPuntos())
-    window.addEventListener('puntos-update', sync)
-    return () => window.removeEventListener('puntos-update', sync)
-  }, [open])
+    if (user) {
+      // Usuario registrado: puntos desde Supabase
+      getPuntosCloud(user.id).then(setPuntos)
+    } else {
+      // Invitado: puntos locales
+      const p = getPuntos()
+      setPuntos(p)
+      const sync = () => setPuntos(getPuntos())
+      window.addEventListener('puntos-update', sync)
+      return () => window.removeEventListener('puntos-update', sync)
+    }
+  }, [open, user])
 
   function buscar(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -74,15 +89,18 @@ export default function MenuDrawer({ open, onClose }: Props) {
         <div className="bg-green-700 text-white px-4 pt-10 pb-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl">
-                🖍️
-              </div>
+              {avatar
+                ? <img src={avatar} alt={nombre ?? ''} className="w-12 h-12 rounded-full border-2 border-white/30" />
+                : <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl">
+                    {user ? (nombre?.[0]?.toUpperCase() || '👤') : '🖍️'}
+                  </div>
+              }
               <div>
                 <div className="font-bold text-base leading-tight">
                   {nombre ? nombre.split(' ')[0] : 'La Crayola'}
                 </div>
                 <div className="text-green-200 text-xs">
-                  {nombre ? 'Bienvenido de nuevo' : 'Librería & Papelería'}
+                  {user ? user.email : nombre ? 'Bienvenido de nuevo' : 'Librería & Papelería'}
                 </div>
               </div>
             </div>
@@ -143,35 +161,63 @@ export default function MenuDrawer({ open, onClose }: Props) {
           {/* ── PESTAÑA CUENTA ── */}
           {tab === 'cuenta' && (
             <div className="py-2">
+              {/* Tarjeta de perfil */}
               <div className="mx-4 my-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <User size={18} className="text-green-700" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-gray-800">{nombre ?? 'Cliente'}</div>
-                    <div className="text-xs text-gray-400">
-                      {puntos && puntos.total > 0
-                        ? `${puntos.total} puntos acumulados · ${puntos.nivel}`
-                        : 'Sin compras aún'}
+                  {user
+                    ? avatar
+                      ? <img src={avatar} className="w-10 h-10 rounded-full" alt="" />
+                      : <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">{nombre?.[0]?.toUpperCase()}</div>
+                    : <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center"><User size={18} className="text-green-700" /></div>
+                  }
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-gray-800 truncate">{nombre ?? 'Cliente'}</div>
+                    <div className="text-xs text-gray-400 truncate">
+                      {user
+                        ? `${puntos?.total ?? 0} pts · Nivel ${puntos?.nivel ?? 'Bronce'}`
+                        : puntos && puntos.total > 0
+                          ? `${puntos.total} pts acumulados`
+                          : 'Sin compras aún'
+                      }
                     </div>
                   </div>
+                  {!user && (
+                    <button onClick={() => navegar('/cuenta')}
+                      className="text-[10px] bg-green-600 text-white font-bold px-2.5 py-1 rounded-lg shrink-0">
+                      Entrar
+                    </button>
+                  )}
                 </div>
               </div>
 
-              <ItemMenu icon={<Package size={18} />}      label="Mis pedidos"         sub="Historial y recompra"          onClick={() => navegar('/pedidos')} />
-              <ItemMenu icon={<Heart size={18} />}        label="Mis favoritos"        sub="Lista de deseos"               onClick={() => navegar('/favoritos')} />
-              <ItemMenu icon={<Star size={18} />}         label="Mis puntos"           sub={puntos ? `${puntos.disponibles} pts disponibles · ${puntos.nivel}` : 'Gana puntos comprando'} onClick={() => navegar('/puntos')} badge="Próx." />
-              <ItemMenu icon={<Tag size={18} />}          label="Cupones y códigos"    sub="Descuentos disponibles"        onClick={() => navegar('/cupones')}  badge="Próx." />
+              <ItemMenu icon={<Package size={18} />} label="Mis pedidos"      sub="Historial y recompra"     onClick={() => navegar('/pedidos')} />
+              <ItemMenu icon={<Heart size={18} />}   label="Mis favoritos"     sub="Lista de deseos"          onClick={() => navegar('/favoritos')} />
+              <ItemMenu icon={<Star size={18} />}    label="Mis puntos"        sub={puntos ? `${puntos.disponibles} pts · ${puntos.nivel}` : 'Gana puntos comprando'} onClick={() => navegar('/cuenta')} badge={user ? undefined : 'Próx.'} />
+              <ItemMenu icon={<Tag size={18} />}     label="Cupones y códigos" sub="Descuentos disponibles"   onClick={() => navegar('/cupones')} badge="Próx." />
               <Divider />
-              <ItemMenu icon={<Settings size={18} />}     label="Configuración"        sub="Preferencias"                  onClick={() => navegar('/configuracion')} badge="Próx." />
-              <ItemMenu icon={<HelpCircle size={18} />}   label="Ayuda y soporte"      sub="Preguntas frecuentes"          onClick={() => navegar('/ayuda')} />
+              <ItemMenu icon={<Settings size={18} />}   label="Configuración"   sub="Preferencias"             onClick={() => navegar('/configuracion')} badge="Próx." />
+              <ItemMenu icon={<HelpCircle size={18} />} label="Ayuda y soporte" sub="Preguntas frecuentes"     onClick={() => navegar('/ayuda')} />
               <ItemMenu
                 icon={<MessageCircle size={18} className="text-green-600" />}
                 label="WhatsApp"
                 sub="Escríbenos directamente"
                 onClick={() => { window.open('https://wa.me/593984341953', '_blank'); onClose() }}
               />
+              {user && (
+                <>
+                  <Divider />
+                  <button
+                    onClick={() => { logout(); onClose() }}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition text-left text-sm font-medium text-red-500">
+                    <span className="w-5 flex-shrink-0 text-red-400">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-[18px] h-[18px]">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+                      </svg>
+                    </span>
+                    Cerrar sesión
+                  </button>
+                </>
+              )}
             </div>
           )}
 
