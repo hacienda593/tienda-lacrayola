@@ -1,14 +1,16 @@
 'use client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ShoppingCart, Search, Menu } from 'lucide-react'
+import { ShoppingCart, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getCarrito } from '@/lib/carrito'
+import MenuDrawer from '@/components/MenuDrawer'
 
 export default function Header() {
   const router = useRouter()
   const [n, setN] = useState(0)
   const [q, setQ] = useState('')
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   useEffect(() => {
     const update = () => setN(getCarrito().reduce((s, i) => s + i.cantidad, 0))
@@ -23,6 +25,8 @@ export default function Header() {
   }
 
   return (
+    <>
+    <MenuDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       {/* Top bar */}
       <div className="bg-green-700 text-white text-xs text-center py-1.5 px-4">
@@ -30,6 +34,19 @@ export default function Header() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
+        {/* Hamburguesa */}
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="flex items-center justify-center w-9 h-9 rounded-xl hover:bg-gray-100 transition shrink-0"
+          aria-label="Abrir menú"
+        >
+          <span className="flex flex-col gap-[5px]">
+            <span className="block w-5 h-[2px] bg-gray-700 rounded" />
+            <span className="block w-5 h-[2px] bg-gray-700 rounded" />
+            <span className="block w-5 h-[2px] bg-gray-700 rounded" />
+          </span>
+        </button>
+
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <span className="text-2xl">🖍️</span>
@@ -77,5 +94,6 @@ export default function Header() {
         </div>
       </div>
     </header>
+    </>
   )
 }
