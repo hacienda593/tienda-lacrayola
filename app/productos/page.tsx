@@ -3,9 +3,9 @@ import { useEffect, useState, useMemo, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Fuse from 'fuse.js'
 import { supabase } from '@/lib/supabase'
-import { agregarItem } from '@/lib/carrito'
+import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { Producto } from '@/lib/types'
-import { Search, X, ShoppingCart, Check } from 'lucide-react'
+import { Search, X, ShoppingCart, Plus, Minus } from 'lucide-react'
 
 function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
 
@@ -15,19 +15,45 @@ const CAT_EMOJI: Record<string, string> = {
 }
 
 function BtnAgregar({ prod }: { prod: Producto }) {
-  const [ok, setOk] = useState(false)
-  function handleClick(e: React.MouseEvent) {
+  const [cantidad, setCantidad] = useState(() => {
+    const items = getCarrito()
+    return items.find((i: { codigo: string }) => i.codigo === prod.codigo)?.cantidad ?? 0
+  })
+
+  function agregar(e: React.MouseEvent) {
     e.stopPropagation()
     agregarItem(prod)
-    setOk(true)
-    setTimeout(() => setOk(false), 1200)
+    setCantidad((c: number) => c + 1)
   }
+
+  function cambiar(e: React.MouseEvent, delta: number) {
+    e.stopPropagation()
+    const nueva = cantidad + delta
+    cambiarCantidad(prod.codigo, nueva)
+    setCantidad(Math.max(0, nueva))
+  }
+
+  if (cantidad === 0) {
+    return (
+      <button onClick={agregar}
+        className="w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent">
+        <ShoppingCart size={12}/>Agregar
+      </button>
+    )
+  }
+
   return (
-    <button onClick={handleClick}
-      className={`w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition mt-auto
-        ${ok ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent'}`}>
-      {ok ? <><Check size={12}/>¡Agregado!</> : <><ShoppingCart size={12}/>Agregar</>}
-    </button>
+    <div className="flex items-center justify-between bg-green-600 rounded-lg overflow-hidden">
+      <button onClick={e => cambiar(e, -1)}
+        className="px-3 py-2 text-white hover:bg-green-700 transition font-bold">
+        <Minus size={12}/>
+      </button>
+      <span className="text-white text-xs font-bold">{cantidad}</span>
+      <button onClick={e => cambiar(e, +1)}
+        className="px-3 py-2 text-white hover:bg-green-700 transition font-bold">
+        <Plus size={12}/>
+      </button>
+    </div>
   )
 }
 
