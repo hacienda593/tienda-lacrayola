@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCarrito, totalCarrito, vaciarCarrito } from '@/lib/carrito'
 import { crearPedido } from './actions'
@@ -44,18 +44,17 @@ export default function CheckoutPage() {
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
 
-  // Solicitar geolocalización al montar
-  useEffect(() => {
-    if (!navigator.geolocation) return
-    setGeoMsg('Obteniendo ubicación...')
+  function pedirUbicacion() {
+    if (!navigator.geolocation) { setGeoMsg('No disponible'); return }
+    setGeoMsg('Obteniendo...')
     navigator.geolocation.getCurrentPosition(
       pos => {
         setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude })
         setGeoMsg('✓ Ubicación obtenida')
       },
-      () => setGeoMsg('')
+      () => setGeoMsg('No se pudo obtener')
     )
-  }, [])
+  }
 
   async function confirmar(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -123,10 +122,15 @@ export default function CheckoutPage() {
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dirección de entrega</div>
-            {geoMsg && (
-              <span className={`flex items-center gap-1 text-[10px] ${geo ? 'text-green-400' : 'text-gray-500'}`}>
-                <MapPin size={10}/>{geoMsg}
+            {geo ? (
+              <span className="flex items-center gap-1 text-[10px] text-green-400">
+                <MapPin size={10}/>Ubicación obtenida
               </span>
+            ) : (
+              <button type="button" onClick={pedirUbicacion}
+                className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-green-400 transition">
+                <MapPin size={10}/>{geoMsg || 'Compartir ubicación'}
+              </button>
             )}
           </div>
           <div>
