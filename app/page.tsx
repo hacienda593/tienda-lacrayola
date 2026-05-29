@@ -66,7 +66,7 @@ export default function Home() {
               Todo para el regreso<br/>a clases
             </h1>
             <p className="text-green-100 text-sm md:text-base mb-6 max-w-md">
-              Más de 17,000 productos en stock. Útiles, arte, tecnología y más. Envíos a domicilio en Quito.
+              Más de 17,000 productos en stock. Útiles, arte, tecnología y más. Envíos a domicilio en Los Bancos.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
               <Link href="/productos?cat=Escolar"
