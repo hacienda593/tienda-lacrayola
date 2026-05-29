@@ -103,17 +103,32 @@ export default function PedidosPage() {
   useEffect(() => {
     if (authLoading) return
 
-    if (user) {
-      // Usuario registrado: cargar desde Supabase
-      Promise.all([
-        supabase.from('ol_pedidos')
-          .select('id,numero,estado,total,created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false }),
-      ]).then(async ([{ data: pedidosData }]) => {
-        if (!pedidosData) { setCargando(false); return }
-        // Cargar items de cada pedido
-        const conItems = await Promise.all(pedidosData.map(async p => {
+    async function cargar() {
+      if (user) {
+        // Registrado: buscar por user_id + por email (pedidos previos al registro)
+        const email = user.email ?? ''
+        const [{ data: porId }, { data: porEmail }] = await Promise.all([
+          supabase.from('ol_pedidos')
+            .select('id,numero,estado,total,created_at')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false }),
+          supabase.from('ol_pedidos')
+            .select('id,numero,estado,total,created_at')
+            .eq('email_cliente', email)
+            .is('user_id', null)
+            .order('created_at', { ascending: false }),
+        ])
+
+        const vistos = new Set<string>()
+        const todos = [...(porId ?? []), ...(porEmail ?? [])].filter(p => {
+          if (vistos.has(p.id)) return false
+          vistos.add(p.id)
+          return true
+        }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+        if (todos.length === 0) { setCargando(false); return }
+
+        const conItems = await Promise.all(todos.map(async p => {
           const { data: items } = await supabase
             .from('ol_pedido_items')
             .select('codigo,descripcion,cantidad,precio_unitario')
@@ -129,20 +144,22 @@ export default function PedidosPage() {
         }))
         setPedidos(conItems)
         setCargando(false)
-      })
-    } else {
-      // Invitado: cargar desde localStorage
-      const locales = getPedidosLocales()
-      setPedidos(locales.map(p => ({
-        id:     p.id,
-        numero: p.numero,
-        fecha:  p.fecha,
-        total:  p.total,
-        estado: p.estado,
-        items:  p.items,
-      })))
-      setCargando(false)
+      } else {
+        // Invitado: localStorage
+        const locales = getPedidosLocales()
+        setPedidos(locales.map(p => ({
+          id:     p.id,
+          numero: p.numero,
+          fecha:  p.fecha,
+          total:  p.total,
+          estado: p.estado,
+          items:  p.items,
+        })))
+        setCargando(false)
+      }
     }
+
+    cargar()
   }, [user, authLoading])
 
   function recomprar(pedido: PedidoVista) {
