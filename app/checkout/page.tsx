@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import { getCarrito, totalCarrito, vaciarCarrito } from '@/lib/carrito'
 import { getPerfil, guardarPerfil, guardarPedidoLocal } from '@/lib/perfil'
 import { sumarPuntos } from '@/lib/puntos'
+import { sumarPuntosCloud } from '@/lib/puntosCloud'
+import { useAuth } from '@/context/AuthContext'
 import { crearPedido } from './actions'
 import { Loader2, MapPin, Star, CheckCircle } from 'lucide-react'
 import { ItemCarrito } from '@/lib/types'
@@ -30,6 +32,7 @@ function abrirWhatsApp(numero: string, nombre: string, items: ItemCarrito[], tot
 
 export default function CheckoutPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [form, setForm] = useState({
     nombre: '', email: '', telefono: '',
     direccion: '', ciudad: 'Los Bancos', referencias: '', notas: ''
@@ -81,7 +84,7 @@ export default function CheckoutPage() {
     setLoading(true)
 
     const resultado = await crearPedido(
-      { ...form, geo_lat: geo?.lat, geo_lng: geo?.lng },
+      { ...form, geo_lat: geo?.lat, geo_lng: geo?.lng, user_id: user?.id ?? null },
       items.map(i => ({ codigo: i.codigo, cantidad: i.cantidad }))
     )
 
@@ -111,8 +114,13 @@ export default function CheckoutPage() {
       items:  items.map(i => ({ codigo: i.codigo, descripcion: i.descripcion, cantidad: i.cantidad, precio_unitario: i.precio_unitario })),
     })
 
-    // Sumar puntos de fidelización
-    const ganados = sumarPuntos(total)
+    // Sumar puntos: en nube si está registrado, local si es invitado
+    let ganados: number
+    if (user) {
+      ganados = await sumarPuntosCloud(user.id, total)
+    } else {
+      ganados = sumarPuntos(total)
+    }
     setPuntosGanados(ganados)
 
     vaciarCarrito()

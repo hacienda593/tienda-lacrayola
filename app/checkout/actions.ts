@@ -21,6 +21,7 @@ export interface DatosCliente {
   notas: string
   geo_lat?: number | null
   geo_lng?: number | null
+  user_id?: string | null
 }
 
 export interface ResultadoPedido {
@@ -87,6 +88,7 @@ export async function crearPedido(
       notas:          cliente.notas.trim() || null,
       geo_lat:        cliente.geo_lat ?? null,
       geo_lng:        cliente.geo_lng ?? null,
+      user_id:        cliente.user_id ?? null,
       total,
       total_items,
       estado: 'pendiente',

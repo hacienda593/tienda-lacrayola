@@ -4,6 +4,7 @@ import './globals.css'
 import Header from '@/components/Header'
 import NavBarMobile from '@/components/NavBarMobile'
 import Footer from '@/components/Footer'
+import { AuthProvider } from '@/context/AuthContext'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
@@ -16,12 +17,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" className={inter.variable}>
       <body className="bg-[#f8f7f4] text-gray-900 antialiased">
-        <Header />
-        <main className="min-h-screen pb-20 md:pb-6">
-          {children}
-        </main>
-        <Footer />
-        <NavBarMobile />
+        <AuthProvider>
+          <Header />
+          <main className="min-h-screen pb-20 md:pb-6">
+            {children}
+          </main>
+          <Footer />
+          <NavBarMobile />
+        </AuthProvider>
       </body>
     </html>
   )
