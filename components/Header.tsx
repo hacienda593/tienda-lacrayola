@@ -100,6 +100,11 @@ export default function Header() {
 
               {/* Links rápidos desktop */}
               <div className="hidden md:flex gap-5 overflow-x-auto scrollbar-hide">
+                <Link href="/tiendas"
+                  className="shrink-0 text-sm font-bold text-green-700 hover:text-green-900 transition whitespace-nowrap py-0.5 flex items-center gap-1">
+                  🏪 Tiendas
+                </Link>
+                <span className="text-gray-200 py-0.5">|</span>
                 {['Escolar','Arte','Oficina','Tecnologia','Juguetes','Manualidades','Libros','Pintura'].map(c => (
                   <Link key={c} href={`/productos?cat=${encodeURIComponent(c)}`}
                     className="shrink-0 text-sm text-gray-600 hover:text-green-700 font-medium transition whitespace-nowrap py-0.5">

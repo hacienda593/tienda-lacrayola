@@ -100,10 +100,10 @@ export async function crearPedido(
     return { ok: false, error: errPed?.message || 'Error al crear pedido' }
   }
 
-  // Insertar items con descripcion y categoria para historial
+  // Insertar items con descripcion, categoria y tienda para historial
   const { data: productosDetalle } = await supabaseServer
     .from('ol_productos')
-    .select('codigo, descripcion, categoria')
+    .select('codigo, descripcion, categoria, tienda_id')
     .in('codigo', codigos)
 
   const mapaDetalle = new Map((productosDetalle ?? []).map(p => [p.codigo, p]))
@@ -121,6 +121,23 @@ export async function crearPedido(
 
   if (errItems) {
     return { ok: false, error: errItems.message }
+  }
+
+  // Crear lista de picking agrupada por tienda
+  const pickingItems = items
+    .map(i => ({
+      pedido_id:   pedido.id,
+      tienda_id:   mapaDetalle.get(i.codigo)?.tienda_id ?? null,
+      codigo_producto: i.codigo,
+      descripcion: mapaDetalle.get(i.codigo)?.descripcion ?? i.codigo,
+      cantidad:    i.cantidad,
+      precio_ref:  i.precio_unitario,
+      estado:      'pendiente',
+    }))
+    .filter(i => i.tienda_id) // solo items con tienda asignada
+
+  if (pickingItems.length > 0) {
+    await supabaseServer.from('rep_picking').insert(pickingItems)
   }
 
   return { ok: true, pedidoId: pedido.id, numeroPedido: pedido.numero }

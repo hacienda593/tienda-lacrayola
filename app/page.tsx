@@ -183,10 +183,16 @@ function ProdCard({ p }: { p: Producto }) {
 }
 
 // ── Home ───────────────────────────────────────────────────────────
+const CAT_TIENDA: Record<string, string> = {
+  supermercado: '🛒', farmacia: '💊', libreria: '📚',
+  abarrotes: '🥬', tecnologia: '💻', otros: '🏪',
+}
+
 export default function Home() {
   const [cats,        setCats]        = useState<{ categoria: string; n: number }[]>([])
   const [destacados,  setDestacados]  = useState<Producto[]>([])
   const [novedades,   setNovedades]   = useState<Producto[]>([])
+  const [tiendas,     setTiendas]     = useState<{ id: string; nombre: string; categoria: string | null; logo_url: string | null }[]>([])
   const [cargandoCats, setCargandoCats] = useState(true)
   const [cargandoProds, setCargandoProds] = useState(true)
 
@@ -212,7 +218,7 @@ export default function Home() {
         if (data) setDestacados(data as Producto[])
       })
 
-    // Novedades (últimos agregados — los de menor código numérico suelen ser más nuevos, usamos orden desc)
+    // Novedades
     supabase.from('ol_productos')
       .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva')
       .gt('stock', 0).gt('precio_publico', 0)
@@ -221,6 +227,13 @@ export default function Home() {
         if (data) setNovedades(data as Producto[])
         setCargandoProds(false)
       })
+
+    // Tiendas aliadas
+    supabase.from('ol_tiendas')
+      .select('id,nombre,categoria,logo_url')
+      .eq('activa', true)
+      .order('orden')
+      .then(({ data }) => { if (data) setTiendas(data) })
   }, [])
 
   return (
@@ -250,6 +263,41 @@ export default function Home() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-12">
+
+        {/* ── TIENDAS ALIADAS ── */}
+        {tiendas.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">🏪 Tiendas disponibles</h2>
+                <p className="text-xs text-gray-400">Compramos por ti y te entregamos en casa</p>
+              </div>
+              <Link href="/tiendas" className="text-sm text-green-600 font-medium flex items-center gap-1 hover:underline">
+                Ver todas <ChevronRight size={14} />
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              {tiendas.map(t => (
+                <Link key={t.id} href={`/tiendas/${t.id}`}
+                  className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col items-center gap-2 text-center group">
+                  <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
+                    {t.logo_url
+                      ? <img src={t.logo_url} alt={t.nombre} className="w-9 h-9 object-contain" />
+                      : (CAT_TIENDA[t.categoria ?? 'otros'] ?? '🏪')
+                    }
+                  </div>
+                  <span className="text-xs font-bold text-gray-700 leading-tight">{t.nombre}</span>
+                </Link>
+              ))}
+              {/* Ver todas */}
+              <Link href="/tiendas"
+                className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-4 flex flex-col items-center gap-2 text-center hover:bg-green-50 hover:border-green-200 transition group">
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">➕</div>
+                <span className="text-xs font-bold text-gray-400 group-hover:text-green-600">Ver todas</span>
+              </Link>
+            </div>
+          </section>
+        )}
 
         {/* ── CATEGORÍAS ── */}
         <section>
