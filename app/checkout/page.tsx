@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCarrito, totalCarrito, vaciarCarrito } from '@/lib/carrito'
+import { getCarrito, totalCarrito, vaciarCarrito, calcularEnvioConsolidado, obtenerTiendasUnicas } from '@/lib/carrito'
 import { getPerfil, guardarPerfil, guardarPedidoLocal } from '@/lib/perfil'
 import { sumarPuntos } from '@/lib/puntos'
 import { sumarPuntosCloud } from '@/lib/puntosCloud'
@@ -9,23 +9,50 @@ import { useAuth } from '@/context/AuthContext'
 import { crearPedido } from './actions'
 import { Loader2, MapPin, Star, CheckCircle } from 'lucide-react'
 import { ItemCarrito } from '@/lib/types'
+import RecargoEnvioBadge from '@/components/RecargoEnvioBadge'
 
 const WA_NUMERO = '593984341953'
 
 function fmt(n: number) { return '$' + n.toFixed(2) }
 
-function abrirWhatsApp(numero: string, nombre: string, items: ItemCarrito[], total: number, direccion: string, ciudad: string, referencias: string, numeroPedido: number) {
-  const lineas = items.map(i => `  • ${i.descripcion} ×${i.cantidad} = ${fmt(i.precio_unitario * i.cantidad)}`).join('\n')
+function abrirWhatsApp(
+  numero: string, 
+  nombre: string, 
+  items: ItemCarrito[], 
+  subtotal: number, 
+  costoEnvio: number, 
+  granTotal: number, 
+  direccion: string, 
+  ciudad: string, 
+  referencias: string, 
+  numeroPedido: number
+) {
+  // Agrupar ítems por tienda para el mensaje
+  const agrupados: Record<string, ItemCarrito[]> = {}
+  items.forEach(i => {
+    const key = i.tienda_nombre || 'Inventario Crayola'
+    if (!agrupados[key]) agrupados[key] = []
+    agrupados[key].push(i)
+  })
+
+  const bloques = Object.entries(agrupados).map(([tienda, prods]) => {
+    const listado = prods.map(p => `  • ${p.descripcion} ×${p.cantidad} = ${fmt(p.precio_unitario * p.cantidad)}`).join('\n')
+    return `🏪 *${tienda}:*\n${listado}`
+  }).join('\n\n')
+
   const entrega = [direccion, ciudad, referencias].filter(Boolean).join(', ')
   const msg = [
     `🛒 *Nuevo pedido #${String(numeroPedido).padStart(4,'0')}*`,
-    `👤 ${nombre}`,
+    `👤 *Cliente:* ${nombre}`,
     ``,
-    `*Productos:*`,
-    lineas,
+    `*Detalle de compra:*`,
+    bloques,
     ``,
-    `*Total: ${fmt(total)}*`,
-    entrega ? `📍 ${entrega}` : '',
+    `*Resumen:*`,
+    `  • Subtotal: ${fmt(subtotal)}`,
+    `  • Envío Consolidado: ${fmt(costoEnvio)}`,
+    `  • *Total a pagar: ${fmt(granTotal)}*`,
+    entrega ? `📍 *Entrega:* ${entrega}` : '',
   ].filter(l => l !== undefined).join('\n')
   window.open(`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, '_blank')
 }
@@ -62,6 +89,9 @@ export default function CheckoutPage() {
 
   const items = getCarrito()
   const total = totalCarrito(items)
+  const nTiendas = obtenerTiendasUnicas(items).length || (items.length > 0 ? 1 : 0)
+  const costoEnvio = calcularEnvioConsolidado(items)
+  const granTotal = total + costoEnvio
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
 
@@ -126,7 +156,18 @@ export default function CheckoutPage() {
 
     vaciarCarrito()
 
-    abrirWhatsApp(WA_NUMERO, form.nombre, items, total, form.direccion, form.ciudad, form.referencias, resultado.numeroPedido!)
+    abrirWhatsApp(
+      WA_NUMERO, 
+      form.nombre, 
+      items, 
+      total, 
+      costoEnvio,
+      granTotal,
+      form.direccion, 
+      form.ciudad, 
+      form.referencias, 
+      resultado.numeroPedido!
+    )
 
     setTimeout(() => router.push(`/pedido/${resultado.pedidoId}`), 1800)
   }
@@ -242,9 +283,9 @@ export default function CheckoutPage() {
         </div>
 
         {/* Resumen */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3.5">
           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Resumen</div>
-          <div className="space-y-1 mb-3">
+          <div className="space-y-1">
             {items.map(i => (
               <div key={i.codigo} className="flex justify-between text-xs text-gray-300">
                 <span className="truncate flex-1">{i.descripcion} ×{i.cantidad}</span>
@@ -252,17 +293,21 @@ export default function CheckoutPage() {
               </div>
             ))}
           </div>
-          <div className="flex justify-between font-bold text-white border-t border-gray-700 pt-2">
-            <span>Total</span>
-            <span className="text-green-400">{fmt(total)}</span>
+
+          {/* Recargo por envío consolidado */}
+          <RecargoEnvioBadge nTiendas={nTiendas} costoTotalEnvio={costoEnvio} />
+
+          <div className="flex justify-between font-bold text-white border-t border-gray-800 pt-2.5">
+            <span>Total consolidado</span>
+            <span className="text-green-400">{fmt(granTotal)}</span>
           </div>
         </div>
 
         {error && <p className="text-red-400 text-xs text-center">{error}</p>}
 
         <button type="submit" disabled={loading}
-          className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition text-sm">
-          {loading ? <><Loader2 size={16} className="animate-spin" />Procesando...</> : <>✅ Confirmar pedido · {fmt(total)}</>}
+          className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition text-sm cursor-pointer">
+          {loading ? <><Loader2 size={16} className="animate-spin" />Procesando...</> : <>✅ Confirmar pedido · {fmt(granTotal)}</>}
         </button>
 
         <p className="text-center text-xs text-gray-500">

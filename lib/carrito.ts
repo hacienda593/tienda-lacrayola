@@ -16,13 +16,31 @@ export function setCarrito(items: ItemCarrito[]) {
   window.dispatchEvent(new Event('carrito-update'))
 }
 
-export function agregarItem(prod: { codigo: string; descripcion: string; categoria: string; precio_publico: number }, cant = 1) {
+export function agregarItem(
+  prod: { 
+    codigo: string; 
+    descripcion: string; 
+    categoria: string; 
+    precio_publico: number; 
+    tienda_id?: string | null; 
+    tienda_nombre?: string | null 
+  }, 
+  cant = 1
+) {
   const items = getCarrito()
   const idx = items.findIndex(i => i.codigo === prod.codigo)
   if (idx >= 0) {
     items[idx].cantidad += cant
   } else {
-    items.push({ codigo: prod.codigo, descripcion: prod.descripcion, categoria: prod.categoria, precio_unitario: prod.precio_publico, cantidad: cant })
+    items.push({ 
+      codigo: prod.codigo, 
+      descripcion: prod.descripcion, 
+      categoria: prod.categoria, 
+      precio_unitario: prod.precio_publico, 
+      cantidad: cant,
+      tienda_id: prod.tienda_id ?? null,
+      tienda_nombre: prod.tienda_nombre ?? null
+    })
   }
   setCarrito(items)
 }
@@ -41,4 +59,19 @@ export function vaciarCarrito() { setCarrito([]) }
 
 export function totalCarrito(items: ItemCarrito[]) {
   return items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0)
+}
+
+export function obtenerTiendasUnicas(items: ItemCarrito[]): string[] {
+  const set = new Set<string>()
+  items.forEach(i => {
+    if (i.tienda_id) set.add(i.tienda_id)
+  })
+  return Array.from(set)
+}
+
+export function calcularEnvioConsolidado(items: ItemCarrito[]): number {
+  if (items.length === 0) return 0
+  const tiendas = obtenerTiendasUnicas(items)
+  const nTiendas = tiendas.length || 1 // Si no hay tienda_id, asumimos 1 (inventario propio)
+  return 1.50 + (nTiendas - 1) * 0.75
 }

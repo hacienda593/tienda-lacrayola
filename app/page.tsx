@@ -7,6 +7,7 @@ import { ChevronRight, ShoppingCart, Truck, Shield, Clock, Heart, ChevronLeft } 
 import { agregarItem } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto } from '@/lib/types'
+import LocalGrid from '@/components/LocalGrid'
 
 function fmt(n: number) { return '$' + n.toFixed(2) }
 
@@ -263,6 +264,9 @@ export default function Home() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-12">
+
+        {/* ── SELECCIÓN DE VERTICALES ── */}
+        <LocalGrid />
 
         {/* ── TIENDAS ALIADAS ── */}
         {tiendas.length > 0 && (
