@@ -21,6 +21,17 @@ export default function Header() {
     return () => window.removeEventListener('carrito-update', update)
   }, [])
 
+  useEffect(() => {
+    const abrirCats = () => setCatOpen(true)
+    const abrirMenu = () => setDrawerOpen(true)
+    window.addEventListener('open-categorias-global', abrirCats)
+    window.addEventListener('open-menu-global', abrirMenu)
+    return () => {
+      window.removeEventListener('open-categorias-global', abrirCats)
+      window.removeEventListener('open-menu-global', abrirMenu)
+    }
+  }, [])
+
   function buscar(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (q.trim()) router.push(`/productos?q=${encodeURIComponent(q.trim())}`)
