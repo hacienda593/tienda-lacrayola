@@ -4,23 +4,44 @@ import { useRouter } from 'next/navigation'
 import {
   X, User, Tag, Settings, HelpCircle,
   ChevronRight, Search, Heart, Package,
-  MessageCircle, Star, Trophy,
+  MessageCircle, Star, Trophy, Loader2,
 } from 'lucide-react'
 import { getPuntos, progresoNivel } from '@/lib/puntos'
 import { getPuntosCloud, EstadoPuntosCloud } from '@/lib/puntosCloud'
 import { getPerfil } from '@/lib/perfil'
 import { useAuth } from '@/context/AuthContext'
+import { supabase } from '@/lib/supabase'
+import { OlTienda } from '@/lib/types'
 
-const CATEGORIAS = [
-  { label: 'Escolar',      emoji: '📚', slug: 'Escolar' },
-  { label: 'Arte',         emoji: '🎨', slug: 'Arte' },
-  { label: 'Oficina',      emoji: '🖊️', slug: 'Oficina' },
-  { label: 'Tecnología',   emoji: '💻', slug: 'Tecnologia' },
-  { label: 'Juguetes',     emoji: '🧸', slug: 'Juguetes' },
-  { label: 'Manualidades', emoji: '✂️', slug: 'Manualidades' },
-  { label: 'Libros',       emoji: '📖', slug: 'Libros' },
-  { label: 'Pintura',      emoji: '🖌️', slug: 'Pintura' },
-]
+const STORE_EMOJI: Record<string, string> = {
+  supermercado: '🛒',
+  farmacia: '💊',
+  libreria: '🖍️',
+  abarrotes: '🥬',
+  tecnologia: '💻',
+  ropa: '👕',
+  otros: '🏪',
+}
+
+const CAT_EMOJI: Record<string, string> = {
+  'Escolar':      '📚',
+  'Arte':         '🎨',
+  'Oficina':      '🖊️',
+  'Tecnologia':   '💻',
+  'Juguetes':     '🧸',
+  'Manualidades': '✂️',
+  'Libros':       '📖',
+  'Pintura':      '🖌️',
+  'Papeleria':    '📄',
+  'Alimentos':    '🥦',
+  'Bebidas':      '🥤',
+  'Limpieza':     '🧹',
+  'Higiene':      '🧴',
+  'Farmacia':     '💊',
+  'Carnes':       '🥩',
+  'Lacteos':      '🧀',
+  'Snacks':       '🍿',
+}
 
 type Tab = 'cuenta' | 'explorar'
 
@@ -36,6 +57,11 @@ export default function MenuDrawer({ open, onClose }: Props) {
   const { user, logout }    = useAuth()
   const router = useRouter()
 
+  const [tiendas, setTiendas] = useState<OlTienda[]>([])
+  const [tiendaSeleccionada, setTiendaSeleccionada] = useState<OlTienda | null>(null)
+  const [cats, setCats] = useState<{ categoria: string; total: number }[]>([])
+  const [cargandoCats, setCargandoCats] = useState(false)
+
   // Nombre a mostrar: Google > perfil local > null
   const rawNombre = user?.user_metadata?.full_name || user?.user_metadata?.name || ''
   const nombre = user
@@ -43,13 +69,12 @@ export default function MenuDrawer({ open, onClose }: Props) {
     : (getPerfil()?.nombre ?? null)
   const avatar = user?.user_metadata?.avatar_url
 
+  // Cargar puntos
   useEffect(() => {
     if (!open) return
     if (user) {
-      // Usuario registrado: puntos desde Supabase
       getPuntosCloud(user.id).then(setPuntos)
     } else {
-      // Invitado: puntos locales
       const p = getPuntos()
       setPuntos(p)
       const sync = () => setPuntos(getPuntos())
@@ -57,6 +82,54 @@ export default function MenuDrawer({ open, onClose }: Props) {
       return () => window.removeEventListener('puntos-update', sync)
     }
   }, [open, user])
+
+  // Cargar tiendas aliadas activas al abrir
+  useEffect(() => {
+    if (!open) return
+    setTiendaSeleccionada(null)
+    supabase.from('ol_tiendas')
+      .select('*')
+      .eq('activa', true)
+      .order('orden')
+      .then(({ data }) => { if (data) setTiendas(data as OlTienda[]) })
+  }, [open])
+
+  // Cargar categorías cuando se selecciona una tienda
+  useEffect(() => {
+    if (!tiendaSeleccionada) {
+      setCats([])
+      return
+    }
+    setCargandoCats(true)
+    supabase.from('ol_productos')
+      .select('categoria')
+      .eq('tienda_id', tiendaSeleccionada.id)
+      .gt('stock', 0)
+      .gt('precio_publico', 0)
+      .then(({ data }) => {
+        if (!data) {
+          setCats([])
+          setCargandoCats(false)
+          return
+        }
+        const map = new Map<string, number>()
+        data.forEach(p => {
+          if (p.categoria) map.set(p.categoria, (map.get(p.categoria) ?? 0) + 1)
+        })
+        const result = Array.from(map.entries())
+          .map(([categoria, total]) => ({ categoria, total }))
+          .sort((a, b) => b.total - a.total)
+        setCats(result)
+        setCargandoCats(false)
+      })
+  }, [tiendaSeleccionada])
+
+  // Registrar escuchador global para abrir el menú desde la barra móvil
+  useEffect(() => {
+    const abrirMenu = () => setTab('cuenta')
+    window.addEventListener('open-menu-global', abrirMenu)
+    return () => window.removeEventListener('open-menu-global', abrirMenu)
+  }, [])
 
   function buscar(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -231,37 +304,99 @@ export default function MenuDrawer({ open, onClose }: Props) {
                     value={q} onChange={e => setQ(e.target.value)}
                     placeholder="Buscar productos..."
                     className="w-full bg-gray-100 border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition"
-                    autoFocus
                   />
                 </div>
               </form>
 
-              <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Acceso rápido</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <QuickBtn emoji="🏠" label="Inicio"      onClick={() => navegar('/')} />
-                  <QuickBtn emoji="🛍️" label="Todo"        onClick={() => navegar('/productos')} />
-                  <QuickBtn emoji="❤️" label="Favoritos"   onClick={() => navegar('/favoritos')} />
-                  <QuickBtn emoji="📦" label="Mis pedidos" onClick={() => navegar('/pedidos')} />
-                </div>
-              </div>
+              {/* Si no hay tienda seleccionada -> Listar Tiendas */}
+              {!tiendaSeleccionada ? (
+                <>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Acceso rápido</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <QuickBtn emoji="🏠" label="Inicio"      onClick={() => navegar('/')} />
+                      <QuickBtn emoji="🛍️" label="Todo"        onClick={() => navegar('/productos')} />
+                      <QuickBtn emoji="❤️" label="Favoritos"   onClick={() => navegar('/favoritos')} />
+                      <QuickBtn emoji="📦" label="Mis pedidos" onClick={() => navegar('/pedidos')} />
+                    </div>
+                  </div>
 
-              <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Categorías</p>
-                <div className="space-y-1">
-                  {CATEGORIAS.map(({ label, emoji, slug }) => (
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">🏪 Tiendas disponibles</p>
+                    <div className="space-y-1.5">
+                      {tiendas.map(tienda => {
+                        const fallbackEmoji = STORE_EMOJI[tienda.categoria ?? 'otros'] || '🏪'
+                        return (
+                          <button
+                            key={tienda.id}
+                            onClick={() => setTiendaSeleccionada(tienda)}
+                            className="w-full flex items-center gap-3 px-3 py-2 bg-gray-50 border border-gray-100 hover:border-green-200 hover:bg-green-50/30 rounded-xl transition text-left group"
+                          >
+                            <span className="text-xl w-7 text-center">
+                              {tienda.logo_url 
+                                ? <img src={tienda.logo_url} alt={tienda.nombre} className="w-5 h-5 object-contain inline" />
+                                : fallbackEmoji
+                              }
+                            </span>
+                            <span className="text-xs font-bold text-gray-700 group-hover:text-green-700 flex-1 truncate">
+                              {tienda.nombre}
+                            </span>
+                            <ChevronRight size={14} className="text-gray-300 group-hover:text-green-500" />
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                // Si hay tienda seleccionada -> Listar sus Categorías dinámicas
+                <>
+                  <div className="flex items-center justify-between pb-1 border-b border-gray-100">
                     <button
-                      key={slug}
-                      onClick={() => navegar(`/productos?cat=${encodeURIComponent(slug)}`)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-green-50 transition text-left group"
+                      onClick={() => setTiendaSeleccionada(null)}
+                      className="text-xs text-green-600 font-bold hover:underline flex items-center gap-1"
                     >
-                      <span className="text-xl w-7 text-center">{emoji}</span>
-                      <span className="text-sm font-medium text-gray-700 group-hover:text-green-700 flex-1">{label}</span>
-                      <ChevronRight size={14} className="text-gray-300 group-hover:text-green-500" />
+                      ← Cambiar tienda
                     </button>
-                  ))}
-                </div>
-              </div>
+                    <span className="text-[10px] text-gray-400 font-semibold truncate max-w-[140px]">
+                      {tiendaSeleccionada.nombre}
+                    </span>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Categorías</p>
+                    {cargandoCats ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 size={20} className="animate-spin text-green-500" />
+                      </div>
+                    ) : cats.length > 0 ? (
+                      <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1 scrollbar-hide">
+                        {cats.map(({ categoria, total }) => {
+                          const emoji = CAT_EMOJI[categoria] || '📦'
+                          return (
+                            <button
+                              key={categoria}
+                              onClick={() => navegar(`/productos?tienda_id=${tiendaSeleccionada.id}&cat=${encodeURIComponent(categoria)}`)}
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-green-50 transition text-left group border border-transparent hover:border-green-100"
+                            >
+                              <span className="text-xl w-7 text-center">{emoji}</span>
+                              <span className="text-xs font-semibold text-gray-700 group-hover:text-green-700 flex-1">{categoria}</span>
+                              <span className="text-[9px] text-gray-400 font-bold bg-gray-50 group-hover:bg-green-100 px-1.5 py-0.5 rounded-full">
+                                {total}
+                              </span>
+                              <ChevronRight size={14} className="text-gray-300 group-hover:text-green-500" />
+                            </button>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-400 text-xs">
+                        Sin categorías en esta tienda
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
