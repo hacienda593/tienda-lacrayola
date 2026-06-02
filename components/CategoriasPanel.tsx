@@ -220,12 +220,12 @@ export default function CategoriasPanel({ open, onClose }: Props) {
 
       {/* Panel emergente Temu-Style — adaptado a móvil y desktop */}
       <div className={`
-        fixed z-[70] bg-white shadow-2xl transition-all duration-300 ease-in-out
-        /* móvil: bottom sheet fluido */
-        bottom-0 left-0 right-0 rounded-t-2xl max-h-[92vh]
+        fixed z-[70] bg-white shadow-2xl transition-transform duration-300 ease-out
+        /* móvil: bottom sheet con altura estable y hardware acceleration */
+        bottom-0 left-0 right-0 rounded-t-2xl h-[86vh] max-h-[86vh]
         /* desktop: panel lateral premium */
         md:bottom-auto md:top-0 md:left-0 md:h-full md:w-[600px] md:rounded-none md:max-h-full
-        flex flex-col
+        flex flex-col will-change-transform
         ${open
           ? 'translate-y-0 md:translate-x-0'
           : 'translate-y-full md:translate-y-0 md:-translate-x-full'
@@ -295,7 +295,7 @@ export default function CategoriasPanel({ open, onClose }: Props) {
           <div className="flex flex-1 min-h-0">
 
             {/* ── Columna izquierda: Categorías principales ── */}
-            <div className="w-[110px] md:w-[130px] shrink-0 border-r border-gray-100 overflow-y-auto bg-gray-50">
+            <div className="w-[110px] md:w-[130px] shrink-0 border-r border-gray-100 overflow-y-auto overscroll-y-contain bg-gray-50">
               {catsFiltradas.map(cat => {
                 const c      = CAT_CFG[cat.categoria] ?? DEFAULT_CFG
                 const estaAct = cat.categoria === activa
@@ -332,7 +332,7 @@ export default function CategoriasPanel({ open, onClose }: Props) {
             </div>
 
             {/* ── Columna derecha: Subcategorías y Compra Express (Tipti-Style) ── */}
-            <div ref={subRef} className="flex-1 overflow-y-auto bg-white flex flex-col">
+            <div ref={subRef} className="flex-1 overflow-y-auto overscroll-y-contain bg-white flex flex-col">
               {activaData ? (
                 <div className="flex flex-col flex-1">
                   {/* Banner de Categoría */}
