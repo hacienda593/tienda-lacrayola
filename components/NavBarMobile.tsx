@@ -1,20 +1,25 @@
 'use client'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Home, Store, ShoppingCart, Heart, Menu, LayoutGrid, Search, Sparkles } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { Home, Store, ShoppingCart, Heart, Menu, LayoutGrid, Sparkles } from 'lucide-react'
+import { useEffect, useState, Suspense } from 'react'
 import { getCarrito } from '@/lib/carrito'
 import { supabase } from '@/lib/supabase'
 
-export default function NavBarMobile() {
+function NavBarMobileInner() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [n, setN] = useState(0)
   const [crayolaId, setCrayolaId] = useState('')
   const [tiendaNombre, setTiendaNombre] = useState('')
 
-  // 1. Determinar el contexto de navegación dinámico (Home, Tienda Aliada o Búsqueda)
-  const esTienda = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
-  const esProductos = pathname.startsWith('/productos')
+  // 1. Obtener la ID de la tienda activa si está en la URL o ruta (defecto La Crayola)
+  const activeTId = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
+    ? pathname.split('/')[2]
+    : (pathname.startsWith('/productos') ? (searchParams.get('tienda_id') || crayolaId || 'b7fe17b9-c3da-4c9f-9a87-169d70623566') : '')
+
+  const esTienda = !!activeTId
+  const esProductos = pathname.startsWith('/productos') && !activeTId
 
   // 2. Escuchar actualizaciones de la cantidad de artículos del carrito
   useEffect(() => {
@@ -35,22 +40,18 @@ export default function NavBarMobile() {
 
   // 4. Obtener dinámicamente el nombre de la tienda aliada actual
   useEffect(() => {
-    if (!esTienda) {
+    if (!activeTId) {
       setTiendaNombre('')
       return
     }
-    const pathParts = pathname.split('/')
-    const tId = pathParts[2]
-    if (!tId) return
-
     supabase.from('ol_tiendas')
       .select('nombre')
-      .eq('id', tId)
+      .eq('id', activeTId)
       .single()
       .then(({ data }) => {
         if (data) setTiendaNombre(data.nombre)
       })
-  }, [pathname, esTienda])
+  }, [pathname, activeTId])
 
   // Limpiar el nombre para formato móvil compacto (ej: "Supermercado Tuti" -> "Tuti")
   function getNombreCorto(completo: string) {
@@ -65,7 +66,7 @@ export default function NavBarMobile() {
 
   // 5. Definir la botonera líquida según el contexto
   if (esTienda) {
-    // ── Contexto Tienda Aliada: Enfoque en recolección rápida, favoritos y pasillos dinámicos ──
+    // ── Contexto Tienda Aliada (o búsqueda dentro de tienda): Enfoque en recolección rápida, favoritos y pasillos dinámicos ──
     const nombreCorto = getNombreCorto(tiendaNombre)
     return (
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/85 backdrop-blur-xl border-t border-gray-200/50 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl will-change-transform">
@@ -121,7 +122,7 @@ export default function NavBarMobile() {
   }
 
   if (esProductos) {
-    // ── Contexto Catálogo / Búsqueda: Enfoque en filtración y refinamiento ──
+    // ── Contexto Catálogo / Búsqueda General: Enfoque en filtración y refinamiento ──
     return (
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/85 backdrop-blur-xl border-t border-gray-200/50 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl will-change-transform">
         <div className="flex h-16 items-center px-2">
@@ -237,5 +238,15 @@ export default function NavBarMobile() {
 
       </div>
     </nav>
+  )
+}
+
+export default function NavBarMobile() {
+  return (
+    <Suspense fallback={
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/85 backdrop-blur-xl border-t border-gray-200/50 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl h-16" />
+    }>
+      <NavBarMobileInner />
+    </Suspense>
   )
 }

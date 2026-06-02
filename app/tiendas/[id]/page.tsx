@@ -96,15 +96,27 @@ export default function TiendaPage() {
 
   useEffect(() => {
     async function cargar() {
-      const [{ data: t }, { data: ps }] = await Promise.all([
-        supabase.from('ol_tiendas').select('*').eq('id', id).single(),
-        supabase.from('ol_productos')
-          .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id')
-          .eq('tienda_id', id)
-          .gt('precio_publico', 0)
-          .order('descripcion'),
-      ])
+      const { data: t } = await supabase.from('ol_tiendas').select('*').eq('id', id).single()
+      if (!t) {
+        setCargando(false)
+        return
+      }
       setTienda(t as OlTienda)
+
+      const esCrayola = t.nombre.toLowerCase().includes('crayola')
+
+      let pQuery = supabase.from('ol_productos')
+        .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id')
+        .gt('precio_publico', 0)
+        .order('descripcion')
+
+      if (esCrayola) {
+        pQuery = pQuery.or(`tienda_id.eq.${id},tienda_id.is.null`)
+      } else {
+        pQuery = pQuery.eq('tienda_id', id)
+      }
+
+      const { data: ps } = await pQuery
       const prods = (ps ?? []) as Producto[]
       setBase(prods)
       fuseRef.current = new Fuse(prods, {

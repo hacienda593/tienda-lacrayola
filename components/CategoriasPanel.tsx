@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { X, ChevronRight, Search, Loader2, LayoutGrid, Store, ShoppingCart, Plus, Minus } from 'lucide-react'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
@@ -54,6 +54,13 @@ interface Props {
 
 export default function CategoriasPanel({ open, onClose }: Props) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const activeTId = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
+    ? pathname.split('/')[2]
+    : (pathname.startsWith('/productos') ? (searchParams.get('tienda_id') || '') : '')
+
   const [tiendas, setTiendas] = useState<OlTienda[]>([])
   const [tiendaActiva, setTiendaActiva] = useState<OlTienda | null>(null)
   
@@ -87,11 +94,12 @@ export default function CategoriasPanel({ open, onClose }: Props) {
       
       if (data && data.length > 0) {
         setTiendas(data as OlTienda[])
-        setTiendaActiva(data[0] as OlTienda)
+        const found = activeTId ? data.find(t => t.id === activeTId) : null
+        setTiendaActiva((found as OlTienda) || (data[0] as OlTienda))
       }
     }
     cargarTiendas()
-  }, [open])
+  }, [open, activeTId])
 
   // 3. Cargar Categorías y Subcategorías del local seleccionado
   useEffect(() => {
@@ -99,14 +107,22 @@ export default function CategoriasPanel({ open, onClose }: Props) {
     setCargando(true)
     setProductos([])
     const activeId = tiendaActiva.id
+    const esCrayola = tiendaActiva.nombre.toLowerCase().includes('crayola')
 
     async function cargar() {
-      const { data } = await supabase
+      let query = supabase
         .from('ol_productos')
         .select('categoria, subcategoria')
-        .eq('tienda_id', activeId)
         .gt('stock', 0)
         .gt('precio_publico', 0)
+
+      if (esCrayola) {
+        query = query.or(`tienda_id.eq.${activeId},tienda_id.is.null`)
+      } else {
+        query = query.eq('tienda_id', activeId)
+      }
+
+      const { data } = await query
 
       if (!data) { 
         setCats([])
@@ -150,14 +166,22 @@ export default function CategoriasPanel({ open, onClose }: Props) {
     }
     setCargandoProds(true)
     const activeId = tiendaActiva.id
+    const esCrayola = tiendaActiva.nombre.toLowerCase().includes('crayola')
     async function cargarDestacados() {
-      const { data } = await supabase
+      let query = supabase
         .from('ol_productos')
         .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id')
-        .eq('tienda_id', activeId)
         .eq('categoria', activa)
         .gt('stock', 0)
         .limit(6)
+
+      if (esCrayola) {
+        query = query.or(`tienda_id.eq.${activeId},tienda_id.is.null`)
+      } else {
+        query = query.eq('tienda_id', activeId)
+      }
+
+      const { data } = await query
 
       if (data) {
         setProductos(data as Producto[])

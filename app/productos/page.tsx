@@ -187,7 +187,17 @@ function ProductosContent() {
   const [orden, setOrden]           = useState<Orden>('relevancia')
   const [visibles, setVisibles]     = useState(40)
   const [showOrden, setShowOrden]   = useState(false)
+  const [crayolaId, setCrayolaId]   = useState('')
   const fuseRef = useRef<Fuse<Producto> | null>(null)
+
+  // Obtener ID de La Crayola
+  useEffect(() => {
+    supabase.from('ol_tiendas')
+      .select('id')
+      .ilike('nombre', '%crayola%')
+      .single()
+      .then(({ data }) => { if (data) setCrayolaId(data.id) })
+  }, [])
 
   useEffect(() => {
     setCat(params.get('cat') || '')
@@ -239,7 +249,14 @@ function ProductosContent() {
       pool = [...base]
     }
     pool = pool.filter(p => {
-      if (tiendaId && p.tienda_id !== tiendaId) return false
+      if (tiendaId) {
+        const esCrayola = tiendaId === crayolaId
+        if (esCrayola) {
+          if (p.tienda_id !== tiendaId && p.tienda_id !== null) return false
+        } else {
+          if (p.tienda_id !== tiendaId) return false
+        }
+      }
       if (cat && p.categoria?.toLowerCase() !== cat.toLowerCase()) return false
       if (sub && p.subcategoria?.toLowerCase() !== sub.toLowerCase()) return false
       if (marca && p.marca !== marca) return false
@@ -250,31 +267,37 @@ function ProductosContent() {
     if (orden === 'precio_desc') pool.sort((a, b) => b.precio_publico - a.precio_publico)
     if (orden === 'nombre_asc')  pool.sort((a, b) => a.descripcion.localeCompare(b.descripcion))
     return pool
-  }, [base, query, cat, sub, tiendaId, marca, stockFiltro, orden])
+  }, [base, query, cat, sub, tiendaId, crayolaId, marca, stockFiltro, orden])
 
   const catsCtx = useMemo(() => {
     const q = query.trim()
     let pool = q.length >= 2 && fuseRef.current ? fuseRef.current.search(q).map(r => r.item) : base
-    if (tiendaId) pool = pool.filter(p => p.tienda_id === tiendaId)
+    if (tiendaId) {
+      const esCrayola = tiendaId === crayolaId
+      pool = pool.filter(p => esCrayola ? (p.tienda_id === tiendaId || p.tienda_id === null) : p.tienda_id === tiendaId)
+    }
     if (marca) pool = pool.filter(p => p.marca === marca)
     if (stockFiltro === 'disponible') pool = pool.filter(p => p.stock > 0)
     const map = new Map<string, number>()
     pool.forEach(p => { if (p.categoria) map.set(p.categoria, (map.get(p.categoria) || 0) + 1) })
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [base, query, tiendaId, marca, stockFiltro])
+  }, [base, query, tiendaId, crayolaId, marca, stockFiltro])
 
   const marcasCtx = useMemo(() => {
     const q = query.trim()
     let pool = q.length >= 2 && fuseRef.current ? fuseRef.current.search(q).map(r => r.item) : base
-    if (tiendaId) pool = pool.filter(p => p.tienda_id === tiendaId)
+    if (tiendaId) {
+      const esCrayola = tiendaId === crayolaId
+      pool = pool.filter(p => esCrayola ? (p.tienda_id === tiendaId || p.tienda_id === null) : p.tienda_id === tiendaId)
+    }
     if (cat) pool = pool.filter(p => p.categoria === cat)
     if (stockFiltro === 'disponible') pool = pool.filter(p => p.stock > 0)
     const map = new Map<string, number>()
     pool.forEach(p => { if (p.marca) map.set(p.marca, (map.get(p.marca) || 0) + 1) })
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [base, query, cat, stockFiltro])
+  }, [base, query, cat, tiendaId, crayolaId, stockFiltro])
 
   function limpiar() { setQuery(''); setCat(''); setSub(''); setMarca(''); setOrden('relevancia'); setVisibles(40) }
   const hayFiltros = !!(query || cat || sub || marca || stockFiltro !== 'disponible' || orden !== 'relevancia')
