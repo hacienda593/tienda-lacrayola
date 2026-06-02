@@ -181,6 +181,7 @@ function ProductosContent() {
   const [query, setQuery]           = useState(queryInicial)
   const [cat, setCat]               = useState(catInicial)
   const [sub, setSub]               = useState(subInicial)
+  const [tiendaId, setTiendaId]     = useState(params.get('tienda_id') || '')
   const [marca, setMarca]           = useState('')
   const [stockFiltro, setStockFiltro] = useState<'todos'|'disponible'>('disponible')
   const [orden, setOrden]           = useState<Orden>('relevancia')
@@ -191,6 +192,7 @@ function ProductosContent() {
   useEffect(() => {
     setCat(params.get('cat') || '')
     setSub(params.get('sub') || '')
+    setTiendaId(params.get('tienda_id') || '')
     const q = params.get('q') || ''
     if (q) setQuery(q)
     setMarca(''); setVisibles(40)
@@ -204,7 +206,7 @@ function ProductosContent() {
       let hayMas = true
       while (hayMas) {
         const { data } = await supabase.from('ol_productos')
-          .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva')
+          .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id')
           .gt('precio_publico', 0)
           .order('descripcion')
           .range(desde, desde + LOTE - 1)
@@ -237,6 +239,7 @@ function ProductosContent() {
       pool = [...base]
     }
     pool = pool.filter(p => {
+      if (tiendaId && p.tienda_id !== tiendaId) return false
       if (cat && p.categoria?.toLowerCase() !== cat.toLowerCase()) return false
       if (sub && p.subcategoria?.toLowerCase() !== sub.toLowerCase()) return false
       if (marca && p.marca !== marca) return false
@@ -247,22 +250,24 @@ function ProductosContent() {
     if (orden === 'precio_desc') pool.sort((a, b) => b.precio_publico - a.precio_publico)
     if (orden === 'nombre_asc')  pool.sort((a, b) => a.descripcion.localeCompare(b.descripcion))
     return pool
-  }, [base, query, cat, marca, stockFiltro, orden])
+  }, [base, query, cat, sub, tiendaId, marca, stockFiltro, orden])
 
   const catsCtx = useMemo(() => {
     const q = query.trim()
     let pool = q.length >= 2 && fuseRef.current ? fuseRef.current.search(q).map(r => r.item) : base
+    if (tiendaId) pool = pool.filter(p => p.tienda_id === tiendaId)
     if (marca) pool = pool.filter(p => p.marca === marca)
     if (stockFiltro === 'disponible') pool = pool.filter(p => p.stock > 0)
     const map = new Map<string, number>()
     pool.forEach(p => { if (p.categoria) map.set(p.categoria, (map.get(p.categoria) || 0) + 1) })
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [base, query, marca, stockFiltro])
+  }, [base, query, tiendaId, marca, stockFiltro])
 
   const marcasCtx = useMemo(() => {
     const q = query.trim()
     let pool = q.length >= 2 && fuseRef.current ? fuseRef.current.search(q).map(r => r.item) : base
+    if (tiendaId) pool = pool.filter(p => p.tienda_id === tiendaId)
     if (cat) pool = pool.filter(p => p.categoria === cat)
     if (stockFiltro === 'disponible') pool = pool.filter(p => p.stock > 0)
     const map = new Map<string, number>()
