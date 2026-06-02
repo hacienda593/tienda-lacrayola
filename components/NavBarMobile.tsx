@@ -10,8 +10,13 @@ export default function NavBarMobile() {
   const pathname = usePathname()
   const [n, setN] = useState(0)
   const [crayolaId, setCrayolaId] = useState('')
+  const [tiendaNombre, setTiendaNombre] = useState('')
 
-  // 1. Escuchar actualizaciones de la cantidad de artículos del carrito
+  // 1. Determinar el contexto de navegación dinámico (Home, Tienda Aliada o Búsqueda)
+  const esTienda = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
+  const esProductos = pathname.startsWith('/productos')
+
+  // 2. Escuchar actualizaciones de la cantidad de artículos del carrito
   useEffect(() => {
     const update = () => setN(getCarrito().reduce((s, i) => s + i.cantidad, 0))
     update()
@@ -19,7 +24,7 @@ export default function NavBarMobile() {
     return () => window.removeEventListener('carrito-update', update)
   }, [])
 
-  // 2. Obtener dinámicamente el ID de la tienda La Crayola para el botón Hero
+  // 3. Obtener dinámicamente el ID de la tienda La Crayola para el botón Hero del Home
   useEffect(() => {
     supabase.from('ol_tiendas')
       .select('id')
@@ -28,23 +33,40 @@ export default function NavBarMobile() {
       .then(({ data }) => { if (data) setCrayolaId(data.id) })
   }, [])
 
-  // 3. Determinar el contexto de navegación dinámico (Home, Tienda Aliada o Búsqueda)
-  const esTienda = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
-  const esProductos = pathname.startsWith('/productos')
-
-  // 4. Lógica para enfocar el buscador de la tienda actual
-  function handleFocusSearch() {
-    // Buscar cualquier input de texto dentro de la página y enfocarlo con scroll suave
-    const searchInput = document.querySelector('input[type="text"], input[placeholder*="Buscar"]') as HTMLInputElement
-    if (searchInput) {
-      searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      setTimeout(() => searchInput.focus(), 300)
+  // 4. Obtener dinámicamente el nombre de la tienda aliada actual
+  useEffect(() => {
+    if (!esTienda) {
+      setTiendaNombre('')
+      return
     }
+    const pathParts = pathname.split('/')
+    const tId = pathParts[2]
+    if (!tId) return
+
+    supabase.from('ol_tiendas')
+      .select('nombre')
+      .eq('id', tId)
+      .single()
+      .then(({ data }) => {
+        if (data) setTiendaNombre(data.nombre)
+      })
+  }, [pathname, esTienda])
+
+  // Limpiar el nombre para formato móvil compacto (ej: "Supermercado Tuti" -> "Tuti")
+  function getNombreCorto(completo: string) {
+    if (!completo) return ''
+    let s = completo.replace(/supermercados?|comisariatos?|librer[ií]a|farmacias?/gi, '').trim()
+    const parts = s.split(' ')
+    if (parts[0].toLowerCase() === 'el' || parts[0].toLowerCase() === 'la') {
+      return parts.slice(0, 2).join(' ')
+    }
+    return parts[0]
   }
 
   // 5. Definir la botonera líquida según el contexto
   if (esTienda) {
-    // ── Contexto Tienda Aliada: Enfoque en recolección rápida y pasillos ──
+    // ── Contexto Tienda Aliada: Enfoque en recolección rápida, favoritos y pasillos dinámicos ──
+    const nombreCorto = getNombreCorto(tiendaNombre)
     return (
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/85 backdrop-blur-xl border-t border-gray-200/50 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl will-change-transform">
         <div className="flex h-16 items-center px-2">
@@ -55,16 +77,13 @@ export default function NavBarMobile() {
             <span className="text-[9px] font-bold">Inicio</span>
           </Link>
 
-          {/* Botón 2: Buscar en Tienda */}
-          <button 
-            onClick={handleFocusSearch} 
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100"
-          >
-            <Search size={20} className="stroke-[1.8]" />
-            <span className="text-[9px] font-bold">Buscar</span>
-          </button>
+          {/* Botón 2: Favoritos */}
+          <Link href="/favoritos" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100">
+            <Heart size={20} className="stroke-[1.8]" />
+            <span className="text-[9px] font-bold">Favoritos</span>
+          </Link>
 
-          {/* Botón 3: CATEGORÍAS (CENTRAL HERO FLOTANTE) */}
+          {/* Botón 3: CATEGORÍAS (CENTRAL HERO FLOTANTE CON NOMBRE DE TIENDA) */}
           <div className="flex-1 flex flex-col items-center justify-center relative h-full">
             <button
               onClick={() => window.dispatchEvent(new Event('open-categorias-global'))}
@@ -72,7 +91,9 @@ export default function NavBarMobile() {
             >
               <LayoutGrid size={22} className="stroke-[2.5]" />
             </button>
-            <span className="text-[9px] font-extrabold text-green-600 mt-7 uppercase tracking-wider">Pasillos</span>
+            <span className="text-[9px] font-extrabold text-green-600 mt-7 uppercase tracking-wider text-center px-1 truncate max-w-full">
+              Pasillos {nombreCorto}
+            </span>
           </div>
 
           {/* Botón 4: Tiendas */}
