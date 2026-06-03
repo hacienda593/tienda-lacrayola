@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { X, ChevronRight, Search, Loader2, LayoutGrid, Store, ShoppingCart, Plus, Minus } from 'lucide-react'
@@ -39,6 +39,56 @@ const STORE_EMOJI: Record<string, string> = {
   tecnologia: '💻',
   ropa: '👕',
   otros: '🏪',
+}
+
+const FALLBACK_SUBS: Record<string, { nombre: string; emoji: string; hot?: boolean }[]> = {
+  'Escolar': [
+    { nombre: 'Cuadernos', emoji: '📓', hot: true },
+    { nombre: 'Lápices', emoji: '✏️' },
+    { nombre: 'Pinturas', emoji: '🎨' },
+    { nombre: 'Mochilas', emoji: '🎒', hot: true },
+    { nombre: 'Reglas', emoji: '📐' },
+    { nombre: 'Gomas', emoji: '🧪' },
+  ],
+  'Arte': [
+    { nombre: 'Pinceles', emoji: '🖌️', hot: true },
+    { nombre: 'Acrílicos', emoji: '🎨' },
+    { nombre: 'Lienzos', emoji: '🖼️' },
+    { nombre: 'Dibujo', emoji: '✏️' },
+    { nombre: 'Paletas', emoji: '🎨' },
+  ],
+  'Oficina': [
+    { nombre: 'Esferos', emoji: '🖊️', hot: true },
+    { nombre: 'Carpetas', emoji: '📂' },
+    { nombre: 'Agendas', emoji: '📅' },
+    { nombre: 'Grapadoras', emoji: '📎' },
+    { nombre: 'Papel Bond', emoji: '📄', hot: true },
+  ],
+  'Manualidades': [
+    { nombre: 'Limpiapipas', emoji: '✂️', hot: true },
+    { nombre: 'Fomix', emoji: '📦' },
+    { nombre: 'Silicona', emoji: '🧪' },
+    { nombre: 'Cintas', emoji: '🩹' },
+    { nombre: 'Escarcha', emoji: '✨' },
+  ],
+  'Libros': [
+    { nombre: 'Novelas', emoji: '📕', hot: true },
+    { nombre: 'Cuentos', emoji: '📖' },
+    { nombre: 'Autoayuda', emoji: '🧠' },
+    { nombre: 'Educativos', emoji: '📚' },
+  ],
+  'Tecnologia': [
+    { nombre: 'Audífonos', emoji: '🎧', hot: true },
+    { nombre: 'Teclados', emoji: '⌨️' },
+    { nombre: 'Memorias', emoji: '💾' },
+    { nombre: 'Cables', emoji: '🔌' },
+  ],
+}
+
+function toSentenceCase(str: string) {
+  if (!str) return ''
+  const trimmed = str.trim()
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
 }
 
 interface CatData {
@@ -234,6 +284,27 @@ export default function CategoriasPanel({ open, onClose }: Props) {
   const activaData = catsFiltradas.find(c => c.categoria === activa) ?? catsFiltradas[0]
   const cfg        = CAT_CFG[activaData?.categoria ?? ''] ?? DEFAULT_CFG
 
+  const subcategoriasAMostrar = useMemo(() => {
+    if (!activaData) return []
+    
+    // Si la base de datos ya tiene subcategorías, las usamos
+    if (activaData.subcategorias && activaData.subcategorias.length > 0) {
+      return activaData.subcategorias.map((sub, idx) => {
+        const match = FALLBACK_SUBS[activaData.categoria]?.find(f => f.nombre.toLowerCase() === sub.nombre.toLowerCase())
+        return {
+          nombre: sub.nombre,
+          emoji: match?.emoji || '📦',
+          hot: match?.hot || (idx % 3 === 0)
+        }
+      })
+    }
+    
+    // Si la base de datos no tiene subcategorías, usamos las de prueba completas para diseño Temu-Style
+    return FALLBACK_SUBS[activaData.categoria] || [
+      { nombre: 'General', emoji: '📦' }
+    ]
+  }, [activaData])
+
   return (
     <>
       {/* Overlay */}
@@ -318,38 +389,21 @@ export default function CategoriasPanel({ open, onClose }: Props) {
         ) : (
           <div className="flex flex-1 min-h-0">
 
-            {/* ── Columna izquierda: Categorías principales ── */}
-            <div className="w-[110px] md:w-[130px] shrink-0 border-r border-gray-100 overflow-y-auto overscroll-y-contain bg-gray-50">
+            {/* ── Columna izquierda: Categorías principales (Temu Style Text-Only) ── */}
+            <div className="w-[110px] md:w-[130px] shrink-0 border-r border-gray-100 overflow-y-auto overscroll-y-contain bg-gray-50/70">
               {catsFiltradas.map(cat => {
-                const c      = CAT_CFG[cat.categoria] ?? DEFAULT_CFG
                 const estaAct = cat.categoria === activa
                 return (
                   <button
                     key={cat.categoria}
                     onClick={() => setActiva(cat.categoria)}
-                    className={`w-full flex flex-col items-center gap-1.5 px-1 py-3 transition-all relative
-                      ${estaAct ? 'bg-white' : 'hover:bg-white/70'}`}
+                    className={`w-full text-left px-4 py-3.5 transition-all relative font-extrabold text-[11px] border-b border-gray-100/50
+                      ${estaAct 
+                        ? 'bg-white text-green-600 border-l-4 border-l-green-600 shadow-sm' 
+                        : 'text-gray-500 hover:bg-white/50 hover:text-gray-700'
+                      }`}
                   >
-                    {/* Indicador activo */}
-                    {estaAct && (
-                      <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-green-600 rounded-r" />
-                    )}
-
-                    {/* Círculo emoji */}
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all
-                      ${estaAct ? c.bgActive + ' shadow-sm' : c.bg}`}>
-                      <span className={estaAct ? 'brightness-0 invert' : ''}>{c.emoji}</span>
-                    </div>
-
-                    <span className={`text-[10px] font-bold text-center leading-tight line-clamp-2 px-1
-                      ${estaAct ? 'text-green-700' : 'text-gray-600'}`}>
-                      {cat.categoria}
-                    </span>
-
-                    {/* Cantidad */}
-                    <span className={`text-[9px] font-semibold ${estaAct ? 'text-green-500' : 'text-gray-400'}`}>
-                      {cat.total}
-                    </span>
+                    <span className="line-clamp-2 leading-tight">{toSentenceCase(cat.categoria)}</span>
                   </button>
                 )
               })}
@@ -362,38 +416,49 @@ export default function CategoriasPanel({ open, onClose }: Props) {
                   {/* Banner de Categoría */}
                   <button
                     onClick={() => navegar(activaData.categoria)}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 ${cfg.bg} border-b border-gray-100 hover:opacity-90 transition shrink-0`}
+                    className={`w-full flex items-center justify-between px-4 py-3 ${cfg.bg} border-b border-gray-100 hover:opacity-90 transition shrink-0`}
                   >
-                    <div className={`w-10 h-10 ${cfg.bgActive} rounded-xl flex items-center justify-center text-xl shadow-sm`}>
-                      <span className="brightness-0 invert">{cfg.emoji}</span>
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-8 h-8 ${cfg.bgActive} rounded-full flex items-center justify-center text-sm shadow-sm`}>
+                        <span className="brightness-0 invert">{cfg.emoji}</span>
+                      </div>
+                      <div className="text-left">
+                        <div className={`font-extrabold text-[11px] ${cfg.color}`}>Ver Todo en {activaData.categoria}</div>
+                        <div className="text-[9px] text-gray-400">{activaData.total} productos disponibles</div>
+                      </div>
                     </div>
-                    <div className="flex-1 text-left">
-                      <div className={`font-extrabold text-sm ${cfg.color}`}>Ver Todo en {activaData.categoria}</div>
-                      <div className="text-[10px] text-gray-500">{activaData.total} productos disponibles</div>
-                    </div>
-                    <ChevronRight size={14} className="text-gray-400" />
+                    <ChevronRight size={13} className="text-gray-400" />
                   </button>
 
-                  {/* ── Subcategorías Grid ── */}
-                  {activaData.subcategorias.length > 0 && (
-                    <div className="p-3 border-b border-gray-50 shrink-0">
-                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-0.5">
-                        Subcategorías
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {activaData.subcategorias
+                  {/* Title of Section */}
+                  <div className="px-4 pt-3.5 pb-1 shrink-0">
+                    <h3 className="text-[11px] font-extrabold text-gray-800 uppercase tracking-wider">Comprar por categoría</h3>
+                  </div>
+
+                  {/* ── Subcategorías Grid Circular (Temu Style) ── */}
+                  {subcategoriasAMostrar.length > 0 && (
+                    <div className="px-3 pb-4 border-b border-gray-50 shrink-0">
+                      <div className="grid grid-cols-3 gap-y-4 gap-x-2">
+                        {subcategoriasAMostrar
                           .filter(s => !q || s.nombre.toLowerCase().includes(q.toLowerCase()))
-                          .map(sub => (
+                          .map((sub) => (
                             <button
                               key={sub.nombre}
                               onClick={() => navegar(activaData.categoria, sub.nombre)}
-                              className="flex items-center justify-between bg-gray-50 border border-gray-100 hover:border-green-200 hover:bg-green-50/50 rounded-xl px-2.5 py-2 text-left transition group"
+                              className="flex flex-col items-center group relative transition active:scale-95 duration-100"
                             >
-                              <span className="text-[10px] font-bold text-gray-700 group-hover:text-green-700 leading-tight line-clamp-2 flex-1">
+                              {/* Círculo de Subcategoría */}
+                              <div className="w-16 h-16 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-3xl shadow-sm group-hover:shadow-md group-hover:scale-105 group-hover:bg-white transition-all relative">
+                                <span>{sub.emoji}</span>
+                                {sub.hot && (
+                                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider scale-90 origin-top-right animate-pulse shadow-sm shadow-red-500/20">
+                                    Hot
+                                  </span>
+                                )}
+                              </div>
+                              {/* Nombre de Subcategoría */}
+                              <span className="text-[10px] text-gray-600 text-center font-extrabold mt-1.5 leading-tight line-clamp-2 max-w-[70px] group-hover:text-green-700">
                                 {sub.nombre}
-                              </span>
-                              <span className="text-[9px] text-gray-400 ml-1.5 shrink-0 bg-white group-hover:bg-green-100 px-1 rounded-md">
-                                {sub.cantidad}
                               </span>
                             </button>
                           ))
