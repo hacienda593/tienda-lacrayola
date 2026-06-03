@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef, useMemo } from 'react'
+import { useEffect, useState, useRef, useMemo, Suspense } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { X, ChevronRight, Search, Loader2, LayoutGrid, Store, ShoppingCart, Plus, Minus } from 'lucide-react'
@@ -102,7 +102,7 @@ interface Props {
   onClose: () => void
 }
 
-export default function CategoriasPanel({ open, onClose }: Props) {
+function CategoriasPanelInner({ open, onClose }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -561,5 +561,13 @@ export default function CategoriasPanel({ open, onClose }: Props) {
         )}
       </div>
     </>
+  )
+}
+
+export default function CategoriasPanel(props: Props) {
+  return (
+    <Suspense fallback={null}>
+      <CategoriasPanelInner {...props} />
+    </Suspense>
   )
 }
