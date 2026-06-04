@@ -15,6 +15,9 @@ function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
 const CAT_EMOJI: Record<string, string> = {
   'Escolar':'📚','Arte':'🎨','Oficina':'🖊️','Tecnologia':'💻','Juguetes':'🧸',
   'Manualidades':'✂️','Libros':'📖','Pintura':'🖌️','Papeleria':'📄',
+  'Abarrotes':'🥬','Bebidas y Licores':'🥤','Congelados y Refrigerados':'❄️',
+  'Golosinas y Snacks':'🍪','Panadería':'🍞','Cuidado Personal':'🧴',
+  'Hogar y Limpieza':'🧹','Mascotas':'🐶','Huevos Lácteos y Leches':'🥛',
 }
 
 const CAT_BG: Record<string, string> = {
@@ -22,6 +25,11 @@ const CAT_BG: Record<string, string> = {
   'Oficina':'from-gray-50 to-gray-100','Tecnologia':'from-indigo-50 to-indigo-100',
   'Juguetes':'from-orange-50 to-orange-100','Manualidades':'from-pink-50 to-pink-100',
   'Libros':'from-amber-50 to-amber-100','Pintura':'from-red-50 to-red-100',
+  'Abarrotes':'from-green-50 to-green-100','Bebidas y Licores':'from-sky-50 to-sky-100',
+  'Congelados y Refrigerados':'from-cyan-50 to-cyan-100','Golosinas y Snacks':'from-amber-50 to-amber-100',
+  'Panadería':'from-yellow-50 to-yellow-100','Cuidado Personal':'from-teal-50 to-teal-100',
+  'Hogar y Limpieza':'from-emerald-50 to-emerald-100','Mascotas':'from-orange-50 to-orange-100',
+  'Huevos Lácteos y Leches':'from-blue-50 to-blue-100',
 }
 
 function SkeletonProducto() {
@@ -50,6 +58,7 @@ export default function ProductoPage() {
   const [fav, setFav]         = useState(false)
   const [copiado, setCopiado] = useState(false)
   const [agregado, setAgregado] = useState(false)
+  const [imageError, setImageError] = useState(false)
 
   useEffect(() => {
     async function cargar() {
@@ -130,7 +139,16 @@ export default function ProductoPage() {
 
       {/* Imagen */}
       <div className={`bg-gradient-to-br ${gradient} rounded-2xl h-56 flex items-center justify-center relative overflow-hidden`}>
-        <span className="text-[90px] select-none">{emoji}</span>
+        {prod.imagen_url && !imageError ? (
+          <img
+            src={prod.imagen_url}
+            alt={prod.descripcion}
+            onError={() => setImageError(true)}
+            className="w-full h-full object-contain p-4 animate-fade-in"
+          />
+        ) : (
+          <span className="text-[90px] select-none">{emoji}</span>
+        )}
         {agotado && (
           <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
             <span className="text-sm font-bold text-red-500 bg-red-50 px-4 py-1.5 rounded-full border border-red-200">AGOTADO</span>

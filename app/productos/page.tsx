@@ -13,6 +13,10 @@ function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
 const CAT_EMOJI: Record<string, string> = {
   'Escolar':'📚','Arte':'🎨','Oficina':'🖊️','Tecnologia':'💻','Juguetes':'🧸',
   'Manualidades':'✂️','Libros':'📖','Pintura':'🖌️','Papeleria':'📄',
+  'Abarrotes':'🥬','Bebidas y Licores':'🥤','Congelados y Refrigerados':'❄️',
+  'Golosinas y Snacks':'🍪','Panadería':'🍞','Cuidado Personal':'🧴',
+  'Hogar y Limpieza':'🧹','Mascotas':'🐶','Huevos Lácteos y Leches':'🥛',
+  'Alimentos':'🥦','Bebidas':'🥤','Limpieza':'🧹','Higiene':'🧴'
 }
 
 type Orden = 'relevancia' | 'precio_asc' | 'precio_desc' | 'nombre_asc'
@@ -119,6 +123,7 @@ function BtnFavorito({ prod }: { prod: Producto }) {
 // ── Card de producto ───────────────────────────────────────────────
 function ProductCard({ p, badge }: { p: Producto; badge?: 'nuevo' | 'oferta' | 'popular' | 'ultimas' }) {
   const router = useRouter()
+  const [imageError, setImageError] = useState(false)
   const agotado = p.stock <= 0
   const badgeTipo = agotado ? undefined : (p.stock < 5 ? 'ultimas' : badge)
 
@@ -128,7 +133,17 @@ function ProductCard({ p, badge }: { p: Producto; badge?: 'nuevo' | 'oferta' | '
       className="bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col group cursor-pointer"
     >
       <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-28 flex items-center justify-center mb-3 text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors">
-        {CAT_EMOJI[p.categoria] || '📦'}
+        {p.imagen_url && !imageError ? (
+          <img
+            src={p.imagen_url}
+            alt={p.descripcion}
+            onError={() => setImageError(true)}
+            className="w-full h-full object-contain p-1.5 animate-fade-in"
+            loading="lazy"
+          />
+        ) : (
+          CAT_EMOJI[p.categoria] || '📦'
+        )}
         {badgeTipo && <Badge tipo={badgeTipo} />}
         <BtnFavorito prod={p} />
         {agotado && (
@@ -216,7 +231,7 @@ function ProductosContent() {
       let hayMas = true
       while (hayMas) {
         const { data } = await supabase.from('ol_productos')
-          .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id')
+          .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id,imagen_url')
           .gt('precio_publico', 0)
           .order('descripcion')
           .range(desde, desde + LOTE - 1)

@@ -10,6 +10,7 @@ export interface Producto {
   precio_con_iva: number
   tienda_id?:    string | null
   tienda?:       OlTienda
+  imagen_url?:   string | null
 }
 
 export interface OlTienda {

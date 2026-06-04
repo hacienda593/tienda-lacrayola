@@ -18,6 +18,9 @@ const CAT_EMOJI: Record<string, string> = {
   'Manualidades':'✂️','Libros':'📖','Pintura':'🖌️','Papeleria':'📄',
   'Alimentos':'🥦','Bebidas':'🥤','Limpieza':'🧹','Higiene':'🧴',
   'Farmacia':'💊','Electronicos':'💡','Ropa':'👕',
+  'Abarrotes':'🥬','Bebidas y Licores':'🥤','Congelados y Refrigerados':'❄️',
+  'Golosinas y Snacks':'🍪','Panadería':'🍞','Cuidado Personal':'🧴',
+  'Hogar y Limpieza':'🧹','Mascotas':'🐶','Huevos Lácteos y Leches':'🥛',
 }
 
 function BtnAgregar({ prod, tiendaId, tiendaNombre }: { prod: Producto; tiendaId: string; tiendaNombre: string }) {
@@ -83,6 +86,23 @@ function BtnFavorito({ prod }: { prod: Producto }) {
   )
 }
 
+function ImagenProducto({ src, categoria, alt }: { src?: string | null; categoria: string; alt: string }) {
+  const [error, setError] = useState(false)
+  const emoji = CAT_EMOJI[categoria] || '📦'
+
+  if (!src || error) return <span className="text-4xl select-none">{emoji}</span>
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onError={() => setError(true)}
+      className="w-full h-full object-contain p-1.5"
+      loading="lazy"
+    />
+  )
+}
+
 export default function TiendaPage() {
   const { id }  = useParams<{ id: string }>()
   const router  = useRouter()
@@ -106,7 +126,7 @@ export default function TiendaPage() {
       const esCrayola = t.nombre.toLowerCase().includes('crayola')
 
       let pQuery = supabase.from('ol_productos')
-        .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id')
+        .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id,imagen_url')
         .gt('precio_publico', 0)
         .order('descripcion')
 
@@ -232,7 +252,7 @@ export default function TiendaPage() {
                 onClick={() => router.push(`/producto/${encodeURIComponent(p.codigo)}`)}
                 className="bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group">
                 <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-28 flex items-center justify-center mb-3 text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors">
-                  {CAT_EMOJI[p.categoria] || '📦'}
+                  <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
                   <BtnFavorito prod={p} />
                   {p.stock > 0 && p.stock < 5 && (
                     <span className="absolute top-2 left-2 text-[9px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded-full">

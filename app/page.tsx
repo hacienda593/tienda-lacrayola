@@ -20,6 +20,15 @@ const CAT_CONFIG: Record<string, { emoji: string; color: string; bg: string }> =
   'Manualidades': { emoji: '✂️', color: 'text-pink-700',   bg: 'bg-pink-50 border-pink-100' },
   'Libros':       { emoji: '📖', color: 'text-amber-700',  bg: 'bg-amber-50 border-amber-100' },
   'Pintura':      { emoji: '🖌️', color: 'text-red-700',    bg: 'bg-red-50 border-red-100' },
+  'Abarrotes':    { emoji: '🥬', color: 'text-green-700',  bg: 'bg-green-50 border-green-100' },
+  'Bebidas y Licores': { emoji: '🥤', color: 'text-sky-700', bg: 'bg-sky-50 border-sky-100' },
+  'Congelados y Refrigerados': { emoji: '❄️', color: 'text-cyan-700', bg: 'bg-cyan-50 border-cyan-100' },
+  'Golosinas y Snacks': { emoji: '🍪', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-100' },
+  'Panadería':    { emoji: '🍞', color: 'text-yellow-700', bg: 'bg-yellow-50 border-yellow-100' },
+  'Cuidado Personal': { emoji: '🧴', color: 'text-teal-700', bg: 'bg-teal-50 border-teal-100' },
+  'Hogar y Limpieza': { emoji: '🧹', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-100' },
+  'Mascotas':     { emoji: '🐶', color: 'text-orange-700', bg: 'bg-orange-50 border-orange-100' },
+  'Huevos Lácteos y Leches': { emoji: '🥛', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-100' },
 }
 
 const BANNERS = [
@@ -134,6 +143,7 @@ function ProdCard({ p }: { p: Producto }) {
   const router = useRouter()
   const [fav, setFav] = useState(() => esFavorito(p.codigo))
   const [ok, setOk]   = useState(false)
+  const [imageError, setImageError] = useState(false)
 
   function addCart(e: React.MouseEvent) {
     e.stopPropagation()
@@ -152,8 +162,18 @@ function ProdCard({ p }: { p: Producto }) {
   return (
     <div onClick={() => router.push(`/producto/${encodeURIComponent(p.codigo)}`)}
       className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group">
-      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-32 flex items-center justify-center mb-3 text-4xl group-hover:from-green-50 group-hover:to-green-100 transition-colors">
-        {CAT_CONFIG[p.categoria]?.emoji || '📦'}
+      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-32 flex items-center justify-center mb-3 text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors">
+        {p.imagen_url && !imageError ? (
+          <img
+            src={p.imagen_url}
+            alt={p.descripcion}
+            onError={() => setImageError(true)}
+            className="w-full h-full object-contain p-1.5"
+            loading="lazy"
+          />
+        ) : (
+          CAT_CONFIG[p.categoria]?.emoji || '📦'
+        )}
         <button onClick={toggleFav}
           className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition
             ${fav ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-300 hover:text-red-400'}`}>
@@ -212,7 +232,7 @@ export default function Home() {
 
     // Destacados (mayor precio con stock)
     supabase.from('ol_productos')
-      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva')
+      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url')
       .gt('stock', 0).gt('precio_publico', 5)
       .order('precio_publico', { ascending: false }).limit(8)
       .then(({ data }) => {
@@ -221,7 +241,7 @@ export default function Home() {
 
     // Novedades
     supabase.from('ol_productos')
-      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva')
+      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url')
       .gt('stock', 0).gt('precio_publico', 0)
       .order('codigo', { ascending: false }).limit(8)
       .then(({ data }) => {
