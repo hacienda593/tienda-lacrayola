@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ShoppingCart, Search, LayoutGrid } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { getCarrito } from '@/lib/carrito'
 import MenuDrawer from '@/components/MenuDrawer'
 import CategoriasPanel from '@/components/CategoriasPanel'
@@ -39,7 +39,9 @@ export default function Header() {
 
   return (
     <>
-      <MenuDrawer    open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <Suspense fallback={null}>
+        <MenuDrawer    open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      </Suspense>
       <CategoriasPanel open={catOpen}  onClose={() => setCatOpen(false)} />
 
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">

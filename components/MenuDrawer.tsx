@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams, useSearchParams, usePathname } from 'next/navigation'
 import {
   X, User, Tag, Settings, HelpCircle,
   ChevronRight, Search, Heart, Package,
@@ -56,6 +56,9 @@ export default function MenuDrawer({ open, onClose }: Props) {
   const [puntos, setPuntos] = useState<EstadoPuntosCloud | null>(null)
   const { user, logout }    = useAuth()
   const router = useRouter()
+  const params = useParams<{ id?: string }>()
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
 
   const [tiendas, setTiendas] = useState<OlTienda[]>([])
   const [tiendaSeleccionada, setTiendaSeleccionada] = useState<OlTienda | null>(null)
@@ -86,13 +89,33 @@ export default function MenuDrawer({ open, onClose }: Props) {
   // Cargar tiendas aliadas activas al abrir
   useEffect(() => {
     if (!open) return
-    setTiendaSeleccionada(null)
+    
     supabase.from('ol_tiendas')
       .select('*')
       .eq('activa', true)
       .order('orden')
-      .then(({ data }) => { if (data) setTiendas(data as OlTienda[]) })
-  }, [open])
+      .then(({ data }) => {
+        if (data) {
+          const list = data as OlTienda[]
+          setTiendas(list)
+          
+          // Detectar tienda activa desde la URL
+          let activeTiendaId = searchParams.get('tienda_id') || ''
+          if (!activeTiendaId && pathname.startsWith('/tiendas/') && params.id) {
+            activeTiendaId = params.id
+          }
+          
+          if (activeTiendaId) {
+            const found = list.find(t => t.id === activeTiendaId)
+            if (found) {
+              setTiendaSeleccionada(found)
+              return
+            }
+          }
+          setTiendaSeleccionada(null)
+        }
+      })
+  }, [open, pathname, params.id, searchParams])
 
   // Cargar categorías cuando se selecciona una tienda
   useEffect(() => {
@@ -372,14 +395,12 @@ export default function MenuDrawer({ open, onClose }: Props) {
                     ) : cats.length > 0 ? (
                       <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1 scrollbar-hide">
                         {cats.map(({ categoria, total }) => {
-                          const emoji = CAT_EMOJI[categoria] || '📦'
                           return (
                             <button
                               key={categoria}
                               onClick={() => navegar(`/productos?tienda_id=${tiendaSeleccionada.id}&cat=${encodeURIComponent(categoria)}`)}
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-green-50 transition text-left group border border-transparent hover:border-green-100"
                             >
-                              <span className="text-xl w-7 text-center">{emoji}</span>
                               <span className="text-xs font-semibold text-gray-700 group-hover:text-green-700 flex-1">{categoria}</span>
                               <span className="text-[9px] text-gray-400 font-bold bg-gray-50 group-hover:bg-green-100 px-1.5 py-0.5 rounded-full">
                                 {total}
