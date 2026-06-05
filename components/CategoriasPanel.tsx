@@ -220,7 +220,7 @@ function CategoriasPanelInner({ open, onClose }: Props) {
     async function cargarDestacados() {
       let query = supabase
         .from('ol_productos')
-        .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id')
+        .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id,imagen_url')
         .eq('categoria', activa)
         .gt('stock', 0)
         .limit(6)
@@ -490,14 +490,29 @@ function CategoriasPanelInner({ open, onClose }: Props) {
                               key={p.codigo}
                               className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm hover:shadow-md transition"
                             >
-                              {/* Icono de categoría */}
-                              <div className="w-9 h-9 bg-gray-50 rounded-lg flex items-center justify-center text-lg shrink-0">
-                                {CAT_CFG[p.categoria]?.emoji || '📦'}
+                              {/* Imagen de producto o fallback */}
+                              <div className="w-10 h-10 bg-gray-50 border border-gray-100 rounded-lg flex items-center justify-center overflow-hidden shrink-0 relative">
+                                {p.imagen_url ? (
+                                  <>
+                                    <img 
+                                      src={p.imagen_url} 
+                                      alt={p.descripcion} 
+                                      className="w-full h-full object-contain"
+                                      onError={(e) => {
+                                        e.currentTarget.classList.add('hidden')
+                                        e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                                      }}
+                                    />
+                                    <span className="text-lg hidden">{CAT_CFG[p.categoria]?.emoji || '📦'}</span>
+                                  </>
+                                ) : (
+                                  <span className="text-lg">{CAT_CFG[p.categoria]?.emoji || '📦'}</span>
+                                )}
                               </div>
                               
                               {/* Datos del producto */}
                               <div className="flex-1 min-w-0">
-                                <div className="text-[11px] font-bold text-gray-800 truncate leading-tight">
+                                <div className="text-[11px] font-bold text-gray-800 line-clamp-2 leading-snug">
                                   {p.descripcion}
                                 </div>
                                 <div className="flex items-center gap-1.5 mt-0.5">
@@ -512,27 +527,30 @@ function CategoriasPanelInner({ open, onClose }: Props) {
                                 </div>
                               </div>
 
-                              {/* Acciones de compra rápida (Tipti) */}
+                              {/* Acciones de compra rápida (Temu/Tipti Style) */}
                               <div className="shrink-0">
                                 {qty === 0 ? (
                                   <button
                                     onClick={() => handleAddExpress(p)}
-                                    className="bg-green-50 hover:bg-green-600 hover:text-white border border-green-200 text-green-700 text-xs font-bold rounded-lg px-3 py-1.5 flex items-center gap-1 transition"
+                                    className="w-8 h-8 rounded-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center transition shadow-sm active:scale-95 duration-100"
+                                    aria-label="Agregar"
                                   >
-                                    <ShoppingCart size={11} /> Agregar
+                                    <Plus size={16} />
                                   </button>
                                 ) : (
-                                  <div className="flex items-center bg-green-600 text-white rounded-lg overflow-hidden shrink-0">
+                                  <div className="flex items-center bg-green-50 border border-green-200 text-green-700 h-8 rounded-full overflow-hidden shrink-0">
                                     <button 
                                       onClick={() => handleStepper(p.codigo, qty, -1)} 
-                                      className="px-2 py-1 hover:bg-green-700 transition font-extrabold text-[11px]"
+                                      className="w-7 h-full flex items-center justify-center hover:bg-green-100 transition"
+                                      aria-label="Disminuir"
                                     >
                                       <Minus size={10} />
                                     </button>
-                                    <span className="px-1 text-[11px] font-bold">{qty}</span>
+                                    <span className="px-1.5 text-[11px] font-bold text-green-800 min-w-[14px] text-center">{qty}</span>
                                     <button 
                                       onClick={() => handleStepper(p.codigo, qty, 1)} 
-                                      className="px-2 py-1 hover:bg-green-700 transition font-extrabold text-[11px]"
+                                      className="w-7 h-full flex items-center justify-center hover:bg-green-100 transition"
+                                      aria-label="Aumentar"
                                     >
                                       <Plus size={10} />
                                     </button>
