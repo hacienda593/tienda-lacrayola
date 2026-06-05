@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useMemo, useRef, Suspense } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
@@ -103,9 +103,10 @@ function ImagenProducto({ src, categoria, alt }: { src?: string | null; categori
   )
 }
 
-export default function TiendaPage() {
+function TiendaContent() {
   const { id }  = useParams<{ id: string }>()
   const router  = useRouter()
+  const searchParams = useSearchParams()
   const [tienda,   setTienda]   = useState<OlTienda | null>(null)
   const [base,     setBase]     = useState<Producto[]>([])
   const [cargando, setCargando] = useState(true)
@@ -123,6 +124,14 @@ export default function TiendaPage() {
     window.addEventListener('open-store-filters', handleOpen)
     return () => window.removeEventListener('open-store-filters', handleOpen)
   }, [])
+
+  // Sincronizar estado local con query params de la URL
+  useEffect(() => {
+    setCat(searchParams.get('cat') || '')
+    setSub(searchParams.get('sub') || '')
+    setMarca(searchParams.get('marca') || '')
+    setVisibles(40)
+  }, [searchParams])
 
   useEffect(() => {
     async function cargar() {
@@ -482,5 +491,17 @@ export default function TiendaPage() {
         }
       `}</style>
     </div>
+  )
+}
+
+export default function TiendaPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-5xl mx-auto px-4 py-16 flex justify-center">
+        <Loader2 size={28} className="animate-spin text-green-500" />
+      </div>
+    }>
+      <TiendaContent />
+    </Suspense>
   )
 }

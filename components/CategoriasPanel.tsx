@@ -251,9 +251,9 @@ function CategoriasPanelInner({ open, onClose }: Props) {
   // Redirigir a buscador con filtros preestablecidos
   function navegar(cat: string, sub?: string) {
     if (!tiendaActiva) return
-    const params = new URLSearchParams({ tienda_id: tiendaActiva.id, cat })
+    const params = new URLSearchParams({ cat })
     if (sub) params.set('sub', sub)
-    router.push(`/productos?${params.toString()}`)
+    router.push(`/tiendas/${tiendaActiva.id}?${params.toString()}`)
     onClose()
   }
 
