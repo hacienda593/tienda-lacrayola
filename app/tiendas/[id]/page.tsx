@@ -111,8 +111,18 @@ export default function TiendaPage() {
   const [cargando, setCargando] = useState(true)
   const [q,        setQ]        = useState('')
   const [cat,      setCat]      = useState('')
+  const [sub,      setSub]      = useState('')
+  const [marca,    setMarca]    = useState('')
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const [visibles, setVisibles] = useState(40)
   const fuseRef = useRef<Fuse<Producto> | null>(null)
+
+  // Escuchar el evento del menu inferior movil para abrir filtros
+  useEffect(() => {
+    const handleOpen = () => setDrawerOpen(true)
+    window.addEventListener('open-store-filters', handleOpen)
+    return () => window.removeEventListener('open-store-filters', handleOpen)
+  }, [])
 
   useEffect(() => {
     async function cargar() {
@@ -159,8 +169,37 @@ export default function TiendaPage() {
       ? fuseRef.current.search(q).map(r => r.item)
       : base.filter(p => p.stock > 0)
     if (cat) pool = pool.filter(p => p.categoria === cat)
+    if (sub) pool = pool.filter(p => p.subcategoria === sub)
+    if (marca) pool = pool.filter(p => p.marca === marca)
     return pool
-  }, [base, q, cat])
+  }, [base, q, cat, sub, marca])
+
+  // Subcategorias dinamicas de la categoria seleccionada
+  const subcats = useMemo(() => {
+    if (!cat) return []
+    const map = new Map<string, number>()
+    base.filter(p => p.stock > 0 && p.categoria === cat).forEach(p => {
+      if (p.subcategoria) map.set(p.subcategoria, (map.get(p.subcategoria) ?? 0) + 1)
+    })
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
+  }, [base, cat])
+
+  // Marcas dinamicas
+  const marcas = useMemo(() => {
+    const map = new Map<string, number>()
+    const pool = cat ? base.filter(p => p.stock > 0 && p.categoria === cat) : base.filter(p => p.stock > 0)
+    pool.forEach(p => {
+      if (p.marca) map.set(p.marca, (map.get(p.marca) ?? 0) + 1)
+    })
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
+  }, [base, cat])
+
+  function limpiarFiltros() {
+    setCat('')
+    setSub('')
+    setMarca('')
+    setVisibles(40)
+  }
 
   if (cargando) return (
     <div className="max-w-5xl mx-auto px-4 py-16 flex justify-center">
@@ -216,21 +255,30 @@ export default function TiendaPage() {
         )}
       </div>
 
-      {/* Filtros categoría */}
-      {cats.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          <button onClick={() => setCat('')}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition
-              ${!cat ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-200'}`}>
-            Todos ({base.filter(p => p.stock > 0).length})
+      {/* Filtros activos */}
+      {(cat || sub || marca) && (
+        <div className="flex items-center gap-2 flex-wrap text-xs">
+          {cat && (
+            <span className="flex items-center gap-1 bg-green-50 text-green-700 font-semibold px-2.5 py-1 rounded-full border border-green-200">
+              {CAT_EMOJI[cat] || ''} {cat}
+              <button onClick={() => { setCat(''); setSub(''); setMarca(''); setVisibles(40) }} className="hover:text-green-950 font-bold"><X size={12} /></button>
+            </span>
+          )}
+          {sub && (
+            <span className="flex items-center gap-1 bg-teal-50 text-teal-700 font-semibold px-2.5 py-1 rounded-full border border-teal-200">
+              📂 {sub}
+              <button onClick={() => { setSub(''); setVisibles(40) }} className="hover:text-teal-950 font-bold"><X size={12} /></button>
+            </span>
+          )}
+          {marca && (
+            <span className="flex items-center gap-1 bg-purple-50 text-purple-700 font-semibold px-2.5 py-1 rounded-full border border-purple-200">
+              🏷️ {marca}
+              <button onClick={() => { setMarca(''); setVisibles(40) }} className="hover:text-purple-950 font-bold"><X size={12} /></button>
+            </span>
+          )}
+          <button onClick={limpiarFiltros} className="text-[10px] text-gray-400 hover:text-gray-600 underline">
+            Limpiar todos
           </button>
-          {cats.map(([c, n]) => (
-            <button key={c} onClick={() => setCat(cat === c ? '' : c)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition
-                ${cat === c ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-200'}`}>
-              {CAT_EMOJI[c] || ''} {c} ({n})
-            </button>
-          ))}
         </div>
       )}
 
@@ -242,7 +290,7 @@ export default function TiendaPage() {
         <div className="text-center py-16 space-y-2">
           <div className="text-5xl">🔍</div>
           <p className="text-gray-500 font-medium">Sin productos con ese filtro</p>
-          <button onClick={() => { setQ(''); setCat('') }} className="text-sm text-green-600 underline">Limpiar</button>
+          <button onClick={() => { setQ(''); limpiarFiltros() }} className="text-sm text-green-600 underline">Limpiar</button>
         </div>
       ) : (
         <>
@@ -280,6 +328,159 @@ export default function TiendaPage() {
           )}
         </>
       )}
+
+      {/* Drawer de Filtros Lateral Izquierdo */}
+      {drawerOpen && (
+        <>
+          {/* Overlay */}
+          <div
+            onClick={() => setDrawerOpen(false)}
+            className="fixed inset-0 bg-black/50 z-[60] transition-opacity duration-300 animate-fade-in"
+          />
+          
+          {/* Panel */}
+          <div className="fixed inset-y-0 left-0 w-[280px] bg-white z-[70] shadow-2xl flex flex-col transition-transform duration-300 animate-slide-in-left">
+            
+            {/* Header Drawer */}
+            <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+              <span className="font-extrabold text-gray-800 text-sm">Pasillos y Filtros</span>
+              <button onClick={() => setDrawerOpen(false)} className="p-1 hover:bg-gray-100 rounded-lg text-gray-500 transition">
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Contenido */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-5">
+              {!cat ? (
+                // Nivel 1: Lista de Categorías
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Selecciona un Pasillo</p>
+                  {cats.map(([c, count]) => (
+                    <button
+                      key={c}
+                      onClick={() => { setCat(c); setSub(''); setMarca(''); setVisibles(40) }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-green-700 transition flex items-center justify-between border border-transparent hover:border-green-100"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="text-sm">{CAT_EMOJI[c] || '📦'}</span>
+                        <span>{c}</span>
+                      </span>
+                      <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold">{count}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                // Nivel 2: Subcategorías y Marcas de la categoría seleccionada
+                <div className="space-y-5">
+                  
+                  {/* Botón Volver */}
+                  <button
+                    onClick={() => { setCat(''); setSub(''); setMarca(''); setVisibles(40) }}
+                    className="w-full py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5"
+                  >
+                    ← Todos los pasillos
+                  </button>
+
+                  {/* Pasillo Activo */}
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Pasillo seleccionado</span>
+                    <div className="text-sm font-black text-green-700 bg-green-50 border border-green-100 rounded-xl px-3 py-2.5 flex items-center gap-2">
+                      <span>{CAT_EMOJI[cat] || '📦'}</span>
+                      <span>{cat}</span>
+                    </div>
+                  </div>
+
+                  {/* Lista de Subcategorías (si hay) */}
+                  {subcats.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Subcategorías</p>
+                      <div className="space-y-1">
+                        {subcats.map(([s, count]) => {
+                          const esActiva = sub === s
+                          return (
+                            <button
+                              key={s}
+                              onClick={() => { setSub(esActiva ? '' : s); setVisibles(40) }}
+                              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-between border
+                                ${esActiva 
+                                  ? 'bg-teal-50 border-teal-200 text-teal-700' 
+                                  : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
+                            >
+                              <span>📂 {s}</span>
+                              <span className="text-[9px] font-bold text-gray-400">({count})</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Lista de Marcas (si hay) */}
+                  {marcas.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Marcas</p>
+                      <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                        {marcas.map(([m, count]) => {
+                          const esActiva = marca === m
+                          return (
+                            <button
+                              key={m}
+                              onClick={() => { setMarca(esActiva ? '' : m); setVisibles(40) }}
+                              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-between border
+                                ${esActiva 
+                                  ? 'bg-purple-50 border-purple-200 text-purple-700' 
+                                  : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
+                            >
+                              <span>🏷️ {m}</span>
+                              <span className="text-[9px] font-bold text-gray-400">({count})</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )}
+            </div>
+
+            {/* Footer Drawer */}
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-2 shrink-0">
+              <button
+                onClick={limpiarFiltros}
+                disabled={!cat && !sub && !marca}
+                className="flex-1 py-3 border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-xs font-bold rounded-xl transition disabled:opacity-50"
+              >
+                Limpiar
+              </button>
+              <button
+                onClick={() => setDrawerOpen(false)}
+                className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-xl transition shadow-md"
+              >
+                Ver {filtrados.length} productos
+              </button>
+            </div>
+
+          </div>
+        </>
+      )}
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideInLeft {
+          from { transform: translateX(-100%); }
+          to { transform: translateX(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.2s ease-out forwards;
+        }
+        .animate-slide-in-left {
+          animation: slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
     </div>
   )
 }

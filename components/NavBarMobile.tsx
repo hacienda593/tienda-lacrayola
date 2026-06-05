@@ -87,7 +87,7 @@ function NavBarMobileInner() {
           {/* Botón 3: CATEGORÍAS (CENTRAL HERO FLOTANTE CON NOMBRE DE TIENDA) */}
           <div className="flex-1 flex flex-col items-center justify-center relative h-full">
             <button
-              onClick={() => window.dispatchEvent(new Event('open-categorias-global'))}
+              onClick={() => window.dispatchEvent(new Event('open-store-filters'))}
               className="w-14 h-14 bg-gradient-to-br from-green-600 to-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-green-500/30 border-4 border-white absolute -top-5 active:scale-90 transition-transform duration-150"
             >
               <LayoutGrid size={22} className="stroke-[2.5]" />
