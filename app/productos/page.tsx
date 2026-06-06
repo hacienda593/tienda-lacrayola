@@ -7,6 +7,8 @@ import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto } from '@/lib/types'
 import { Search, X, ShoppingCart, Plus, Minus, Heart, ArrowUpDown, Share2 } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
+import { getPerfil } from '@/lib/perfil'
 
 function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
 
@@ -186,6 +188,7 @@ function EstadoVacio({ query, onLimpiar }: { query: string; onLimpiar: () => voi
 
 // ── Contenido principal ────────────────────────────────────────────
 function ProductosContent() {
+  const router       = useRouter()
   const params       = useSearchParams()
   const catInicial   = params.get('cat') || ''
   const subInicial   = params.get('sub') || ''
@@ -203,6 +206,9 @@ function ProductosContent() {
   const [visibles, setVisibles]     = useState(40)
   const [showOrden, setShowOrden]   = useState(false)
   const [crayolaId, setCrayolaId]   = useState('')
+  const [soloFrecuentes, setSoloFrecuentes] = useState(false)
+  const [frecuentesCodigos, setFrecuentesCodigos] = useState<string[]>([])
+  const { user } = useAuth()
   const fuseRef = useRef<Fuse<Producto> | null>(null)
 
   function compartirFiltros() {
@@ -235,10 +241,43 @@ function ProductosContent() {
     setCat(params.get('cat') || '')
     setSub(params.get('sub') || '')
     setTiendaId(params.get('tienda_id') || '')
+    setSoloFrecuentes(params.get('frecuentes') === 'true')
     const q = params.get('q') || ''
     if (q) setQuery(q)
     setMarca(''); setVisibles(40)
   }, [params])
+
+  // Cargar códigos frecuentes
+  useEffect(() => {
+    async function cargarFrecuentes() {
+      const perfil = getPerfil()
+      const telefono = perfil?.telefono || ''
+      const userId = user?.id || null
+
+      if (!userId && !telefono) return
+
+      let queryDb = supabase
+        .from('ol_productos_frecuentes')
+        .select('producto_codigo')
+
+      if (userId) {
+        queryDb = queryDb.eq('user_id', userId)
+      } else {
+        queryDb = queryDb.eq('telefono', telefono)
+      }
+
+      const { data } = await queryDb.order('veces_comprado', { ascending: false }).limit(30)
+      if (data) {
+        setFrecuentesCodigos(data.map((item: any) => item.producto_codigo))
+      }
+    }
+
+    if (soloFrecuentes) {
+      cargarFrecuentes()
+    } else {
+      setFrecuentesCodigos([])
+    }
+  }, [soloFrecuentes, user])
 
   useEffect(() => {
     async function cargar() {
@@ -281,6 +320,7 @@ function ProductosContent() {
       pool = [...base]
     }
     pool = pool.filter(p => {
+      if (soloFrecuentes && !frecuentesCodigos.includes(p.codigo)) return false
       if (tiendaId) {
         const esCrayola = tiendaId === crayolaId
         if (esCrayola) {
@@ -299,7 +339,7 @@ function ProductosContent() {
     if (orden === 'precio_desc') pool.sort((a, b) => b.precio_publico - a.precio_publico)
     if (orden === 'nombre_asc')  pool.sort((a, b) => a.descripcion.localeCompare(b.descripcion))
     return pool
-  }, [base, query, cat, sub, tiendaId, crayolaId, marca, stockFiltro, orden])
+  }, [base, query, cat, sub, tiendaId, crayolaId, marca, stockFiltro, orden, soloFrecuentes, frecuentesCodigos])
 
   const catsCtx = useMemo(() => {
     const q = query.trim()
@@ -331,8 +371,17 @@ function ProductosContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [base, query, cat, tiendaId, crayolaId, stockFiltro])
 
-  function limpiar() { setQuery(''); setCat(''); setSub(''); setMarca(''); setOrden('relevancia'); setVisibles(40) }
-  const hayFiltros = !!(query || cat || sub || marca || stockFiltro !== 'disponible' || orden !== 'relevancia')
+  function limpiar() {
+    setQuery('')
+    setCat('')
+    setSub('')
+    setMarca('')
+    setSoloFrecuentes(false)
+    setOrden('relevancia')
+    setVisibles(40)
+    router.push('/productos')
+  }
+  const hayFiltros = !!(query || cat || sub || marca || soloFrecuentes || stockFiltro !== 'disponible' || orden !== 'relevancia')
 
   // Asignar badges: primeros 4 = popular, últimos en stock = ultimas (ya en ProductCard)
   function badgePara(_: Producto, idx: number): 'popular' | undefined {
@@ -462,6 +511,16 @@ function ProductosContent() {
           {/* Barra estado + ordenamiento */}
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2 flex-wrap">
+              {soloFrecuentes && (
+                <span className="flex items-center gap-1 bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                  🔄 Habituales
+                  <button onClick={() => {
+                    const paramsNew = new URLSearchParams(params.toString())
+                    paramsNew.delete('frecuentes')
+                    router.push(`/productos?${paramsNew.toString()}`)
+                  }}><X size={11} /></button>
+                </span>
+              )}
               {cat && (
                 <span className="flex items-center gap-1 bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">
                   {CAT_EMOJI[cat] || ''} {cat}

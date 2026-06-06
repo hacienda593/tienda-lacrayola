@@ -4,7 +4,7 @@ import { useRouter, useParams, useSearchParams, usePathname } from 'next/navigat
 import {
   X, User, Tag, Settings, HelpCircle,
   ChevronRight, Search, Heart, Package,
-  MessageCircle, Star, Trophy, Loader2,
+  MessageCircle, Star, Trophy, Loader2, ShoppingCart,
 } from 'lucide-react'
 import { getPuntos, progresoNivel } from '@/lib/puntos'
 import { getPuntosCloud, EstadoPuntosCloud } from '@/lib/puntosCloud'
@@ -288,6 +288,7 @@ export default function MenuDrawer({ open, onClose }: Props) {
 
               <ItemMenu icon={<Package size={18} />} label="Mis pedidos"      sub="Historial y recompra"     onClick={() => navegar('/pedidos')} />
               <ItemMenu icon={<Heart size={18} />}   label="Mis favoritos"     sub="Lista de deseos"          onClick={() => navegar('/favoritos')} />
+              <ItemMenu icon={<ShoppingCart size={18} />} label="Mis habituales" sub="Compras más frecuentes" onClick={() => navegar('/productos?frecuentes=true')} />
               <ItemMenu icon={<Star size={18} />}    label="Mis puntos"        sub={puntos ? `${puntos.disponibles} pts · ${puntos.nivel}` : 'Gana puntos comprando'} onClick={() => navegar('/cuenta')} badge={user ? undefined : 'Próx.'} />
               <ItemMenu icon={<Tag size={18} />}     label="Cupones y códigos" sub="Descuentos disponibles"   onClick={() => navegar('/cupones')} badge="Próx." />
               <Divider />

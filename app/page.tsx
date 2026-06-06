@@ -8,6 +8,8 @@ import { agregarItem } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto } from '@/lib/types'
 import LocalGrid from '@/components/LocalGrid'
+import { useAuth } from '@/context/AuthContext'
+import { getPerfil } from '@/lib/perfil'
 
 function fmt(n: number) { return '$' + n.toFixed(2) }
 
@@ -203,6 +205,26 @@ function ProdCard({ p }: { p: Producto }) {
   )
 }
 
+function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
+  const [ok, setOk] = useState(false)
+  function add(e: React.MouseEvent) {
+    e.stopPropagation()
+    e.preventDefault()
+    agregarItem(prod)
+    setOk(true)
+    setTimeout(() => setOk(false), 1200)
+    window.dispatchEvent(new Event('carrito-update'))
+  }
+  return (
+    <button onClick={add}
+      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition shrink-0 cursor-pointer
+        ${ok ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent'}`}>
+      <ShoppingCart size={11} />
+      {ok ? '✓' : 'Agregar'}
+    </button>
+  )
+}
+
 // ── Home ───────────────────────────────────────────────────────────
 const CAT_TIENDA: Record<string, string> = {
   supermercado: '🛒', farmacia: '💊', libreria: '📚',
@@ -210,6 +232,9 @@ const CAT_TIENDA: Record<string, string> = {
 }
 
 export default function Home() {
+  const { user } = useAuth()
+  const router = useRouter()
+  const [frecuentes, setFrecuentes] = useState<Producto[]>([])
   const [cats,        setCats]        = useState<{ categoria: string; n: number }[]>([])
   const [destacados,  setDestacados]  = useState<Producto[]>([])
   const [novedades,   setNovedades]   = useState<Producto[]>([])
@@ -257,6 +282,51 @@ export default function Home() {
       .then(({ data }) => { if (data) setTiendas(data) })
   }, [])
 
+  // Cargar productos frecuentes
+  useEffect(() => {
+    async function cargarFrecuentes() {
+      const perfil = getPerfil()
+      const telefono = perfil?.telefono || ''
+      const userId = user?.id || null
+
+      if (!userId && !telefono) return
+
+      let query = supabase
+        .from('ol_productos_frecuentes')
+        .select('producto_codigo, veces_comprado')
+
+      if (userId) {
+        query = query.eq('user_id', userId)
+      } else {
+        query = query.eq('telefono', telefono)
+      }
+
+      const { data, error } = await query
+        .order('veces_comprado', { ascending: false })
+        .limit(10)
+
+      if (data && !error && data.length > 0) {
+        const codigos = data.map((item: any) => item.producto_codigo)
+        const { data: prodsRaw } = await supabase
+          .from('ol_productos')
+          .select('codigo, descripcion, categoria, subcategoria, marca, stock, stock_minimo, precio_publico, precio_con_iva, tienda_id, imagen_url')
+          .in('codigo', codigos)
+
+        if (prodsRaw) {
+          const prods = prodsRaw as Producto[]
+          const list = codigos
+            .map(code => prods.find(p => p.codigo === code))
+            .filter((p): p is Producto => !!p && p.stock > 0)
+          setFrecuentes(list)
+        }
+      } else {
+        setFrecuentes([])
+      }
+    }
+
+    cargarFrecuentes()
+  }, [user])
+
   return (
     <div>
       {/* ── CARRUSEL ── */}
@@ -284,6 +354,45 @@ export default function Home() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-12">
+
+        {/* ── PRODUCTOS FRECUENTES (Comprar de nuevo) ── */}
+        {frecuentes.length > 0 && (
+          <section className="space-y-4 bg-green-50/40 border border-green-100/60 rounded-2xl p-5 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  🔄 Comprar de nuevo
+                </h2>
+                <p className="text-xs text-gray-400">Tus artículos habituales listos para volver a ordenar</p>
+              </div>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+              {frecuentes.map(p => (
+                <div key={p.codigo}
+                  onClick={() => router.push(`/producto/${encodeURIComponent(p.codigo)}`)}
+                  className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[155px] relative group/freq">
+                  <div className="relative bg-gray-50 rounded-lg h-24 flex items-center justify-center mb-2 text-3xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors">
+                    {p.imagen_url ? (
+                      <img src={p.imagen_url} alt={p.descripcion} className="w-full h-full object-contain p-1" />
+                    ) : (
+                      CAT_CONFIG[p.categoria]?.emoji || '📦'
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[9px] font-semibold text-green-600 uppercase truncate mb-0.5">{p.categoria}</div>
+                    <div className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 min-h-[36px] mb-1">{p.descripcion}</div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-1">
+                    <div className="text-sm font-extrabold text-gray-900">{fmt(p.precio_publico)}</div>
+                    <div className="scale-75 origin-right shrink-0">
+                      <BtnAgregarFrecuente prod={p} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* ── SELECCIÓN DE VERTICALES ── */}
         <LocalGrid />
