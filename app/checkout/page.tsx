@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCarrito, totalCarrito, vaciarCarrito, calcularEnvioConsolidado, obtenerTiendasUnicas } from '@/lib/carrito'
 import { getPerfil, guardarPerfil, guardarPedidoLocal } from '@/lib/perfil'
@@ -10,6 +10,7 @@ import { crearPedido } from './actions'
 import { Loader2, MapPin, Star, CheckCircle } from 'lucide-react'
 import { ItemCarrito } from '@/lib/types'
 import RecargoEnvioBadge from '@/components/RecargoEnvioBadge'
+import { supabase } from '@/lib/supabase'
 
 const WA_NUMERO = '593984341953'
 
@@ -72,6 +73,17 @@ export default function CheckoutPage() {
   const [puntosGanados, setPuntosGanados] = useState<number | null>(null)
   const [metodoEntrega, setMetodoEntrega] = useState<'domicilio' | 'retiro'>('domicilio')
 
+  const [verMapa, setVerMapa] = useState(false)
+  const [direcciones, setDirecciones] = useState<any[]>([])
+  const [direccionSeleccionadaId, setDireccionSeleccionadaId] = useState<string>('nueva')
+  const [nombreEtiqueta, setNombreEtiqueta] = useState('')
+  const [guardandoDir, setGuardandoDir] = useState(false)
+  const [dirMsg, setDirMsg] = useState('')
+
+  const mapContainerRef = useRef<HTMLDivElement | null>(null)
+  const mapInstanceRef = useRef<any>(null)
+  const markerRef = useRef<any>(null)
+
   // Pre-rellenar: Google tiene prioridad, luego perfil local guardado
   useEffect(() => {
     const perfil = getPerfil()
@@ -88,6 +100,161 @@ export default function CheckoutPage() {
     }))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
+
+  // Cargar direcciones guardadas
+  useEffect(() => {
+    async function cargarDirecciones() {
+      const tel = form.telefono.trim()
+      const userId = user?.id || null
+
+      if (!userId && !tel) {
+        setDirecciones([])
+        return
+      }
+
+      let query = supabase.from('ol_direcciones_cliente').select('*')
+      if (userId) {
+        query = query.or(`user_id.eq.${userId},telefono.eq.${tel}`)
+      } else {
+        query = query.eq('telefono', tel)
+      }
+
+      const { data } = await query
+      if (data) {
+        setDirecciones(data)
+      }
+    }
+    const timer = setTimeout(cargarDirecciones, 600)
+    return () => clearTimeout(timer)
+  }, [form.telefono, user])
+
+  function alSeleccionarDireccion(id: string) {
+    setDireccionSeleccionadaId(id)
+    if (id === 'nueva') {
+      setForm(f => ({ ...f, direccion: '', referencias: '', ciudad: 'Los Bancos' }))
+      setGeo(null)
+      setVerMapa(false)
+      return
+    }
+    const d = direcciones.find(x => x.id === id)
+    if (d) {
+      setForm(f => ({
+        ...f,
+        direccion: d.direccion_texto,
+        referencias: d.referencias || '',
+        ciudad: d.ciudad,
+      }))
+      setGeo({ lat: d.geo_lat, lng: d.geo_lng })
+      setVerMapa(true) // Mostrar mapa centrado en la dirección guardada
+    }
+  }
+
+  async function guardarDireccionNueva() {
+    if (!form.telefono.trim()) { setDirMsg('Ingresa tu teléfono primero'); return }
+    if (!form.direccion.trim()) { setDirMsg('Ingresa la dirección'); return }
+    if (!geo) { setDirMsg('Obtén tu ubicación GPS en el mapa'); return }
+    if (!nombreEtiqueta.trim()) { setDirMsg('Escribe un nombre (ej: Casa)'); return }
+    
+    setGuardandoDir(true)
+    setDirMsg('')
+
+    const { data, error } = await supabase.from('ol_direcciones_cliente')
+      .upsert({
+        user_id: user?.id || null,
+        telefono: form.telefono.trim(),
+        nombre_etiqueta: nombreEtiqueta.trim(),
+        direccion_texto: form.direccion.trim(),
+        ciudad: form.ciudad,
+        referencias: form.referencias || null,
+        geo_lat: geo.lat,
+        geo_lng: geo.lng,
+      }, { onConflict: user?.id ? 'user_id,nombre_etiqueta' : 'telefono,nombre_etiqueta' })
+      .select()
+
+    setGuardandoDir(false)
+    if (error) {
+      setDirMsg('Error al guardar: ' + error.message)
+    } else {
+      setDirMsg('✓ Guardada con éxito')
+      if (data && data[0]) {
+        setDirecciones(prev => {
+          const filtered = prev.filter(x => x.nombre_etiqueta !== nombreEtiqueta.trim())
+          return [...filtered, data[0]]
+        })
+        setDireccionSeleccionadaId(data[0].id)
+        setNombreEtiqueta('')
+      }
+    }
+  }
+
+  // Cargar e inicializar Leaflet dinámicamente
+  useEffect(() => {
+    if (typeof window === 'undefined' || !mapContainerRef.current || !verMapa) return
+
+    let LInstance: any = null
+
+    async function initMap() {
+      LInstance = (await import('leaflet')).default
+      await import('leaflet/dist/leaflet.css')
+
+      delete LInstance.Icon.Default.prototype._getIconUrl
+      LInstance.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+      })
+
+      const centerLat = geo?.lat ?? -0.0221
+      const centerLng = geo?.lng ?? -78.8983
+
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove()
+        mapInstanceRef.current = null
+      }
+
+      const map = LInstance.map(mapContainerRef.current).setView([centerLat, centerLng], 15)
+      mapInstanceRef.current = map
+
+      LInstance.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map)
+
+      const marker = LInstance.marker([centerLat, centerLng], { draggable: true }).addTo(map)
+      markerRef.current = marker
+
+      marker.on('dragend', () => {
+        const position = marker.getLatLng()
+        setGeo({ lat: position.lat, lng: position.lng })
+        setGeoMsg('✓ Ubicación del mapa')
+      })
+
+      map.on('click', (e: any) => {
+        marker.setLatLng(e.latlng)
+        setGeo({ lat: e.latlng.lat, lng: e.latlng.lng })
+        setGeoMsg('✓ Ubicación del mapa')
+      })
+    }
+
+    initMap()
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove()
+        mapInstanceRef.current = null
+      }
+    }
+  }, [verMapa])
+
+  // Sincronizar mapa si geo cambia externamente
+  useEffect(() => {
+    if (mapInstanceRef.current && markerRef.current && geo && verMapa) {
+      const currentPos = markerRef.current.getLatLng()
+      if (Math.abs(currentPos.lat - geo.lat) > 0.00001 || Math.abs(currentPos.lng - geo.lng) > 0.00001) {
+        mapInstanceRef.current.setView([geo.lat, geo.lng], 15)
+        markerRef.current.setLatLng([geo.lat, geo.lng])
+      }
+    }
+  }, [geo, verMapa])
 
   const items = getCarrito()
   const total = totalCarrito(items)
@@ -115,6 +282,8 @@ export default function CheckoutPage() {
       pos => {
         setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude })
         setGeoMsg('✓ Ubicación obtenida')
+        setVerMapa(true)
+        setDireccionSeleccionadaId('nueva')
       },
       () => setGeoMsg('No se pudo obtener')
     )
@@ -308,14 +477,79 @@ export default function CheckoutPage() {
             <div className="flex items-center justify-between">
               <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dirección de entrega</div>
               {geo ? (
-                <span className="flex items-center gap-1 text-[10px] text-green-400"><MapPin size={10}/>Ubicación obtenida</span>
+                <button type="button" onClick={() => setVerMapa(!verMapa)}
+                  className="flex items-center gap-1 text-[10px] text-green-400 hover:text-green-300 font-bold underline cursor-pointer">
+                  <MapPin size={10}/>{verMapa ? 'Ocultar mapa' : 'Ver mapa interactivo'}
+                </button>
               ) : (
                 <button type="button" onClick={pedirUbicacion}
                   className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-green-400 transition cursor-pointer">
-                  <MapPin size={10}/>{geoMsg || 'Compartir ubicación'}
+                  <MapPin size={10}/>{geoMsg || 'Obtener ubicación GPS'}
                 </button>
               )}
             </div>
+
+            {/* Selector de direcciones guardadas */}
+            {direcciones.length > 0 && (
+              <div className="border-b border-gray-800 pb-3">
+                <label className="text-xs text-gray-400 block mb-1">📍 Mis direcciones guardadas</label>
+                <select
+                  value={direccionSeleccionadaId}
+                  onChange={e => alSeleccionarDireccion(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500"
+                >
+                  <option value="nueva">-- Nueva dirección / Ingresar otra --</option>
+                  {direcciones.map(d => (
+                    <option key={d.id} value={d.id}>
+                      📌 {d.nombre_etiqueta} ({d.direccion_texto})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Mapa interactivo */}
+            {verMapa && (
+              <div className="space-y-1.5 border-b border-gray-800 pb-3">
+                <div className="text-[10px] text-gray-400 flex items-center justify-between">
+                  <span>📍 Arrastra la chincheta sobre tu ubicación exacta:</span>
+                  <button type="button" onClick={() => setVerMapa(false)} className="text-red-400 hover:underline">Ocultar mapa</button>
+                </div>
+                <div 
+                  ref={mapContainerRef} 
+                  className="w-full h-[220px] rounded-xl border border-gray-800 bg-gray-950 overflow-hidden relative z-10" 
+                />
+                {geo && (
+                  <div className="text-[9px] text-gray-500 text-right">
+                    Lat: {geo.lat.toFixed(5)} · Lng: {geo.lng.toFixed(5)}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Guardar nueva dirección */}
+            {direccionSeleccionadaId === 'nueva' && geo && (
+              <div className="bg-gray-800/40 border border-gray-800 rounded-xl p-3 space-y-2">
+                <div className="text-[11px] font-semibold text-gray-300">💾 ¿Quieres guardar esta ubicación para futuras compras?</div>
+                <div className="flex gap-2">
+                  <input 
+                    value={nombreEtiqueta} 
+                    onChange={e => setNombreEtiqueta(e.target.value)}
+                    placeholder="Nombre (ej: Casa, Trabajo, Escuela...)"
+                    className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-green-500" 
+                  />
+                  <button 
+                    type="button" 
+                    onClick={guardarDireccionNueva} 
+                    disabled={guardandoDir}
+                    className="bg-green-600 hover:bg-green-500 disabled:opacity-60 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition cursor-pointer"
+                  >
+                    {guardandoDir ? 'Guardando...' : 'Guardar'}
+                  </button>
+                </div>
+                {dirMsg && <p className="text-[10px] text-green-400 font-semibold">{dirMsg}</p>}
+              </div>
+            )}
             {[
               { k: 'ciudad',      label: 'Ciudad',      placeholder: 'Los Bancos' },
               { k: 'direccion',   label: 'Dirección',   placeholder: 'Calle, número, sector...' },
