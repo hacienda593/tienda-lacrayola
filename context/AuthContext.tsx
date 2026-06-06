@@ -44,6 +44,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function logout() {
     await supabase.auth.signOut()
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('lc_perfil')
+      localStorage.removeItem('lc_puntos')
+      localStorage.removeItem('lc_favoritos')
+      window.dispatchEvent(new Event('puntos-update'))
+      window.dispatchEvent(new Event('favoritos-update'))
+    }
   }
 
   return (
