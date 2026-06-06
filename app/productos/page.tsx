@@ -344,6 +344,9 @@ function ProductosContent() {
   const catsCtx = useMemo(() => {
     const q = query.trim()
     let pool = q.length >= 2 && fuseRef.current ? fuseRef.current.search(q).map(r => r.item) : base
+    if (soloFrecuentes) {
+      pool = pool.filter(p => frecuentesCodigos.includes(p.codigo))
+    }
     if (tiendaId) {
       const esCrayola = tiendaId === crayolaId
       pool = pool.filter(p => esCrayola ? (p.tienda_id === tiendaId || p.tienda_id === null) : p.tienda_id === tiendaId)
@@ -353,12 +356,14 @@ function ProductosContent() {
     const map = new Map<string, number>()
     pool.forEach(p => { if (p.categoria) map.set(p.categoria, (map.get(p.categoria) || 0) + 1) })
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [base, query, tiendaId, crayolaId, marca, stockFiltro])
+  }, [base, query, tiendaId, crayolaId, marca, stockFiltro, soloFrecuentes, frecuentesCodigos])
 
   const marcasCtx = useMemo(() => {
     const q = query.trim()
     let pool = q.length >= 2 && fuseRef.current ? fuseRef.current.search(q).map(r => r.item) : base
+    if (soloFrecuentes) {
+      pool = pool.filter(p => frecuentesCodigos.includes(p.codigo))
+    }
     if (tiendaId) {
       const esCrayola = tiendaId === crayolaId
       pool = pool.filter(p => esCrayola ? (p.tienda_id === tiendaId || p.tienda_id === null) : p.tienda_id === tiendaId)
@@ -368,8 +373,7 @@ function ProductosContent() {
     const map = new Map<string, number>()
     pool.forEach(p => { if (p.marca) map.set(p.marca, (map.get(p.marca) || 0) + 1) })
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [base, query, cat, tiendaId, crayolaId, stockFiltro])
+  }, [base, query, cat, tiendaId, crayolaId, stockFiltro, soloFrecuentes, frecuentesCodigos])
 
   function limpiar() {
     setQuery('')
