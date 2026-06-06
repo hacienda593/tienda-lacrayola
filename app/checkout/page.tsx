@@ -25,7 +25,8 @@ function abrirWhatsApp(
   direccion: string, 
   ciudad: string, 
   referencias: string, 
-  numeroPedido: number
+  numeroPedido: number,
+  metodoEntrega: 'domicilio' | 'retiro'
 ) {
   // Agrupar ítems por tienda para el mensaje
   const agrupados: Record<string, ItemCarrito[]> = {}
@@ -40,7 +41,7 @@ function abrirWhatsApp(
     return `🏪 *${tienda}:*\n${listado}`
   }).join('\n\n')
 
-  const entrega = [direccion, ciudad, referencias].filter(Boolean).join(', ')
+  const entrega = metodoEntrega === 'retiro' ? 'Retiro en local principal (La Crayola)' : [direccion, ciudad, referencias].filter(Boolean).join(', ')
   const msg = [
     `🛒 *Nuevo pedido #${String(numeroPedido).padStart(4,'0')}*`,
     `👤 *Cliente:* ${nombre}`,
@@ -50,9 +51,9 @@ function abrirWhatsApp(
     ``,
     `*Resumen:*`,
     `  • Subtotal: ${fmt(subtotal)}`,
-    `  • Envío Consolidado: ${fmt(costoEnvio)}`,
+    metodoEntrega === 'domicilio' ? `  • Envío Consolidado: ${fmt(costoEnvio)}` : `  • Entrega: Retiro en tienda (Gratis)`,
     `  • *Total a pagar: ${fmt(granTotal)}*`,
-    entrega ? `📍 *Entrega:* ${entrega}` : '',
+    `📍 *Forma de entrega:* ${entrega}`,
   ].filter(l => l !== undefined).join('\n')
   window.open(`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, '_blank')
 }
@@ -69,6 +70,7 @@ export default function CheckoutPage() {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [puntosGanados, setPuntosGanados] = useState<number | null>(null)
+  const [metodoEntrega, setMetodoEntrega] = useState<'domicilio' | 'retiro'>('domicilio')
 
   // Pre-rellenar: Google tiene prioridad, luego perfil local guardado
   useEffect(() => {
@@ -90,7 +92,18 @@ export default function CheckoutPage() {
   const items = getCarrito()
   const total = totalCarrito(items)
   const nTiendas = obtenerTiendasUnicas(items).length || (items.length > 0 ? 1 : 0)
-  const costoEnvio = calcularEnvioConsolidado(items)
+
+  const CRAYOLA_ID = 'b7fe17b9-c3da-4c9f-9a87-169d70623566'
+  const esSoloCrayola = items.every(item => !item.tienda_id || item.tienda_id === CRAYOLA_ID)
+
+  useEffect(() => {
+    if (!esSoloCrayola) {
+      setMetodoEntrega('domicilio')
+    }
+  }, [esSoloCrayola])
+
+  const costoEnvioBase = calcularEnvioConsolidado(items)
+  const costoEnvio = metodoEntrega === 'domicilio' ? costoEnvioBase : 0
   const granTotal = total + costoEnvio
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
@@ -115,7 +128,15 @@ export default function CheckoutPage() {
     setLoading(true)
 
     const resultado = await crearPedido(
-      { ...form, geo_lat: geo?.lat, geo_lng: geo?.lng, user_id: user?.id ?? null },
+      { 
+        ...form, 
+        direccion: metodoEntrega === 'retiro' ? 'RETIRO EN TIENDA' : form.direccion,
+        ciudad: metodoEntrega === 'retiro' ? 'Los Bancos' : form.ciudad,
+        referencias: metodoEntrega === 'retiro' ? 'Retiro directo en local' : form.referencias,
+        geo_lat: metodoEntrega === 'retiro' ? null : geo?.lat, 
+        geo_lng: metodoEntrega === 'retiro' ? null : geo?.lng, 
+        user_id: user?.id ?? null 
+      },
       items.map(i => ({ codigo: i.codigo, cantidad: i.cantidad }))
     )
 
@@ -163,10 +184,11 @@ export default function CheckoutPage() {
       total, 
       costoEnvio,
       granTotal,
-      form.direccion, 
-      form.ciudad, 
-      form.referencias, 
-      resultado.numeroPedido!
+      metodoEntrega === 'retiro' ? 'RETIRO EN TIENDA' : form.direccion, 
+      metodoEntrega === 'retiro' ? 'Los Bancos' : form.ciudad, 
+      metodoEntrega === 'retiro' ? 'Retiro directo en local' : form.referencias, 
+      resultado.numeroPedido!,
+      metodoEntrega
     )
 
     setTimeout(() => router.push(`/pedido/${resultado.pedidoId}`), 1800)
@@ -241,38 +263,94 @@ export default function CheckoutPage() {
           ))}
         </div>
 
-        {/* Entrega */}
+        {/* Método de Entrega */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dirección de entrega</div>
-            {geo ? (
-              <span className="flex items-center gap-1 text-[10px] text-green-400"><MapPin size={10}/>Ubicación obtenida</span>
-            ) : (
-              <button type="button" onClick={pedirUbicacion}
-                className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-green-400 transition">
-                <MapPin size={10}/>{geoMsg || 'Compartir ubicación'}
-              </button>
-            )}
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Método de entrega</div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setMetodoEntrega('domicilio')}
+              className={`py-2.5 rounded-xl font-bold text-xs transition border flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                metodoEntrega === 'domicilio'
+                  ? 'bg-green-600 text-white border-transparent'
+                  : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'
+              }`}
+            >
+              <span>🚚 Envío a domicilio</span>
+              <span className="text-[10px] font-medium opacity-80">({fmt(costoEnvioBase)})</span>
+            </button>
+            <button
+              type="button"
+              disabled={!esSoloCrayola}
+              onClick={() => setMetodoEntrega('retiro')}
+              className={`py-2.5 rounded-xl font-bold text-xs transition border flex flex-col items-center justify-center gap-1 ${
+                !esSoloCrayola
+                  ? 'opacity-40 bg-gray-900 text-gray-600 border-gray-800 cursor-not-allowed'
+                  : metodoEntrega === 'retiro'
+                    ? 'bg-green-600 text-white border-transparent cursor-pointer'
+                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700 cursor-pointer'
+              }`}
+            >
+              <span>🏪 Retiro en tienda</span>
+              <span className="text-[10px] font-medium opacity-80">(Gratis)</span>
+            </button>
           </div>
-          {[
-            { k: 'ciudad',      label: 'Ciudad',      placeholder: 'Los Bancos' },
-            { k: 'direccion',   label: 'Dirección',   placeholder: 'Calle, número, sector...' },
-            { k: 'referencias', label: 'Referencias', placeholder: 'Cerca de, color de casa...' },
-          ].map(({ k, label, placeholder }) => (
-            <div key={k}>
-              <label className="text-xs text-gray-400 block mb-1">{label}</label>
-              <input value={(form as Record<string, string>)[k]} onChange={e => set(k, e.target.value)}
-                placeholder={placeholder}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500" />
-            </div>
-          ))}
-          <div>
-            <label className="text-xs text-gray-400 block mb-1">Notas del pedido</label>
-            <textarea value={form.notas} onChange={e => set('notas', e.target.value)}
-              rows={2} placeholder="Instrucciones especiales..."
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500 resize-none" />
-          </div>
+          {!esSoloCrayola && (
+            <p className="text-[10px] text-orange-400 font-medium leading-relaxed">
+              ⚠️ El retiro en tienda no está disponible porque tienes productos de otros locales en tu carrito.
+            </p>
+          )}
         </div>
+
+        {/* Entrega */}
+        {metodoEntrega === 'domicilio' ? (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dirección de entrega</div>
+              {geo ? (
+                <span className="flex items-center gap-1 text-[10px] text-green-400"><MapPin size={10}/>Ubicación obtenida</span>
+              ) : (
+                <button type="button" onClick={pedirUbicacion}
+                  className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-green-400 transition cursor-pointer">
+                  <MapPin size={10}/>{geoMsg || 'Compartir ubicación'}
+                </button>
+              )}
+            </div>
+            {[
+              { k: 'ciudad',      label: 'Ciudad',      placeholder: 'Los Bancos' },
+              { k: 'direccion',   label: 'Dirección',   placeholder: 'Calle, número, sector...' },
+              { k: 'referencias', label: 'Referencias', placeholder: 'Cerca de, color de casa...' },
+            ].map(({ k, label, placeholder }) => (
+              <div key={k}>
+                <label className="text-xs text-gray-400 block mb-1">{label}</label>
+                <input value={(form as Record<string, string>)[k]} onChange={e => set(k, e.target.value)}
+                  placeholder={placeholder}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500" />
+              </div>
+            ))}
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Notas del pedido</label>
+              <textarea value={form.notas} onChange={e => set('notas', e.target.value)}
+                rows={2} placeholder="Instrucciones especiales..."
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500 resize-none" />
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Punto de retiro</div>
+            <div className="bg-gray-800 rounded-xl p-3 border border-gray-700 text-xs text-gray-300 leading-relaxed space-y-1">
+              <p className="font-bold text-white">📍 Local Principal - La Crayola</p>
+              <p>Dirección: Av. Principal, San Miguel de los Bancos, Ecuador</p>
+              <p>Horario: Lunes a Sábado de 8:00 AM a 6:00 PM</p>
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Notas para tu retiro (opcional)</label>
+              <textarea value={form.notas} onChange={e => set('notas', e.target.value)}
+                rows={2} placeholder="¿Quién retirará el pedido? ¿A qué hora pasarás?..."
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500 resize-none" />
+            </div>
+          </div>
+        )}
 
         {/* Puntos a ganar */}
         <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2.5">
@@ -295,10 +373,12 @@ export default function CheckoutPage() {
           </div>
 
           {/* Recargo por envío consolidado */}
-          <RecargoEnvioBadge nTiendas={nTiendas} costoTotalEnvio={costoEnvio} />
+          {metodoEntrega === 'domicilio' && (
+            <RecargoEnvioBadge nTiendas={nTiendas} costoTotalEnvio={costoEnvio} />
+          )}
 
           <div className="flex justify-between font-bold text-white border-t border-gray-800 pt-2.5">
-            <span>Total consolidado</span>
+            <span>{metodoEntrega === 'domicilio' ? 'Total consolidado' : 'Total a pagar'}</span>
             <span className="text-green-400">{fmt(granTotal)}</span>
           </div>
         </div>
