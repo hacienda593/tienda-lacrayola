@@ -120,7 +120,7 @@ export default function Header() {
                 <span className="text-gray-200 py-0.5">|</span>
                 <Link href="/productos?frecuentes=true"
                   className="shrink-0 text-sm font-bold text-green-700 hover:text-green-900 transition whitespace-nowrap py-0.5 flex items-center gap-1">
-                  🔄 Habituales
+                  🔄 Frecuentes
                 </Link>
                 <span className="text-gray-200 py-0.5">|</span>
                 {['Escolar','Arte','Oficina','Tecnologia','Juguetes','Manualidades','Libros','Pintura'].map(c => (
@@ -135,7 +135,7 @@ export default function Header() {
               <div className="md:hidden flex gap-2 overflow-x-auto scrollbar-hide flex-1 items-center">
                 <Link href="/productos?frecuentes=true"
                   className="shrink-0 text-xs text-green-700 hover:text-green-900 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200 transition whitespace-nowrap flex items-center gap-1">
-                  🔄 Habituales
+                  🔄 Frecuentes
                 </Link>
                 {['Escolar','Arte','Oficina','Juguetes','Libros'].map(c => (
                   <Link key={c} href={`/productos?cat=${encodeURIComponent(c)}`}
