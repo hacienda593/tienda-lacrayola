@@ -48,6 +48,24 @@ function SkeletonProducto() {
   )
 }
 
+function ImagenRelacionado({ src, categoria, alt }: { src?: string | null; categoria: string; alt: string }) {
+  const [error, setError] = useState(false)
+  const emoji = CAT_EMOJI[categoria] || '📦'
+
+  if (!src || error) return <span className="text-3xl select-none">{emoji}</span>
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onError={() => setError(true)}
+      className="w-full h-full object-contain p-2"
+      loading="lazy"
+    />
+  )
+}
+
+
 export default function ProductoPage() {
   const { codigo } = useParams<{ codigo: string }>()
   const router = useRouter()
@@ -77,12 +95,15 @@ export default function ProductoPage() {
       // Relacionados
       const { data: rel } = await supabase
         .from('ol_productos')
-        .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva')
+        .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url')
         .eq('categoria', p.categoria)
         .neq('codigo', p.codigo)
         .gt('stock', 0)
         .limit(4)
-      if (rel) setRelacionados(rel as Producto[])
+      if (rel) {
+        console.log("Relacionados cargados:", rel)
+        setRelacionados(rel as Producto[])
+      }
       setCargando(false)
     }
     cargar()
@@ -249,8 +270,8 @@ export default function ProductoPage() {
             {relacionados.map(r => (
               <a key={r.codigo} href={`/producto/${encodeURIComponent(r.codigo)}`}
                 className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-md transition flex flex-col">
-                <div className={`bg-gradient-to-br ${CAT_BG[r.categoria] || 'from-gray-50 to-gray-100'} rounded-xl h-20 flex items-center justify-center text-3xl mb-2`}>
-                  {CAT_EMOJI[r.categoria] || '📦'}
+                <div className={`bg-gradient-to-br ${CAT_BG[r.categoria] || 'from-gray-50 to-gray-100'} rounded-xl h-20 flex items-center justify-center mb-2 overflow-hidden`}>
+                  <ImagenRelacionado src={r.imagen_url} categoria={r.categoria} alt={r.descripcion} />
                 </div>
                 <div className="text-xs font-medium text-gray-700 line-clamp-2 flex-1">{r.descripcion}</div>
                 <div className="text-sm font-bold text-gray-900 mt-1.5">{fmt(r.precio_publico)}</div>
