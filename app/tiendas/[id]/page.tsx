@@ -399,7 +399,7 @@ function TiendaContent() {
                               ? 'bg-teal-50 border-teal-200 text-teal-700' 
                               : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
                         >
-                          <span className="truncate max-w-[100px]">📂 {s}</span>
+                          <span className="truncate max-w-[100px]">🛍️ {s}</span>
                           <span className="text-[9px] font-bold text-gray-400">({count})</span>
                         </button>
                       )
@@ -449,7 +449,7 @@ function TiendaContent() {
               )}
               {sub && (
                 <span className="flex items-center gap-1 bg-teal-50 text-teal-700 font-semibold px-2.5 py-1 rounded-full border border-teal-200">
-                  📂 {sub}
+                  🛍️ {sub}
                   <button onClick={() => { setSub(''); setVisibles(40) }} className="hover:text-teal-950 font-bold"><X size={12} /></button>
                 </span>
               )}
@@ -599,7 +599,7 @@ function TiendaContent() {
                                   ? 'bg-teal-50 border-teal-200 text-teal-700' 
                                   : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
                             >
-                              <span>📂 {s}</span>
+                              <span>🛍️ {s}</span>
                               <span className="text-[9px] font-bold text-gray-400">({count})</span>
                             </button>
                           )

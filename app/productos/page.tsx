@@ -470,7 +470,7 @@ function ProductosContent() {
               )}
               {sub && (
                 <span className="flex items-center gap-1 bg-teal-100 text-teal-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                  📂 {sub}
+                  🛍️ {sub}
                   <button onClick={() => setSub('')}><X size={11} /></button>
                 </span>
               )}
