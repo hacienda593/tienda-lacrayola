@@ -8,7 +8,7 @@ import { OlTienda, Producto } from '@/lib/types'
 import Fuse from 'fuse.js'
 import {
   ArrowLeft, Search, ShoppingCart, Plus, Minus,
-  Heart, Store, MapPin, Loader2, X, Share2,
+  Heart, Store, MapPin, Loader2, X, Share2, SlidersHorizontal, Info,
 } from 'lucide-react'
 
 function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
@@ -116,7 +116,14 @@ function TiendaContent() {
   const [marca,    setMarca]    = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [visibles, setVisibles] = useState(40)
+  const [infoOpen, setInfoOpen] = useState(false)
   const fuseRef = useRef<Fuse<Producto> | null>(null)
+
+  function compartirTienda() {
+    navigator.clipboard.writeText(window.location.href)
+    const texto = `Te comparto la tienda ${tienda?.nombre || ''} en línea: ${window.location.href}`
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank')
+  }
 
   function compartirFiltros() {
     const params = new URLSearchParams()
@@ -243,11 +250,11 @@ function TiendaContent() {
     <div className="max-w-5xl mx-auto px-4 py-5 space-y-5">
 
       {/* Header tienda */}
-      <div className="flex items-center gap-3">
-        <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-xl transition shrink-0">
-          <ArrowLeft size={18} className="text-gray-600" />
-        </button>
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-xl transition shrink-0">
+            <ArrowLeft size={18} className="text-gray-600" />
+          </button>
           <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-2xl shrink-0">
             {tienda.logo_url
               ? <img src={tienda.logo_url} alt={tienda.nombre} className="w-9 h-9 object-contain" />
@@ -264,7 +271,63 @@ function TiendaContent() {
             )}
           </div>
         </div>
+
+        {/* Botones de acción rápidos a la derecha */}
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Botón de Filtros (solo móvil, en desktop ya se muestra el sidebar) */}
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="md:hidden w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-500 hover:text-green-600 hover:bg-green-50 transition cursor-pointer animate-fade-in"
+            title="Ver pasillos y categorías"
+          >
+            <SlidersHorizontal size={14} />
+          </button>
+
+          {/* Botón de Compartir Tienda */}
+          <button
+            onClick={compartirTienda}
+            className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-500 hover:text-green-600 hover:bg-green-50 transition cursor-pointer"
+            title="Compartir enlace de la tienda"
+          >
+            <Share2 size={14} />
+          </button>
+
+          {/* Botón de Información de la Tienda */}
+          <button
+            onClick={() => setInfoOpen(!infoOpen)}
+            className={`w-8 h-8 rounded-xl border flex items-center justify-center transition cursor-pointer ${
+              infoOpen
+                ? 'bg-green-500 border-transparent text-white'
+                : 'bg-gray-50 border-gray-100 text-gray-500 hover:text-green-600 hover:bg-green-50'
+            }`}
+            title="Información de la tienda"
+          >
+            <Info size={14} />
+          </button>
+        </div>
       </div>
+
+      {/* Información detallada de la tienda */}
+      {infoOpen && (
+        <div className="bg-green-50/70 border border-green-100 rounded-2xl p-4 text-xs text-green-800 space-y-2 animate-fade-in">
+          <div className="font-extrabold text-green-950 flex items-center gap-1">
+            🏪 {tienda.nombre}
+          </div>
+          <p className="leading-relaxed">{tienda.descripcion || 'Esta tienda aliada ofrece excelentes productos seleccionados para ti.'}</p>
+          {tienda.direccion && (
+            <p className="flex items-start gap-1">
+              <span className="font-bold shrink-0">📍 Dirección:</span>
+              <span>{tienda.direccion}</span>
+            </p>
+          )}
+          {tienda.categoria && (
+            <p className="flex items-center gap-1">
+              <span className="font-bold shrink-0">🏷️ Categoría:</span>
+              <span className="capitalize">{tienda.categoria}</span>
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Buscador */}
       <div className="relative">
