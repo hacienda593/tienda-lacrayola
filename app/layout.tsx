@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-[#f8f7f4] text-gray-900 antialiased">
         <AuthProvider>
           <Header />
-          <main className="min-h-screen pb-20 md:pb-6">
+          <main className="min-h-screen pb-20 md:pb-6 w-full max-w-full overflow-x-hidden">
             {children}
           </main>
           <Footer />

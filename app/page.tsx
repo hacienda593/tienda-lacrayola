@@ -357,7 +357,7 @@ export default function Home() {
 
         {/* ── PRODUCTOS FRECUENTES (Comprar de nuevo) ── */}
         {frecuentes.length > 0 && (
-          <section className="space-y-4 bg-green-50/40 border border-green-100/60 rounded-2xl p-5 animate-fade-in">
+          <section className="w-full max-w-full overflow-hidden space-y-4 bg-green-50/40 border border-green-100/60 rounded-2xl p-5 animate-fade-in">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">

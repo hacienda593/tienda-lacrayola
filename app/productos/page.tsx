@@ -478,7 +478,7 @@ function ProductosContent() {
           </div>
 
           {/* Filtros móvil */}
-          <div className="md:hidden space-y-2">
+          <div className="md:hidden space-y-2 w-full max-w-full overflow-hidden">
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
               {(['disponible','todos'] as const).map(v => (
                 <button key={v} onClick={() => setStockFiltro(v)}

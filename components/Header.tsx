@@ -132,7 +132,7 @@ export default function Header() {
               </div>
 
               {/* Móvil: chips de categorías horizontales */}
-              <div className="md:hidden flex gap-2 overflow-x-auto scrollbar-hide flex-1 items-center">
+              <div className="md:hidden flex gap-2 overflow-x-auto scrollbar-hide flex-1 items-center min-w-0">
                 <Link href="/productos?frecuentes=true"
                   className="shrink-0 text-xs text-green-700 hover:text-green-900 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200 transition whitespace-nowrap flex items-center gap-1">
                   🔄 Frecuentes

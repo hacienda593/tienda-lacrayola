@@ -521,7 +521,7 @@ function TiendaContent() {
 
           {/* Productos Frecuentes (Comprar de nuevo) */}
           {tienda && frecuentes.length > 0 && !cat && !q && !sub && !marca && (
-            <div className="space-y-3 bg-green-50/40 border border-green-100/60 rounded-2xl p-4 animate-fade-in">
+            <div className="w-full max-w-full overflow-hidden space-y-3 bg-green-50/40 border border-green-100/60 rounded-2xl p-4 animate-fade-in">
               <div className="flex items-center justify-between">
                 <h3 className="font-extrabold text-gray-900 text-sm flex items-center gap-1.5">
                   🔄 Comprar de nuevo
