@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto } from '@/lib/types'
-import { Search, X, ShoppingCart, Plus, Minus, Heart, ArrowUpDown } from 'lucide-react'
+import { Search, X, ShoppingCart, Plus, Minus, Heart, ArrowUpDown, Share2 } from 'lucide-react'
 
 function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
 
@@ -204,6 +204,23 @@ function ProductosContent() {
   const [showOrden, setShowOrden]   = useState(false)
   const [crayolaId, setCrayolaId]   = useState('')
   const fuseRef = useRef<Fuse<Producto> | null>(null)
+
+  function compartirFiltros() {
+    const params = new URLSearchParams()
+    if (cat) params.set('cat', cat)
+    if (sub) params.set('sub', sub)
+    if (marca) params.set('marca', marca)
+    if (query) params.set('q', query)
+    if (tiendaId) params.set('tienda_id', tiendaId)
+    const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`
+    
+    // Copiar al portapapeles
+    navigator.clipboard.writeText(url)
+    
+    // Abrir WhatsApp
+    const texto = `Hola, te comparto los productos de esta sección: ${url}`
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank')
+  }
 
   // Obtener ID de La Crayola
   useEffect(() => {
@@ -464,6 +481,11 @@ function ProductosContent() {
                 </span>
               )}
             </div>
+            {(cat || sub || marca || query) && (
+              <button onClick={compartirFiltros} className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white font-semibold px-2.5 py-1 rounded-full shadow-sm transition text-[10px]">
+                <Share2 size={11} /> Compartir por WhatsApp
+              </button>
+            )}
             <div className="flex items-center gap-2 ml-auto">
               {!loadingState && (
                 <p className="text-xs text-gray-400">{filtrados.length.toLocaleString()} productos</p>

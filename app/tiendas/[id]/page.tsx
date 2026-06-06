@@ -8,7 +8,7 @@ import { OlTienda, Producto } from '@/lib/types'
 import Fuse from 'fuse.js'
 import {
   ArrowLeft, Search, ShoppingCart, Plus, Minus,
-  Heart, Store, MapPin, Loader2, X,
+  Heart, Store, MapPin, Loader2, X, Share2,
 } from 'lucide-react'
 
 function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
@@ -117,6 +117,21 @@ function TiendaContent() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [visibles, setVisibles] = useState(40)
   const fuseRef = useRef<Fuse<Producto> | null>(null)
+
+  function compartirFiltros() {
+    const params = new URLSearchParams()
+    if (cat) params.set('cat', cat)
+    if (sub) params.set('sub', sub)
+    if (marca) params.set('marca', marca)
+    const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`
+    
+    // Copiar al portapapeles
+    navigator.clipboard.writeText(url)
+    
+    // Abrir WhatsApp
+    const texto = `Hola, te comparto los productos de esta sección: ${url}`
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank')
+  }
 
   // Escuchar el evento del menu inferior movil para abrir filtros
   useEffect(() => {
@@ -287,6 +302,9 @@ function TiendaContent() {
           )}
           <button onClick={limpiarFiltros} className="text-[10px] text-gray-400 hover:text-gray-600 underline">
             Limpiar todos
+          </button>
+          <button onClick={compartirFiltros} className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white font-semibold px-2.5 py-1 rounded-full shadow-sm transition ml-auto text-[10px]">
+            <Share2 size={11} /> Compartir por WhatsApp
           </button>
         </div>
       )}
