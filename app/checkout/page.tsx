@@ -276,8 +276,18 @@ export default function CheckoutPage() {
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
 
   function pedirUbicacion() {
-    if (!navigator.geolocation) { setGeoMsg('No disponible'); return }
+    if (!navigator.geolocation) {
+      setGeoMsg('No disponible')
+      return
+    }
     setGeoMsg('Obteniendo...')
+
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 8000,
+      maximumAge: 0
+    }
+
     navigator.geolocation.getCurrentPosition(
       pos => {
         setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude })
@@ -285,7 +295,31 @@ export default function CheckoutPage() {
         setVerMapa(true)
         setDireccionSeleccionadaId('nueva')
       },
-      () => setGeoMsg('No se pudo obtener')
+      err => {
+        console.warn('Fallo GPS alta precisión, intentando red móvil...', err)
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+            setGeoMsg('✓ Ubicación (red)')
+            setVerMapa(true)
+            setDireccionSeleccionadaId('nueva')
+          },
+          err2 => {
+            console.error('Fallo geolocalización total:', err2)
+            let msg = 'No se pudo obtener'
+            if (err2.code === err2.PERMISSION_DENIED) {
+              msg = 'Permiso denegado'
+            } else if (err2.code === err2.POSITION_UNAVAILABLE) {
+              msg = 'No disponible'
+            } else if (err2.code === err2.TIMEOUT) {
+              msg = 'Tiempo agotado'
+            }
+            setGeoMsg(msg)
+          },
+          { enableHighAccuracy: false, timeout: 8000 }
+        )
+      },
+      options
     )
   }
 
@@ -421,7 +455,6 @@ export default function CheckoutPage() {
           {[
             { k: 'nombre',   label: 'Nombre completo *',      type: 'text',  placeholder: 'Juan Pérez',    hidden: !!user },
             { k: 'telefono', label: 'Teléfono / WhatsApp *',  type: 'tel',   placeholder: '0991234567',    hidden: false },
-            { k: 'email',    label: 'Email (opcional)',        type: 'email', placeholder: 'juan@email.com', hidden: !!user },
           ].filter(f => !f.hidden).map(({ k, label, type, placeholder }) => (
             <div key={k}>
               <label className="text-xs text-gray-400 block mb-1">{label}</label>
@@ -477,15 +510,32 @@ export default function CheckoutPage() {
             <div className="flex items-center justify-between">
               <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dirección de entrega</div>
               {geo ? (
-                <button type="button" onClick={() => setVerMapa(!verMapa)}
-                  className="flex items-center gap-1 text-[10px] text-green-400 hover:text-green-300 font-bold underline cursor-pointer">
-                  <MapPin size={10}/>{verMapa ? 'Ocultar mapa' : 'Ver mapa interactivo'}
-                </button>
+                <div className="flex gap-3">
+                  <button type="button" onClick={pedirUbicacion}
+                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-green-400 transition cursor-pointer">
+                    <MapPin size={10}/>{geoMsg || 'Re-detectar GPS'}
+                  </button>
+                  <button type="button" onClick={() => setVerMapa(!verMapa)}
+                    className="flex items-center gap-1 text-[10px] text-green-400 hover:text-green-300 font-bold underline cursor-pointer">
+                    🗺️ {verMapa ? 'Ocultar mapa' : 'Ver mapa'}
+                  </button>
+                </div>
               ) : (
-                <button type="button" onClick={pedirUbicacion}
-                  className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-green-400 transition cursor-pointer">
-                  <MapPin size={10}/>{geoMsg || 'Obtener ubicación GPS'}
-                </button>
+                <div className="flex gap-3">
+                  <button type="button" onClick={pedirUbicacion}
+                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-green-400 transition cursor-pointer">
+                    <MapPin size={10}/>{geoMsg || 'Obtener GPS'}
+                  </button>
+                  <button type="button" onClick={() => {
+                    setGeo({ lat: -0.0221, lng: -78.8983 })
+                    setVerMapa(true)
+                    setDireccionSeleccionadaId('nueva')
+                    setGeoMsg('✓ Ubicación manual')
+                  }}
+                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-green-400 transition cursor-pointer">
+                    🗺️ Ubicar en mapa
+                  </button>
+                </div>
               )}
             </div>
 
@@ -513,7 +563,10 @@ export default function CheckoutPage() {
               <div className="space-y-1.5 border-b border-gray-800 pb-3">
                 <div className="text-[10px] text-gray-400 flex items-center justify-between">
                   <span>📍 Arrastra la chincheta sobre tu ubicación exacta:</span>
-                  <button type="button" onClick={() => setVerMapa(false)} className="text-red-400 hover:underline">Ocultar mapa</button>
+                  <div className="flex gap-2.5">
+                    <button type="button" onClick={pedirUbicacion} className="text-green-400 hover:underline">📡 Obtener GPS</button>
+                    <button type="button" onClick={() => setVerMapa(false)} className="text-red-400 hover:underline">Ocultar</button>
+                  </div>
                 </div>
                 <div 
                   ref={mapContainerRef} 
