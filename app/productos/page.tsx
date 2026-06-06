@@ -513,7 +513,7 @@ function ProductosContent() {
             <div className="flex items-center gap-2 flex-wrap">
               {soloFrecuentes && (
                 <span className="flex items-center gap-1 bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                  🔄 Habituales
+                  🔄 Frecuentes
                   <button onClick={() => {
                     const paramsNew = new URLSearchParams(params.toString())
                     paramsNew.delete('frecuentes')
