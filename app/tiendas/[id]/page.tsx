@@ -205,12 +205,7 @@ function TiendaContent() {
 
       let query = supabase
         .from('ol_productos_frecuentes')
-        .select(`
-          veces_comprado,
-          ol_productos (
-            codigo, descripcion, categoria, subcategoria, marca, stock, stock_minimo, precio_publico, precio_con_iva, tienda_id, imagen_url
-          )
-        `)
+        .select('producto_codigo, veces_comprado')
 
       if (userId) {
         query = query.eq('user_id', userId)
@@ -220,13 +215,16 @@ function TiendaContent() {
 
       const { data, error } = await query
         .order('veces_comprado', { ascending: false })
-        .limit(12)
+        .limit(15)
 
       if (data && !error) {
+        // Buscar los códigos correspondientes en la lista `base` de esta tienda
         const list = data
-          .map((item: any) => item.ol_productos)
-          .filter((p: any) => p && p.tienda_id === id && p.stock > 0) as Producto[]
+          .map((item: any) => base.find(p => p.codigo === item.producto_codigo))
+          .filter((p): p is Producto => !!p && p.stock > 0)
         setFrecuentes(list)
+      } else if (error) {
+        console.error('Error al cargar productos frecuentes:', error)
       }
     }
 
