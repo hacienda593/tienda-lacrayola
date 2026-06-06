@@ -10,6 +10,8 @@ import {
   ArrowLeft, Search, ShoppingCart, Plus, Minus,
   Heart, Store, MapPin, Loader2, X, Share2, SlidersHorizontal, Info,
 } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
+import { getPerfil } from '@/lib/perfil'
 
 function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
 
@@ -118,6 +120,9 @@ function TiendaContent() {
   const [visibles, setVisibles] = useState(40)
   const [infoOpen, setInfoOpen] = useState(false)
   const fuseRef = useRef<Fuse<Producto> | null>(null)
+  
+  const { user } = useAuth()
+  const [frecuentes, setFrecuentes] = useState<Producto[]>([])
 
   function compartirTienda() {
     navigator.clipboard.writeText(window.location.href)
@@ -188,6 +193,49 @@ function TiendaContent() {
     }
     cargar()
   }, [id])
+
+  // Cargar productos frecuentes
+  useEffect(() => {
+    async function cargarFrecuentes() {
+      const perfil = getPerfil()
+      const telefono = perfil?.telefono || ''
+      const userId = user?.id || null
+
+      if (!userId && !telefono) return
+
+      let query = supabase
+        .from('ol_productos_frecuentes')
+        .select(`
+          veces_comprado,
+          ol_productos (
+            codigo, descripcion, categoria, subcategoria, marca, stock, stock_minimo, precio_publico, precio_con_iva, tienda_id, imagen_url
+          )
+        `)
+
+      if (userId) {
+        query = query.eq('user_id', userId)
+      } else {
+        query = query.eq('telefono', telefono)
+      }
+
+      const { data, error } = await query
+        .order('veces_comprado', { ascending: false })
+        .limit(12)
+
+      if (data && !error) {
+        const list = data
+          .map((item: any) => item.ol_productos)
+          .filter((p: any) => p && p.tienda_id === id && p.stock > 0) as Producto[]
+        setFrecuentes(list)
+      }
+    }
+
+    if (!cargando && tienda && base.length > 0) {
+      cargarFrecuentes()
+    } else {
+      setFrecuentes([])
+    }
+  }, [id, user, cargando, tienda, base])
 
   const cats = useMemo(() => {
     const map = new Map<string, number>()
@@ -470,6 +518,41 @@ function TiendaContent() {
                   <Share2 size={8} className="stroke-[3]" />
                 </div>
               </button>
+            </div>
+          )}
+
+          {/* Productos Frecuentes (Comprar de nuevo) */}
+          {tienda && frecuentes.length > 0 && !cat && !q && !sub && !marca && (
+            <div className="space-y-3 bg-green-50/40 border border-green-100/60 rounded-2xl p-4 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <h3 className="font-extrabold text-gray-900 text-sm flex items-center gap-1.5">
+                  🔄 Comprar de nuevo
+                </h3>
+                <span className="text-[10px] text-green-700 bg-green-100/60 px-2.5 py-0.5 rounded-full font-bold">
+                  Tus habituales
+                </span>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                {frecuentes.map(p => (
+                  <div key={p.codigo}
+                    onClick={() => router.push(`/producto/${encodeURIComponent(p.codigo)}`)}
+                    className="bg-white rounded-xl border border-gray-100 p-2.5 shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/freq">
+                    <div className="relative bg-gray-50 rounded-lg h-20 flex items-center justify-center mb-2 text-2xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors">
+                      <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[9px] font-semibold text-green-600 uppercase truncate mb-0.5">{p.categoria}</div>
+                      <div className="text-[11px] font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-1">{p.descripcion}</div>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-1">
+                      <div className="text-xs font-black text-gray-900">{fmt(p.precio_publico)}</div>
+                      <div className="scale-75 origin-right shrink-0">
+                        <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

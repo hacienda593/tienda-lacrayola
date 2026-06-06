@@ -143,5 +143,42 @@ export async function crearPedido(
     await supabaseServer.from('rep_picking').insert(pickingItems)
   }
 
+  // Registrar/Actualizar productos frecuentes
+  try {
+    const userId = cliente.user_id ?? null
+    const telefono = cliente.telefono.trim()
+
+    let queryFrecuentes = supabaseServer
+      .from('ol_productos_frecuentes')
+      .select('id, producto_codigo, veces_comprado')
+
+    if (userId) {
+      queryFrecuentes = queryFrecuentes.or(`user_id.eq.${userId},telefono.eq.${telefono}`)
+    } else {
+      queryFrecuentes = queryFrecuentes.eq('telefono', telefono)
+    }
+
+    const { data: existentes } = await queryFrecuentes.in('producto_codigo', codigos)
+    const mapExistentes = new Map((existentes ?? []).map(r => [r.producto_codigo, r]))
+
+    const upsertPayload = items.map(item => {
+      const exist = mapExistentes.get(item.codigo)
+      return {
+        ...(exist ? { id: exist.id } : {}),
+        user_id: userId,
+        telefono: telefono,
+        producto_codigo: item.codigo,
+        veces_comprado: (exist?.veces_comprado ?? 0) + 1,
+        ultimo_pedido: new Date().toISOString(),
+      }
+    })
+
+    if (upsertPayload.length > 0) {
+      await supabaseServer.from('ol_productos_frecuentes').upsert(upsertPayload)
+    }
+  } catch (err) {
+    console.error('Error al registrar productos frecuentes:', err)
+  }
+
   return { ok: true, pedidoId: pedido.id, numeroPedido: pedido.numero }
 }
