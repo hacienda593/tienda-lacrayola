@@ -1205,7 +1205,7 @@ export default function ImpresionPage() {
                     <div key={img.id} className="border border-gray-150 rounded-xl p-2.5 space-y-2 bg-gray-50/20">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-200 shrink-0 relative bg-gray-100 flex items-center justify-center">
-                          <img src={img.croppedUrl || img.rawUrl} className="max-w-full max-h-full object-contain" alt="Thumb" />
+                          <img src={img.croppedUrl || img.rawUrl} className="max-w-full max-h-full object-contain transition-all duration-300" style={{ filter: img.colorMode === 'bn' ? 'grayscale(100%)' : 'none' }} alt="Thumb" />
                           {img.croppedUrl && (
                             <span className="absolute top-0 right-0 bg-green-600 text-white text-[7px] font-bold px-0.5 rounded-bl">
                               Cortada
@@ -1425,7 +1425,7 @@ export default function ImpresionPage() {
                                 height: `${(item.h / altoHoja) * 100}%`,
                               }}
                             >
-                              <img src={item.imgUrl} className="w-full h-full object-contain opacity-95" alt="Item" />
+                              <img src={item.imgUrl} className="w-full h-full object-contain opacity-95 transition-all duration-300" style={{ filter: item.colorMode === 'bn' ? 'grayscale(100%)' : 'none' }} alt="Item" />
                               <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                                 <span className="text-[7px] text-white font-bold truncate max-w-full px-1">{item.name}</span>
                               </div>
