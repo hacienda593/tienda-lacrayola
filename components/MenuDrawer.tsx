@@ -300,7 +300,7 @@ export default function MenuDrawer({ open, onClose }: Props) {
                 sub="Escríbenos directamente"
                 onClick={() => { window.open('https://wa.me/593984341953', '_blank'); onClose() }}
               />
-              {user && (
+              {(user || !!getPerfil()?.nombre) && (
                 <>
                   <Divider />
                   <button

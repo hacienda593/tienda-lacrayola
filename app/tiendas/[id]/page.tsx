@@ -388,7 +388,7 @@ function TiendaContent() {
         )}
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6 items-start">
+      <div className="flex flex-col md:flex-row gap-6 md:items-start">
         {/* ── SIDEBAR filtros (desktop) ── */}
         <aside className="hidden md:block w-52 shrink-0 space-y-5 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
           {!cat ? (
