@@ -29,7 +29,13 @@ function abrirWhatsApp(
   numeroPedido: number,
   metodoEntrega: 'domicilio' | 'retiro',
   geo: { lat: number; lng: number } | null,
-  pedirUbicacionChat: boolean
+  pedirUbicacionChat: boolean,
+  metodoPago: 'efectivo' | 'transferencia',
+  billeteCambio: string,
+  facturaConDatos: boolean,
+  identificacion: string,
+  razonSocial: string,
+  correoFactura: string
 ) {
   // Agrupar ítems por tienda para el mensaje
   const agrupados: Record<string, ItemCarrito[]> = {}
@@ -53,6 +59,14 @@ function abrirWhatsApp(
     ? `\n\n🚚 *Para una entrega sin retrasos:* Por favor, compártenos tu ubicación por aquí (presionando el botón de clip 📎 > Ubicación en tu WhatsApp) para que nuestro repartidor encuentre tu casa fácilmente.`
     : ''
 
+  const pagoMsg = metodoPago === 'efectivo'
+    ? `💵 *Pago:* Efectivo (Cambio de: ${billeteCambio})`
+    : `🏦 *Pago:* Transferencia Bancaria (Pichincha)`
+
+  const facturaMsg = facturaConDatos
+    ? `📄 *Factura:* Con datos\n  • Identificación: ${identificacion}\n  • Razón Social: ${razonSocial}${correoFactura ? `\n  • Correo: ${correoFactura}` : ''}`
+    : `📄 *Factura:* Consumidor Final`
+
   const msg = [
     `🛒 *Nuevo pedido #${String(numeroPedido).padStart(4,'0')}*`,
     `👤 *Cliente:* ${nombre}`,
@@ -64,6 +78,10 @@ function abrirWhatsApp(
     `  • Subtotal: ${fmt(subtotal)}`,
     metodoEntrega === 'domicilio' ? `  • Envío Consolidado: ${fmt(costoEnvio)}` : `  • Entrega: Retiro en tienda (Gratis)`,
     `  • *Total a pagar: ${fmt(granTotal)}*`,
+    ``,
+    pagoMsg,
+    facturaMsg,
+    ``,
     `📍 *Forma de entrega:* ${entrega}${gpsLink}${notaUbicacion}`,
   ].filter(l => l !== undefined).join('\n')
   window.open(`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, '_blank')
@@ -83,6 +101,12 @@ export default function CheckoutPage() {
   const [puntosGanados, setPuntosGanados] = useState<number | null>(null)
   const [pedidoCompletado, setPedidoCompletado] = useState(false)
   const [metodoEntrega, setMetodoEntrega] = useState<'domicilio' | 'retiro'>('domicilio')
+  const [metodoPago, setMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo')
+  const [billeteCambio, setBilleteCambio] = useState('Pago exacto')
+  const [facturaConDatos, setFacturaConDatos] = useState(false)
+  const [identificacion, setIdentificacion] = useState('')
+  const [razonSocial, setRazonSocial] = useState('')
+  const [correoFactura, setCorreoFactura] = useState('')
 
   const [verMapa, setVerMapa] = useState(false)
   const [direcciones, setDirecciones] = useState<any[]>([])
@@ -109,6 +133,18 @@ export default function CheckoutPage() {
       ciudad:      perfil?.ciudad     || f.ciudad,
       referencias: perfil?.referencias|| f.referencias,
     }))
+
+    if (perfil) {
+      if (perfil.identificacion) setIdentificacion(perfil.identificacion)
+      if (perfil.razonSocial) setRazonSocial(perfil.razonSocial)
+      if (perfil.correoFactura) {
+        setCorreoFactura(perfil.correoFactura)
+      } else if (emailGoogle || perfil.email) {
+        setCorreoFactura(emailGoogle || perfil.email)
+      }
+    } else if (emailGoogle) {
+      setCorreoFactura(emailGoogle)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
@@ -314,6 +350,13 @@ export default function CheckoutPage() {
   const costoEnvio = metodoEntrega === 'domicilio' ? costoEnvioBase : 0
   const granTotal = total + costoEnvio
 
+  const requiereDatosLey = granTotal >= 50
+  useEffect(() => {
+    if (requiereDatosLey) {
+      setFacturaConDatos(true)
+    }
+  }, [requiereDatosLey])
+
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
 
   function pedirUbicacion() {
@@ -368,12 +411,31 @@ export default function CheckoutPage() {
     e.preventDefault()
     if (!form.nombre || !form.telefono) { setError('Nombre y teléfono son obligatorios'); return }
     if (items.length === 0) { setError('El carrito está vacío'); return }
+    
+    if (facturaConDatos) {
+      if (!identificacion.trim()) { setError('La identificación (Cédula/RUC) es obligatoria para la factura.'); return }
+      if (!razonSocial.trim()) { setError('La razón social o nombre es obligatorio para la factura.'); return }
+    }
+    
     setError('')
     setLoading(true)
+
+    // Formatear notas con tags de pago y facturación para no alterar el esquema de BD
+    const pagoText = metodoPago === 'efectivo'
+      ? `Efectivo (Cambio de: ${billeteCambio})`
+      : 'Transferencia Bancaria'
+    const facturaText = facturaConDatos
+      ? `RUC/Cédula: ${identificacion.trim()} | Razón Social: ${razonSocial.trim()} | Correo: ${correoFactura.trim() || 'Sin correo'}`
+      : 'Consumidor Final'
+      
+    const tagPago = `[PAGO: ${pagoText}]`
+    const tagFactura = `[FACTURA: ${facturaText}]`
+    const notasFinales = [tagPago, tagFactura, form.notas.trim()].filter(Boolean).join(' ')
 
     const resultado = await crearPedido(
       { 
         ...form, 
+        notas: notasFinales,
         direccion: metodoEntrega === 'retiro' ? 'RETIRO EN TIENDA' : form.direccion,
         ciudad: metodoEntrega === 'retiro' ? 'Los Bancos' : form.ciudad,
         referencias: metodoEntrega === 'retiro' ? 'Retiro directo en local' : form.referencias,
@@ -390,7 +452,7 @@ export default function CheckoutPage() {
       return
     }
 
-    // Guardar perfil para próximas compras
+    // Guardar perfil para próximas compras (incluye datos de facturación)
     guardarPerfil({
       nombre:      form.nombre,
       email:       form.email,
@@ -398,6 +460,9 @@ export default function CheckoutPage() {
       direccion:   form.direccion,
       ciudad:      form.ciudad,
       referencias: form.referencias,
+      identificacion: identificacion.trim(),
+      razonSocial:    razonSocial.trim(),
+      correoFactura:  correoFactura.trim(),
     })
 
     // Guardar pedido en historial local
@@ -436,7 +501,13 @@ export default function CheckoutPage() {
       resultado.numeroPedido!,
       metodoEntrega,
       metodoEntrega === 'retiro' ? null : geo,
-      direccionSeleccionadaId === 'nueva'
+      direccionSeleccionadaId === 'nueva',
+      metodoPago,
+      billeteCambio,
+      facturaConDatos,
+      identificacion.trim(),
+      razonSocial.trim(),
+      correoFactura.trim()
     )
 
     setTimeout(() => router.push(`/pedido/${resultado.pedidoId}`), 1800)
@@ -512,6 +583,76 @@ export default function CheckoutPage() {
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500" />
             </div>
           ))}
+        </div>
+
+        {/* Facturación */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Facturación</div>
+            {requiereDatosLey && (
+              <span className="text-[9px] bg-red-950 text-red-400 border border-red-900 rounded px-1.5 py-0.5 font-bold uppercase tracking-wider">
+                Requerido por Ley
+              </span>
+            )}
+          </div>
+
+          <label className="flex items-center gap-2.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={facturaConDatos}
+              disabled={requiereDatosLey}
+              onChange={(e) => setFacturaConDatos(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-green-600 focus:ring-green-500 focus:ring-offset-gray-900 disabled:opacity-50"
+            />
+            <span className="text-xs text-gray-200 font-medium">
+              ¿Necesitas factura con datos?
+            </span>
+          </label>
+
+          {requiereDatosLey && (
+            <div className="bg-orange-950/40 border border-orange-900/40 rounded-xl p-3 text-[11px] text-orange-200 leading-relaxed">
+              ⚠️ <strong>Control de Facturación (SRI):</strong> De acuerdo con la normativa legal de Ecuador, las transacciones de <strong>$50.00 o más</strong> requieren obligatoriamente datos de facturación (no se permite Consumidor Final).
+            </div>
+          )}
+
+          {facturaConDatos ? (
+            <div className="space-y-2.5 border-t border-gray-800 pt-3 transition-all">
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Identificación (Cédula o RUC) *</label>
+                <input
+                  type="text"
+                  value={identificacion}
+                  onChange={(e) => setIdentificacion(e.target.value)}
+                  placeholder="Ej: 1726384920 o 1793081928001"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Razón Social / Nombre Completo *</label>
+                <input
+                  type="text"
+                  value={razonSocial}
+                  onChange={(e) => setRazonSocial(e.target.value)}
+                  placeholder="Ej: Juan Pérez o Empresa S.A."
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Correo Electrónico para Factura (Opcional)</label>
+                <input
+                  type="email"
+                  value={correoFactura}
+                  onChange={(e) => setCorreoFactura(e.target.value)}
+                  placeholder="Ej: factura@cliente.com"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                />
+              </div>
+            </div>
+          ) : (
+            <p className="text-[11px] text-gray-500 italic leading-relaxed">
+              Se emitirá la factura como <strong>Consumidor Final</strong> (sin identificación ni datos detallados).
+            </p>
+          )}
         </div>
 
         {/* Método de Entrega */}
@@ -700,6 +841,91 @@ export default function CheckoutPage() {
               <>Ganarás <strong>+{Math.floor(total)} puntos temporales</strong>. Regístrate para guardarlos de forma permanente y poder canjearlos.</>
             )}
           </span>
+        </div>
+
+        {/* Forma de Pago */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Forma de pago</div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setMetodoPago('efectivo')}
+              className={`py-2.5 rounded-xl font-bold text-xs transition border flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                metodoPago === 'efectivo'
+                  ? 'bg-green-600 text-white border-transparent'
+                  : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-750'
+              }`}
+            >
+              <span>💵 Efectivo al recibir</span>
+              <span className="text-[9px] font-medium opacity-80">Paga al recibir pedido</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setMetodoPago('transferencia')}
+              className={`py-2.5 rounded-xl font-bold text-xs transition border flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                metodoPago === 'transferencia'
+                  ? 'bg-green-600 text-white border-transparent'
+                  : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-750'
+              }`}
+            >
+              <span>🏦 Transferencia Bancaria</span>
+              <span className="text-[9px] font-medium opacity-80">Banco Pichincha</span>
+            </button>
+          </div>
+
+          {metodoPago === 'efectivo' && (
+            <div className="space-y-2 bg-gray-800/40 border border-gray-800 rounded-xl p-3">
+              <label className="text-xs text-gray-400 block font-medium">¿Con cuánto pagarás? (Para llevar sueltos)</label>
+              <select
+                value={billeteCambio}
+                onChange={e => setBilleteCambio(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500"
+              >
+                <option value="Pago exacto">Tengo el pago exacto</option>
+                <option value="Billete de $5">Billete de $5</option>
+                <option value="Billete de $10">Billete de $10</option>
+                <option value="Billete de $20">Billete de $20</option>
+                <option value="Billete de $50">Billete de $50</option>
+                <option value="Billete de $100">Billete de $100</option>
+              </select>
+            </div>
+          )}
+
+          {metodoPago === 'transferencia' && (
+            <div className="bg-gray-800/50 border border-gray-800 rounded-xl p-3 space-y-2">
+              <div className="text-[11px] font-bold text-green-400 uppercase tracking-wider">Datos de transferencia:</div>
+              <div className="space-y-1.5 text-xs text-gray-300">
+                <div className="flex justify-between border-b border-gray-800/60 pb-1">
+                  <span className="text-gray-500">Banco</span>
+                  <span className="font-semibold text-white">Banco Pichincha</span>
+                </div>
+                <div className="flex justify-between border-b border-gray-800/60 pb-1">
+                  <span className="text-gray-500">Tipo de Cuenta</span>
+                  <span className="font-medium text-white">Cuenta de Ahorros</span>
+                </div>
+                <div className="flex justify-between border-b border-gray-800/60 pb-1">
+                  <span className="text-gray-500">Nro. de Cuenta</span>
+                  <span className="font-bold text-green-400 select-all">2208546193</span>
+                </div>
+                <div className="flex justify-between border-b border-gray-800/60 pb-1">
+                  <span className="text-gray-500">Beneficiario</span>
+                  <span className="font-medium text-white">La Crayola</span>
+                </div>
+                <div className="flex justify-between border-b border-gray-800/60 pb-1">
+                  <span className="text-gray-500">RUC / Identificación</span>
+                  <span className="font-medium text-white select-all">1793081928001</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Correo</span>
+                  <span className="font-medium text-gray-300 select-all">pagos@lacrayola.com</span>
+                </div>
+              </div>
+              <div className="text-[10px] text-gray-400 leading-relaxed border-t border-gray-800 pt-2 flex items-start gap-1">
+                <span>💡</span>
+                <span>Por favor, realiza la transferencia y envíanos el comprobante por WhatsApp al terminar. Tu pedido será procesado una vez verificado.</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Resumen */}

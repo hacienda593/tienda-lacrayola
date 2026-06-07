@@ -8,6 +8,9 @@ export interface PerfilCliente {
   direccion: string
   ciudad: string
   referencias: string
+  identificacion?: string
+  razonSocial?: string
+  correoFactura?: string
 }
 
 export interface PedidoLocal {

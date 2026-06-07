@@ -33,6 +33,7 @@ interface Pedido {
   estado: string
   total: number
   created_at: string
+  notas?: string | null
 }
 
 export default function PedidoPage() {
@@ -77,6 +78,22 @@ export default function PedidoPage() {
 
   const idxActual    = ORDEN_ESTADO.indexOf(pedido.estado)
   const cancelado    = pedido.estado === 'cancelado'
+
+  const parseNotas = (notasStr: string | null | undefined) => {
+    if (!notasStr) return { pago: null, factura: null, cleanNotas: null }
+    const pagoMatch = notasStr.match(/\[PAGO:\s*([^\]]+)\]/)
+    const facturaMatch = notasStr.match(/\[FACTURA:\s*([^\]]+)\]/)
+    const cleanNotas = notasStr
+      .replace(/\[PAGO:\s*[^\]]+\]/, '')
+      .replace(/\[FACTURA:\s*[^\]]+\]/, '')
+      .trim()
+    return {
+      pago: pagoMatch ? pagoMatch[1] : null,
+      factura: facturaMatch ? facturaMatch[1] : null,
+      cleanNotas: cleanNotas || null
+    }
+  }
+  const infoNotas = parseNotas(pedido.notas)
 
   return (
     <div className="max-w-lg mx-auto px-4 py-5 space-y-5">
@@ -145,6 +162,33 @@ export default function PedidoPage() {
           {pedido.direccion && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Dirección</span><span className="text-gray-800">{pedido.direccion}, {pedido.ciudad}</span></div>}
         </div>
       </div>
+
+      {/* Pago y Facturación */}
+      {(infoNotas.pago || infoNotas.factura || infoNotas.cleanNotas) && (
+        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-2.5">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pago y Facturación</div>
+          <div className="space-y-1.5 text-sm">
+            {infoNotas.pago && (
+              <div className="flex gap-2">
+                <span className="text-gray-400 w-24 shrink-0 font-medium">Forma de pago</span>
+                <span className="text-gray-800 font-semibold">{infoNotas.pago}</span>
+              </div>
+            )}
+            {infoNotas.factura && (
+              <div className="flex gap-2">
+                <span className="text-gray-400 w-24 shrink-0 font-medium">Factura</span>
+                <span className="text-gray-800">{infoNotas.factura}</span>
+              </div>
+            )}
+            {infoNotas.cleanNotas && (
+              <div className="flex gap-2 pt-1.5 border-t border-gray-100 mt-1.5">
+                <span className="text-gray-400 w-24 shrink-0 font-medium">Notas</span>
+                <span className="text-gray-650 italic">"{infoNotas.cleanNotas}"</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Productos */}
       <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-2">
