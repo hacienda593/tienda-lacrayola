@@ -82,6 +82,7 @@ export default function ImpresionPage() {
   const [numeroCopias, setNumeroCopias] = useState(1)
   const [paginaActivaIndex, setPaginaActivaIndex] = useState(0)
   const [orientacionHoja, setOrientacionHoja] = useState<'portrait' | 'landscape'>('portrait')
+  const [autoAjustarModo, setAutoAjustarModo] = useState<'libre' | '1' | '2' | '3'>('libre')
 
   // Estados de UI
   const [loading, setLoading] = useState(false)
@@ -284,18 +285,16 @@ export default function ImpresionPage() {
   }
 
   // 3. Algoritmo 2D de Empaquetado (2D Shelf Packing) para Imágenes
-  const paginasFisicas = useMemo(() => {
-    if (tipoArchivo !== 'imagen' || imagenes.length === 0) return []
+  const paginasFisicasData = useMemo(() => {
+    if (tipoArchivo !== 'imagen' || imagenes.length === 0) return { pages: [], scale: 1.0 }
     
     const pages: PhysicalPage[] = []
-    let currentPage: PhysicalPage = { items: [], hasColor: false, colorArea: 0 }
     
     const anchoHoja = orientacionHoja === 'portrait' ? 21 : 29.7
     const altoHoja = orientacionHoja === 'portrait' ? 29.7 : 21
     
-    let x = 0
-    let y = 0
-    let shelfHeight = 0
+    // Margen físico de impresión (0.6 cm en cada borde de la hoja A4)
+    const margin = 0.6
     
     // Expandir imágenes según cantidad de copias
     const imagenesExpandidas: ImagenImpresion[] = []
@@ -313,34 +312,39 @@ export default function ImpresionPage() {
       return hB - hA
     })
     
-    ordenadas.forEach((img) => {
-      let { w, h } = getImgDimensions(img)
+    // Función auxiliar que realiza el empaquetado para una escala dada S (entre 0.05 y 1.0)
+    const empaquetarConEscala = (S: number) => {
+      const pagesList: PhysicalPage[] = []
+      let currentPage: PhysicalPage = { items: [], hasColor: false, colorArea: 0 }
       
-      // Limitar al máximo absoluto de la hoja
-      if (w > anchoHoja) w = anchoHoja
-      if (h > altoHoja) h = altoHoja
+      let x = margin
+      let y = margin
+      let shelfHeight = 0
       
-      // Probar si cabe en el estante actual
-      if (x + w <= anchoHoja && y + h <= altoHoja) {
-        currentPage.items.push({
-          id: `${img.id}-copy-${Math.random().toString(36).substr(2, 9)}`,
-          x,
-          y,
-          w,
-          h,
-          imgUrl: img.croppedUrl || img.rawUrl,
-          colorMode: img.colorMode,
-          name: img.name
-        })
-        x += w
-        shelfHeight = Math.max(shelfHeight, h)
-      } else {
-        // Nueva fila/estante
-        x = 0
-        y += shelfHeight
-        shelfHeight = h
+      ordenadas.forEach((img) => {
+        let { w, h } = getImgDimensions(img)
         
-        if (y + h <= altoHoja) {
+        // Aplicar factor de escala S
+        w = w * S
+        h = h * S
+        
+        // Limitar al espacio imprimible disponible (restando márgenes)
+        const maxW = anchoHoja - 2 * margin
+        const maxH = altoHoja - 2 * margin
+        
+        if (w > maxW) {
+          const aspect = w / h
+          w = maxW
+          h = maxW / aspect
+        }
+        if (h > maxH) {
+          const aspect = w / h
+          h = maxH
+          w = maxH * aspect
+        }
+        
+        // Probar si cabe en el estante actual
+        if (x + w <= anchoHoja - margin && y + h <= altoHoja - margin) {
           currentPage.items.push({
             id: `${img.id}-copy-${Math.random().toString(36).substr(2, 9)}`,
             x,
@@ -352,47 +356,107 @@ export default function ImpresionPage() {
             name: img.name
           })
           x += w
+          shelfHeight = Math.max(shelfHeight, h)
         } else {
-          // Nueva página A4
-          pages.push(currentPage)
-          currentPage = { items: [], hasColor: false, colorArea: 0 }
-          x = 0
-          y = 0
+          // Nueva fila/estante
+          x = margin
+          y += shelfHeight
           shelfHeight = h
           
-          currentPage.items.push({
-            id: `${img.id}-copy-${Math.random().toString(36).substr(2, 9)}`,
-            x,
-            y,
-            w,
-            h,
-            imgUrl: img.croppedUrl || img.rawUrl,
-            colorMode: img.colorMode,
-            name: img.name
-          })
-          x += w
-        }
-      }
-    })
-    
-    if (currentPage.items.length > 0) {
-      pages.push(currentPage)
-    }
-    
-    // Analizar la cobertura de color por cada página física
-    pages.forEach(p => {
-      p.hasColor = p.items.some(it => it.colorMode === 'color')
-      let area = 0
-      p.items.forEach(it => {
-        if (it.colorMode === 'color') {
-          area += (it.w * it.h)
+          if (y + h <= altoHoja - margin) {
+            currentPage.items.push({
+              id: `${img.id}-copy-${Math.random().toString(36).substr(2, 9)}`,
+              x,
+              y,
+              w,
+              h,
+              imgUrl: img.croppedUrl || img.rawUrl,
+              colorMode: img.colorMode,
+              name: img.name
+            })
+            x += w
+          } else {
+            // Nueva página A4
+            pagesList.push(currentPage)
+            currentPage = { items: [], hasColor: false, colorArea: 0 }
+            x = margin
+            y = margin
+            shelfHeight = h
+            
+            currentPage.items.push({
+              id: `${img.id}-copy-${Math.random().toString(36).substr(2, 9)}`,
+              x,
+              y,
+              w,
+              h,
+              imgUrl: img.croppedUrl || img.rawUrl,
+              colorMode: img.colorMode,
+              name: img.name
+            })
+            x += w
+          }
         }
       })
-      p.colorArea = area
-    })
+      
+      if (currentPage.items.length > 0) {
+        pagesList.push(currentPage)
+      }
+      
+      // Analizar la cobertura de color por cada página física
+      pagesList.forEach(p => {
+        p.hasColor = p.items.some(it => it.colorMode === 'color')
+        let area = 0
+        p.items.forEach(it => {
+          if (it.colorMode === 'color') {
+            area += (it.w * it.h)
+          }
+        })
+        p.colorArea = area
+      })
+      
+      return pagesList
+    }
     
-    return pages
-  }, [imagenes, tipoArchivo, orientacionHoja])
+    let finalPages: PhysicalPage[] = []
+    let scaleUsed = 1.0
+    
+    if (autoAjustarModo === 'libre') {
+      finalPages = empaquetarConEscala(1.0)
+    } else {
+      const targetPages = parseInt(autoAjustarModo)
+      
+      // Búsqueda binaria iterativa para encontrar la escala máxima S que quepa en targetPages
+      let minS = 0.05
+      let maxS = 1.0
+      let bestS = 0.05
+      let bestPages: PhysicalPage[] = []
+      
+      for (let step = 0; step < 15; step++) {
+        const midS = (minS + maxS) / 2
+        const pgs = empaquetarConEscala(midS)
+        if (pgs.length <= targetPages) {
+          bestS = midS
+          bestPages = pgs
+          minS = midS // Intentar una escala mayor
+        } else {
+          maxS = midS // Escala demasiado grande, reducir
+        }
+      }
+      
+      if (bestPages.length === 0) {
+        bestPages = empaquetarConEscala(0.05)
+        bestS = 0.05
+      }
+      
+      finalPages = bestPages
+      scaleUsed = bestS
+    }
+    
+    return { pages: finalPages, scale: scaleUsed }
+  }, [imagenes, tipoArchivo, orientacionHoja, autoAjustarModo])
+
+  const paginasFisicas = paginasFisicasData.pages
+  const escalaUtilizada = paginasFisicasData.scale
 
   // Ajustar página activa si se reduce el número de hojas
   useEffect(() => {
@@ -419,8 +483,9 @@ export default function ImpresionPage() {
         if (p.hasColor) {
           const areaA4 = 21 * 29.7
           const pct = p.colorArea / areaA4
-          if (pct < 0.25) costoBasePag = 0.25
-          else if (pct < 0.55) costoBasePag = 0.50
+          if (pct <= 0.05) costoBasePag = 0.25
+          else if (pct <= 0.20) costoBasePag = 0.50
+          else if (pct <= 0.40) costoBasePag = 0.75
           else costoBasePag = 1.00
         }
         
@@ -856,7 +921,7 @@ export default function ImpresionPage() {
     }
     
     const labelDescargas = urlsDescarga.length > 0 
-      ? `[Descargas: ${urlsDescarga.join(', ')}]` 
+      ? `Descargas: ${urlsDescarga.join(', ')}` 
       : ''
     const labelFallbacks = fallbacks.length > 0 
       ? `[Adjuntar por WhatsApp: ${fallbacks.join(', ')}]` 
@@ -1515,6 +1580,56 @@ export default function ImpresionPage() {
                       Horizontal (Landscape)
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Distribución / Auto-ajuste de Hojas (Solo para Imágenes) */}
+              {tipoArchivo === 'imagen' && (
+                <div className="space-y-2 pb-2 border-b border-gray-100">
+                  <label className="text-[10px] font-bold text-gray-500 block uppercase">Distribución de Hojas:</label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { code: 'libre', label: '📱 Libre' },
+                      { code: '1', label: '📄 1 Hoja' },
+                      { code: '2', label: '📄 2 Hojas' },
+                      { code: '3', label: '📄 3 Hojas' },
+                    ].map(opt => (
+                      <button
+                        key={opt.code}
+                        type="button"
+                        onClick={() => setAutoAjustarModo(opt.code as any)}
+                        className={`py-2 rounded-xl text-[10px] font-bold border transition cursor-pointer text-center ${
+                          autoAjustarModo === opt.code
+                            ? 'bg-green-600 text-white border-transparent'
+                            : 'bg-white border-gray-200 text-gray-550 hover:bg-gray-50'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Advertencia / Asesoría si el factor de escala encoge mucho las fotos */}
+                  {escalaUtilizada < 0.98 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[10px] text-amber-800 space-y-1 mt-1.5 transition-all text-left">
+                      <div className="font-bold flex items-center gap-1">⚡ Auto-ajustado activo (Escala: {Math.round(escalaUtilizada * 100)}%)</div>
+                      <p className="leading-tight">
+                        Tus imágenes se han encogido un poco para caber en exactamente {autoAjustarModo} {parseInt(autoAjustarModo) === 1 ? 'hoja' : 'hojas'}.
+                      </p>
+                      {(() => {
+                        const promW = imagenes.reduce((acc, img) => acc + getImgDimensions(img).w * escalaUtilizada, 0) / imagenes.length
+                        const promH = imagenes.reduce((acc, img) => acc + getImgDimensions(img).h * escalaUtilizada, 0) / imagenes.length
+                        if (promW < 5.0 || promH < 5.0) {
+                          return (
+                            <p className="text-red-700 font-semibold leading-tight pt-1">
+                              ⚠️ Las fotos saldrán muy pequeñas (promedio: {promW.toFixed(1)} x {promH.toFixed(1)} cm). Te sugerimos elegir más hojas si deseas que se impriman con mayor detalle y nitidez.
+                            </p>
+                          )
+                        }
+                        return null
+                      })()}
+                    </div>
+                  )}
                 </div>
               )}
 
