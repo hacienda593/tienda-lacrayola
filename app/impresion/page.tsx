@@ -1,141 +1,167 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   Upload, Scissors, FileText, Check, RotateCw, Trash2, 
-  Plus, Minus, Info, ArrowLeft, CheckCircle, HelpCircle, Loader2
+  Plus, Minus, Info, ArrowLeft, CheckCircle, HelpCircle, Loader2, Image as ImageIcon
 } from 'lucide-react'
 import Link from 'next/link'
 import { getCarrito, setCarrito } from '@/lib/carrito'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
 
 function fmt(n: number) { return '$' + n.toFixed(2) }
 
+interface ImagenImpresion {
+  id: string
+  file: File
+  name: string
+  size: number
+  rawUrl: string
+  croppedUrl: string | null
+  formatoSize: 'A4' | 'A5' | 'A6' | 'carnet' | 'personalizado'
+  customW: number
+  customH: number
+  colorMode: 'bn' | 'color'
+  esScreenshot: boolean
+}
+
+interface PackedItem {
+  id: string
+  x: number // cm
+  y: number // cm
+  w: number // cm
+  h: number // cm
+  imgUrl: string
+  colorMode: 'bn' | 'color'
+  name: string
+}
+
+interface PhysicalPage {
+  items: PackedItem[]
+  hasColor: boolean
+  colorArea: number // cm2
+}
+
 export default function ImpresionPage() {
   const router = useRouter()
+  const { user, loading: authLoading, loginGoogle } = useAuth()
   
-  // Archivo principal
-  const [archivo, setArchivo] = useState<File | null>(null)
+  // Archivo y modo principal
   const [tipoArchivo, setTipoArchivo] = useState<'imagen' | 'documento' | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string>('')
   
-  // Estados de Recorte (Canvas-based screenshot editor)
-  const [croppedImage, setCroppedImage] = useState<string | null>(null)
-  const [cropBox, setCropBox] = useState({ x: 0, y: 0, w: 100, h: 100 }) // en porcentajes de la imagen
-  const [cropActive, setCropActive] = useState(false)
-  const [esScreenshotDetectado, setEsScreenshotDetectado] = useState(false)
+  // Lista de Imágenes para diagramación
+  const [imagenes, setImagenes] = useState<ImagenImpresion[]>([])
   
-  // Opciones de Impresión
-  const [formatoSize, setFormatoSize] = useState<'A4' | 'A5' | 'A6' | 'carnet' | 'personalizado'>('A4')
-  const [customWidth, setCustomWidth] = useState(15) // en cm
-  const [customHeight, setCustomHeight] = useState(10) // en cm
-  
-  const [colorMode, setColorMode] = useState<'bn' | 'color'>('bn')
-  const [coberturaColor, setCoberturaColor] = useState<'bajo' | 'medio' | 'alto'>('bajo') // <25%, 50%, 100%
-  const [tipoPapel, setTipoPapel] = useState<'bond75' | 'bond90' | 'cartulina' | 'foto'>('bond75')
-  const [dobleFaz, setDobleFaz] = useState(false)
-  const [numeroCopias, setNumeroCopias] = useState(1)
-  
-  // Para PDF/Documentos
+  // Rango / Páginas para Documentos individuales (PDF/Word/Excel)
+  const [docFile, setDocFile] = useState<File | null>(null)
   const [paginasDocumento, setPaginasDocumento] = useState(1)
   const [rangoModo, setRangoModo] = useState<'todo' | 'rango'>('todo')
   const [rangoTexto, setRangoTexto] = useState('')
-  const [paginasCalculadas, setPaginasCalculadas] = useState(1)
-  const [paginasColorManual, setPaginasColorManual] = useState('') // ej: "1, 3" para mixto
+  const [paginasCalculadasDoc, setPaginasCalculadasDoc] = useState(1)
+  const [paginasColorManual, setPaginasColorManual] = useState('')
   const [modoMixtoDoc, setModoMixtoDoc] = useState(false)
+  const [docColorMode, setDocColorMode] = useState<'bn' | 'color'>('bn')
+  const [coberturaColorDoc, setCoberturaColorDoc] = useState<'bajo' | 'medio' | 'alto'>('bajo')
+  
+  // Recorte (Cropper modal)
+  const [imagenACortarId, setImagenACortarId] = useState<string | null>(null)
+  const [cropBox, setCropBox] = useState({ x: 10, y: 10, w: 80, h: 80 })
+  const isDragging = useRef<string | null>(null)
+  const startDragOffset = useRef({ x: 0, y: 0 })
+  const imgRef = useRef<HTMLImageElement | null>(null)
+  const cropperContainerRef = useRef<HTMLDivElement | null>(null)
 
-  // Estados de UI y Envío
+  // Opciones globales de impresión
+  const [tipoPapel, setTipoPapel] = useState<'bond75' | 'bond90' | 'cartulina' | 'foto'>('bond75')
+  const [dobleFaz, setDobleFaz] = useState(false)
+  const [numeroCopias, setNumeroCopias] = useState(1)
+  const [paginaActivaIndex, setPaginaActivaIndex] = useState(0)
+
+  // Estados de UI
   const [loading, setLoading] = useState(false)
   const [agregadoExito, setAgregadoExito] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [msgCarga, setMsgCarga] = useState('')
 
-  const imgRef = useRef<HTMLImageElement | null>(null)
-  const cropperContainerRef = useRef<HTMLDivElement | null>(null)
-  const isDragging = useRef<string | null>(null) // handle de arrastre
-  const startDragOffset = useRef({ x: 0, y: 0 })
-
-  // 1. Detectar páginas de PDF al cargar archivo
-  useEffect(() => {
-    if (!archivo) return
+  // 1. Manejador de Carga de Archivos
+  const handleUploadArchivos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return
+    setErrorMsg('')
+    const files = Array.from(e.target.files)
     
-    if (archivo.type.startsWith('image/')) {
-      setTipoArchivo('imagen')
-      setCroppedImage(null)
-      setCropActive(false)
-      setEsScreenshotDetectado(false)
-      
-      const url = URL.createObjectURL(archivo)
-      setPreviewUrl(url)
-      
-      // Auto-detección de captura de pantalla
-      const isScreenshotName = archivo.name.toLowerCase().includes('screenshot') || archivo.name.toLowerCase().includes('captura')
-      
-      // Creamos una imagen temporal para validar aspecto
-      const tempImg = new Image()
-      tempImg.onload = () => {
-        const aspect = tempImg.height / tempImg.width
-        const isTallRatio = aspect > 1.8 // Relación móvil típica
-        
-        if (isScreenshotName || isTallRatio) {
-          setEsScreenshotDetectado(true)
-          // Pre-ajustar recorte: omitir 6% superior (status bar) y 6% inferior (nav bar)
-          setCropBox({ x: 0, y: 6, w: 100, h: 88 })
-          setCropActive(true)
-        } else {
-          setCropBox({ x: 10, y: 10, w: 80, h: 80 })
-        }
-      }
-      tempImg.src = url
+    // Verificar si es imagen o documento
+    const file = files[0]
+    if (!file) return
 
-    } else {
-      setTipoArchivo('documento')
-      setPreviewUrl('')
-      setCroppedImage(null)
-      setCropActive(false)
-      setEsScreenshotDetectado(false)
-      setPaginasDocumento(1)
-      setPaginasCalculadas(1)
+    const isImg = file.type.startsWith('image/')
+    
+    if (isImg) {
+      if (tipoArchivo === 'documento') {
+        // Reiniciar documento si cambia a imagen
+        setDocFile(null)
+      }
+      setTipoArchivo('imagen')
       
-      if (archivo.type === 'application/pdf') {
-        setMsgCarga('Analizando PDF...')
-        // Lector binario super liviano para estimar páginas en el cliente
+      const nuevasImgs: ImagenImpresion[] = files.filter(f => f.type.startsWith('image/')).map(f => {
+        const url = URL.createObjectURL(f)
+        const nameLower = f.name.toLowerCase()
+        const esScreenshot = nameLower.includes('screenshot') || nameLower.includes('captura')
+        
+        return {
+          id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          file: f,
+          name: f.name,
+          size: f.size,
+          rawUrl: url,
+          croppedUrl: null,
+          formatoSize: 'A6', // default to A6 (1/4 page) to showcase packing
+          customW: 10,
+          customH: 15,
+          colorMode: 'color',
+          esScreenshot
+        }
+      })
+      setImagenes(prev => [...prev, ...nuevasImgs])
+    } else {
+      // Documento (PDF/Word/Excel) - Solo uno a la vez
+      setTipoArchivo('documento')
+      setImagenes([])
+      setDocFile(file)
+      setPaginasDocumento(1)
+      setPaginasCalculadasDoc(1)
+      
+      if (file.type === 'application/pdf') {
+        setMsgCarga('Analizando páginas del PDF...')
         const reader = new FileReader()
-        reader.onload = function(e) {
-          const contents = e.target?.result as string
-          // Buscamos todas las ocurrencias de "/Type /Page" o "/Type/Page" en la estructura del PDF
+        reader.onload = function(evt) {
+          const contents = evt.target?.result as string
           const matches = contents.match(/\/Type\s*\/Page\b/g)
           const pages = matches ? matches.length : 1
           setPaginasDocumento(pages)
-          setPaginasCalculadas(pages)
+          setPaginasCalculadasDoc(pages)
           setMsgCarga('')
         }
-        reader.readAsBinaryString(archivo)
-      } else {
-        // Word/Excel, etc.
-        setPaginasDocumento(1)
-        setPaginasCalculadas(1)
+        reader.readAsBinaryString(file)
       }
     }
-  }, [archivo])
+    // Limpiar input
+    e.target.value = ''
+  }
 
-  // 2. Calcular páginas a imprimir según rango manual
+  // 2. Control del rango de páginas para documentos
   useEffect(() => {
-    if (tipoArchivo !== 'documento') {
-      setPaginasCalculadas(1)
-      return
-    }
+    if (tipoArchivo !== 'documento' || !docFile) return
     
     if (rangoModo === 'todo') {
-      setPaginasCalculadas(paginasDocumento)
+      setPaginasCalculadasDoc(paginasDocumento)
     } else {
-      // Intentar evaluar el rango (ej: 1-5, 8)
       if (!rangoTexto.trim()) {
-        setPaginasCalculadas(paginasDocumento)
+        setPaginasCalculadasDoc(paginasDocumento)
         return
       }
       try {
-        let totalPags = 0
+        let total = 0
         const partes = rangoTexto.split(',')
         partes.forEach(part => {
           if (part.includes('-')) {
@@ -143,106 +169,198 @@ export default function ImpresionPage() {
             const inicio = parseInt(range[0])
             const fin = parseInt(range[1])
             if (!isNaN(inicio) && !isNaN(fin) && fin >= inicio) {
-              totalPags += (fin - inicio + 1)
+              total += (fin - inicio + 1)
             }
           } else {
             const val = parseInt(part)
-            if (!isNaN(val)) totalPags += 1
+            if (!isNaN(val)) total += 1
           }
         })
-        setPaginasCalculadas(totalPags > 0 ? Math.min(totalPags, paginasDocumento) : paginasDocumento)
+        setPaginasCalculadasDoc(total > 0 ? Math.min(total, paginasDocumento) : paginasDocumento)
       } catch {
-        setPaginasCalculadas(paginasDocumento)
+        setPaginasCalculadasDoc(paginasDocumento)
       }
     }
-  }, [rangoModo, rangoTexto, paginasDocumento, tipoArchivo])
+  }, [rangoModo, rangoTexto, paginasDocumento, docFile, tipoArchivo])
 
-  // 3. Motor de Precios
-  const calcularPrecioUnitario = () => {
-    // A. Si es Imagen/Foto
-    if (tipoArchivo === 'imagen') {
-      let base = 0.05 // Blanco y Negro por defecto
-      
-      if (colorMode === 'color') {
-        // En color depende del tamaño del lienzo
-        if (formatoSize === 'carnet' || formatoSize === 'A6') {
-          base = 0.25 // <25%
-        } else if (formatoSize === 'A5') {
-          base = 0.50 // 50%
-        } else if (formatoSize === 'A4') {
-          base = 1.00 // 100%
-        } else {
-          // Personalizado
-          const area = customWidth * customHeight
-          const areaA4 = 21 * 29.7
-          const pct = area / areaA4
-          if (pct < 0.25) base = 0.25
-          else if (pct < 0.55) base = 0.50
-          else base = 1.00
-        }
-      } else {
-        // BN es más económico por tamaño
-        if (formatoSize === 'carnet' || formatoSize === 'A6') base = 0.05
-        else if (formatoSize === 'A5') base = 0.07
-        else base = 0.10
+  // 3. Algoritmo 2D de Empaquetado (2D Shelf Packing) para Imágenes
+  const paginasFisicas = useMemo(() => {
+    if (tipoArchivo !== 'imagen' || imagenes.length === 0) return []
+    
+    const pages: PhysicalPage[] = []
+    let currentPage: PhysicalPage = { items: [], hasColor: false, colorArea: 0 }
+    
+    let x = 0
+    let y = 0
+    let shelfHeight = 0
+    
+    // Ordenar de mayor a menor altura para empaquetamiento óptimo
+    const ordenadas = [...imagenes].sort((a, b) => {
+      const getH = (img: ImagenImpresion) => {
+        if (img.formatoSize === 'A4') return 29.7
+        if (img.formatoSize === 'A5') return 14.8
+        if (img.formatoSize === 'A6') return 14.8
+        if (img.formatoSize === 'carnet') return 5
+        return img.customH
       }
+      return getH(b) - getH(a)
+    })
+    
+    ordenadas.forEach(img => {
+      let w = 21
+      let h = 29.7
       
-      // Papel recargos
-      let extraPapel = 0
-      if (tipoPapel === 'bond90') extraPapel = 0.02
-      else if (tipoPapel === 'cartulina') extraPapel = 0.08
-      else if (tipoPapel === 'foto') extraPapel = 0.40
+      if (img.formatoSize === 'A5') { w = 21; h = 14.8 } // stack horizontal
+      else if (img.formatoSize === 'A6') { w = 10.5; h = 14.8 }
+      else if (img.formatoSize === 'carnet') { w = 4; h = 5 }
+      else if (img.formatoSize === 'personalizado') { w = img.customW; h = img.customH }
       
-      return base + extraPapel
+      // Limitar al máximo de la hoja
+      if (w > 21) w = 21
+      if (h > 29.7) h = 29.7
+      
+      // Probar si cabe en el estante actual
+      if (x + w <= 21 && y + h <= 29.7) {
+        currentPage.items.push({
+          id: img.id,
+          x,
+          y,
+          w,
+          h,
+          imgUrl: img.croppedUrl || img.rawUrl,
+          colorMode: img.colorMode,
+          name: img.name
+        })
+        x += w
+        shelfHeight = Math.max(shelfHeight, h)
+      } else {
+        // Nueva fila/estante
+        x = 0
+        y += shelfHeight
+        shelfHeight = h
+        
+        if (y + h <= 29.7) {
+          currentPage.items.push({
+            id: img.id,
+            x,
+            y,
+            w,
+            h,
+            imgUrl: img.croppedUrl || img.rawUrl,
+            colorMode: img.colorMode,
+            name: img.name
+          })
+          x += w
+        } else {
+          // Nueva página A4
+          pages.push(currentPage)
+          currentPage = { items: [], hasColor: false, colorArea: 0 }
+          x = 0
+          y = 0
+          shelfHeight = h
+          
+          currentPage.items.push({
+            id: img.id,
+            x,
+            y,
+            w,
+            h,
+            imgUrl: img.croppedUrl || img.rawUrl,
+            colorMode: img.colorMode,
+            name: img.name
+          })
+          x += w
+        }
+      }
+    })
+    
+    if (currentPage.items.length > 0) {
+      pages.push(currentPage)
     }
     
-    // B. Si es Documento (PDF/Word)
-    if (tipoArchivo === 'documento') {
-      let costoTotalHojas = 0
+    // Analizar la cobertura de color por cada página física
+    pages.forEach(p => {
+      p.hasColor = p.items.some(it => it.colorMode === 'color')
+      let area = 0
+      p.items.forEach(it => {
+        if (it.colorMode === 'color') {
+          area += (it.w * it.h)
+        }
+      })
+      p.colorArea = area
+    })
+    
+    return pages
+  }, [imagenes, tipoArchivo])
+
+  // Ajustar página activa si se reduce el número de hojas
+  useEffect(() => {
+    if (paginaActivaIndex >= paginasFisicas.length && paginasFisicas.length > 0) {
+      setPaginaActivaIndex(paginasFisicas.length - 1)
+    }
+  }, [paginasFisicas, paginaActivaIndex])
+
+  // 4. Motor de Precios
+  const calcularPrecioTotal = () => {
+    let recargoPapelPorHoja = 0
+    if (tipoPapel === 'bond90') recargoPapelPorHoja = 0.02
+    else if (tipoPapel === 'cartulina') recargoPapelPorHoja = 0.08
+    else if (tipoPapel === 'foto') recargoPapelPorHoja = 0.40
+    
+    // A. Imágenes (Pack Diagramado)
+    if (tipoArchivo === 'imagen') {
+      if (paginasFisicas.length === 0) return 0
       
-      // Calcular por cada página a imprimir
-      const colorVal = coberturaColor === 'bajo' ? 0.25 : (coberturaColor === 'medio' ? 0.50 : 1.00)
+      let costoHojas = 0
+      paginasFisicas.forEach(p => {
+        let costoBasePag = 0.05 // B/N por defecto
+        
+        if (p.hasColor) {
+          const areaA4 = 21 * 29.7
+          const pct = p.colorArea / areaA4
+          if (pct < 0.25) costoBasePag = 0.25
+          else if (pct < 0.55) costoBasePag = 0.50
+          else costoBasePag = 1.00
+        }
+        
+        costoHojas += (costoBasePag + recargoPapelPorHoja)
+      })
+      
+      return costoHojas
+    }
+    
+    // B. Documento Individual (PDF/Word/Excel)
+    if (tipoArchivo === 'documento' && docFile) {
+      let costoHojasDoc = 0
+      const colorVal = coberturaColorDoc === 'bajo' ? 0.25 : (coberturaColorDoc === 'medio' ? 0.50 : 1.00)
       const bnVal = 0.05
       
-      if (colorMode === 'bn') {
-        costoTotalHojas = paginasCalculadas * bnVal
+      if (docColorMode === 'bn') {
+        costoHojasDoc = paginasCalculadasDoc * bnVal
       } else if (modoMixtoDoc) {
-        // Modo mixto: contar cuántas páginas a color manual
         let pagsColor = 0
         try {
           const arr = paginasColorManual.split(',').map(x => parseInt(x)).filter(x => !isNaN(x))
-          pagsColor = Array.from(new Set(arr)).length // Unicos
+          pagsColor = Array.from(new Set(arr)).length
         } catch {}
         
-        pagsColor = Math.min(pagsColor, paginasCalculadas)
-        const pagsBN = Math.max(0, paginasCalculadas - pagsColor)
-        
-        costoTotalHojas = (pagsColor * colorVal) + (pagsBN * bnVal)
+        pagsColor = Math.min(pagsColor, paginasCalculadasDoc)
+        const pagsBN = Math.max(0, paginasCalculadasDoc - pagsColor)
+        costoHojasDoc = (pagsColor * colorVal) + (pagsBN * bnVal)
       } else {
-        // Todo color
-        costoTotalHojas = paginasCalculadas * colorVal
+        costoHojasDoc = paginasCalculadasDoc * colorVal
       }
       
-      // Recargos de papel por cada hoja física requerida
-      let extraPapel = 0
-      if (tipoPapel === 'bond90') extraPapel = 0.02
-      else if (tipoPapel === 'cartulina') extraPapel = 0.08
-      else if (tipoPapel === 'foto') extraPapel = 0.40
-      
-      const totalHojasFisicas = dobleFaz ? Math.ceil(paginasCalculadas / 2) : paginasCalculadas
-      
-      // Costo final unitario (por juego de copia del documento completo)
-      let costoJuego = costoTotalHojas + (totalHojasFisicas * extraPapel)
-      return costoJuego
+      const totalHojasFisicas = dobleFaz ? Math.ceil(paginasCalculadasDoc / 2) : paginasCalculadasDoc
+      return costoHojasDoc + (totalHojasFisicas * recargoPapelPorHoja)
     }
     
     return 0
   }
 
-  const precioUnitario = calcularPrecioUnitario()
+  const precioUnitario = calcularPrecioTotal()
   const subtotalSinDescuento = precioUnitario * numeroCopias
   
-  // Descuentos de volumen
   let porcentajeDescuento = 0
   if (numeroCopias > 50) porcentajeDescuento = 0.20
   else if (numeroCopias > 10) porcentajeDescuento = 0.10
@@ -250,13 +368,21 @@ export default function ImpresionPage() {
   const descuento = subtotalSinDescuento * porcentajeDescuento
   const totalCotizado = subtotalSinDescuento - descuento
 
-  // 4. Lógica de Drag & Resize Táctil para el Screenshot Cropper
+  // 5. Configuración de Screenshot Cropper por Imagen
+  const abrirRecortador = (img: ImagenImpresion) => {
+    setImagenACortarId(img.id)
+    if (img.esScreenshot) {
+      setCropBox({ x: 0, y: 6, w: 100, h: 88 })
+    } else {
+      setCropBox({ x: 10, y: 10, w: 80, h: 80 })
+    }
+  }
+
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent, handler: string) => {
     e.stopPropagation()
     isDragging.current = handler
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
-    
     startDragOffset.current = { x: clientX, y: clientY }
   }
 
@@ -311,7 +437,7 @@ export default function ImpresionPage() {
   }
 
   useEffect(() => {
-    if (cropActive) {
+    if (imagenACortarId) {
       window.addEventListener('mousemove', handleMouseMove, { passive: false })
       window.addEventListener('mouseup', handleMouseUp)
       window.addEventListener('touchmove', handleMouseMove, { passive: false })
@@ -324,15 +450,12 @@ export default function ImpresionPage() {
       window.removeEventListener('touchend', handleMouseUp)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cropActive])
+  }, [imagenACortarId])
 
-  // 5. Aplicar Recorte en Canvas
   const aplicarRecorte = () => {
-    if (!imgRef.current) return
+    if (!imgRef.current || !imagenACortarId) return
     const canvas = document.createElement('canvas')
     const img = imgRef.current
-    
-    // Tamaño real de la imagen
     const naturalW = img.naturalWidth
     const naturalH = img.naturalHeight
     
@@ -347,68 +470,110 @@ export default function ImpresionPage() {
     if (ctx) {
       ctx.drawImage(img, rx, ry, rw, rh, 0, 0, rw, rh)
       const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
-      setCroppedImage(dataUrl)
-      setCropActive(false)
+      
+      setImagenes(prev => prev.map(imgItem => {
+        if (imgItem.id === imagenACortarId) {
+          return { ...imgItem, croppedUrl: dataUrl }
+        }
+        return imgItem
+      }))
+      setImagenACortarId(null)
     }
   }
 
-  // 6. Añadir al Carrito con fallbacks
+  // 6. Añadir al Carrito (Subida múltiple a Supabase Storage con fallback)
   const añadirAlCarrito = async () => {
-    if (!archivo) { setErrorMsg('Carga un archivo o imagen primero.'); return }
+    if (tipoArchivo === 'imagen' && imagenes.length === 0) {
+      setErrorMsg('Sube al menos una imagen.')
+      return
+    }
+    if (tipoArchivo === 'documento' && !docFile) {
+      setErrorMsg('Sube un archivo de documento.')
+      return
+    }
+    
     setErrorMsg('')
     setLoading(true)
-    setMsgCarga('Subiendo archivo de impresión...')
+    setMsgCarga('Subiendo archivos al Storage...')
     
-    let urlDescarga: string | null = null
+    const urlsDescarga: string[] = []
+    const fallbacks: string[] = []
     
     try {
-      // Intentar subir al Storage de Supabase en bucket 'ol_impresiones'
-      const extension = archivo.name.split('.').pop()
-      const fileName = `imp-${Date.now()}.${extension}`
-      
-      let fileToUpload: Blob = archivo
-      if (tipoArchivo === 'imagen' && croppedImage) {
-        // Convertir base64 a blob
-        const res = await fetch(croppedImage)
-        fileToUpload = await res.blob()
-      }
-      
-      const { data, error } = await supabase.storage
-        .from('ol_impresiones')
-        .upload(fileName, fileToUpload, { cacheControl: '3600', upsert: true })
+      if (tipoArchivo === 'imagen') {
+        for (let i = 0; i < imagenes.length; i++) {
+          const img = imagenes[i]
+          const extension = img.name.split('.').pop()
+          const fileName = `imp-${Date.now()}-${i}.${extension}`
+          
+          let fileToUpload: Blob = img.file
+          if (img.croppedUrl) {
+            const res = await fetch(img.croppedUrl)
+            fileToUpload = await res.blob()
+          }
+          
+          const { data, error } = await supabase.storage
+            .from('ol_impresiones')
+            .upload(fileName, fileToUpload, { cacheControl: '3600', upsert: true })
+            
+          if (!error && data) {
+            const { data: publicData } = supabase.storage
+              .from('ol_impresiones')
+              .getPublicUrl(fileName)
+            if (publicData?.publicUrl) urlsDescarga.push(publicData.publicUrl)
+          } else {
+            fallbacks.push(img.name)
+          }
+        }
+      } else if (tipoArchivo === 'documento' && docFile) {
+        const extension = docFile.name.split('.').pop()
+        const fileName = `imp-${Date.now()}.${extension}`
         
-      if (!error && data) {
-        const { data: publicData } = supabase.storage
+        const { data, error } = await supabase.storage
           .from('ol_impresiones')
-          .getPublicUrl(fileName)
-        urlDescarga = publicData?.publicUrl || null
+          .upload(fileName, docFile, { cacheControl: '3600', upsert: true })
+          
+        if (!error && data) {
+          const { data: publicData } = supabase.storage
+            .from('ol_impresiones')
+            .getPublicUrl(fileName)
+          if (publicData?.publicUrl) urlsDescarga.push(publicData.publicUrl)
+        } else {
+          fallbacks.push(docFile.name)
+        }
       }
     } catch (err) {
-      console.warn('Fallo Supabase Storage upload, se utilizará fallback de WhatsApp:', err)
+      console.warn('Error en subida, se usará envío manual por WhatsApp:', err)
     }
     
-    setMsgCarga('Preparando el carrito...')
+    setMsgCarga('Agregando al carrito...')
     
-    // Configurar descripción del item
     let configStr = ''
+    let totalPagsFisicas = 0
+    let filesCount = 0
+    
     if (tipoArchivo === 'imagen') {
-      const sizeStr = formatoSize === 'personalizado' ? `${customWidth}x${customHeight}cm` : formatoSize.toUpperCase()
-      const colorStr = colorMode === 'bn' ? 'B/N' : 'Color'
-      configStr = `Foto (${sizeStr}, ${colorStr}, ${tipoPapel.toUpperCase()})`
+      totalPagsFisicas = paginasFisicas.length
+      filesCount = imagenes.length
+      configStr = `Pack Fotos (${totalPagsFisicas} hojas, ${imagenes.length} arch, ${tipoPapel.toUpperCase()})`
     } else {
-      const colorStr = colorMode === 'bn' ? 'B/N' : (modoMixtoDoc ? `Mixto (Color: ${paginasColorManual})` : 'Color')
-      const duplexStr = dobleFaz ? 'Doble Faz' : 'Simple Faz'
-      configStr = `Doc (${paginasCalculadas} pág, ${colorStr}, ${tipoPapel.toUpperCase()}, ${duplexStr})`
+      totalPagsFisicas = dobleFaz ? Math.ceil(paginasCalculadasDoc / 2) : paginasCalculadasDoc
+      filesCount = 1
+      const colorStr = docColorMode === 'bn' ? 'B/N' : (modoMixtoDoc ? 'Mixto' : 'Color')
+      configStr = `Doc (${paginasCalculadasDoc} pág, ${colorStr}, ${tipoPapel.toUpperCase()}, ${dobleFaz ? 'Doble Faz' : 'Simple Faz'})`
     }
     
-    const labelOrigen = urlDescarga 
-      ? `[Descarga: ${urlDescarga}]` 
-      : `[Enviar por WhatsApp: ${archivo.name}]`
-
+    const labelDescargas = urlsDescarga.length > 0 
+      ? `[Descargas: ${urlsDescarga.join(', ')}]` 
+      : ''
+    const labelFallbacks = fallbacks.length > 0 
+      ? `[Adjuntar por WhatsApp: ${fallbacks.join(', ')}]` 
+      : ''
+      
     const uniqueId = `IMP-${Date.now()}`
     const itemCarrito = {
       codigo: uniqueId,
-      descripcion: `🖨️ ${configStr} - ${archivo.name} ${labelOrigen}`,
+      descripcion: `🖨️ ${configStr} ${labelDescargas} ${labelFallbacks}`.trim(),
       categoria: 'Impresión',
       precio_unitario: precioUnitario,
       cantidad: numeroCopias,
@@ -429,20 +594,87 @@ export default function ImpresionPage() {
     }, 1200)
   }
 
+  // Si está cargando auth
+  if (authLoading) {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-16 flex flex-col items-center justify-center gap-3">
+        <Loader2 size={32} className="animate-spin text-green-650" />
+        <p className="text-xs text-gray-555 font-medium animate-pulse">Validando acceso...</p>
+      </div>
+    )
+  }
+
+  // Bloqueo si no hay usuario registrado
+  if (!user) {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="p-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition cursor-pointer">
+            <ArrowLeft size={16} className="text-gray-600" />
+          </Link>
+          <h1 className="text-base font-extrabold text-gray-800">Servicio de Impresión</h1>
+        </div>
+
+        <div className="bg-white border border-gray-150 rounded-2xl p-6 shadow-sm flex flex-col items-center text-center space-y-4">
+          <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center text-3xl">
+            🖨️
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-extrabold text-gray-850 text-base">Inicia sesión para imprimir</h3>
+            <p className="text-xs text-gray-500 max-w-sm leading-relaxed">
+              Por motivos de seguridad, confidencialidad y control de tus archivos, el servicio de copiado e impresión en línea está disponible únicamente para usuarios registrados.
+            </p>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-left w-full">
+            <h4 className="text-xs font-bold text-amber-800 mb-1 flex items-center gap-1.5 font-sans">
+              🛡️ Protección y Privacidad
+            </h4>
+            <p className="text-[10px] text-amber-700 leading-normal">
+              Tus documentos se suben mediante conexiones seguras y se auto-eliminarán del sistema de manera automática a las 48 horas de haber sido procesados.
+            </p>
+          </div>
+
+          <button 
+            onClick={loginGoogle}
+            className="w-full bg-green-600 hover:bg-green-500 text-white font-extrabold py-3.5 rounded-xl transition text-sm cursor-pointer shadow-md flex items-center justify-center gap-2"
+          >
+            <span>🔐 Continuar con Google</span>
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
       {/* Header de retorno */}
-      <div className="flex items-center gap-3">
-        <Link href="/" className="p-2 bg-gray-100 hover:bg-gray-250 rounded-xl transition cursor-pointer">
-          <ArrowLeft size={16} className="text-gray-650" />
-        </Link>
-        <h1 className="text-base font-extrabold text-gray-800">Servicio de Impresión</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="p-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition cursor-pointer">
+            <ArrowLeft size={16} className="text-gray-600" />
+          </Link>
+          <h1 className="text-base font-extrabold text-gray-800">Servicio de Impresión</h1>
+        </div>
+        
+        {tipoArchivo && (
+          <button 
+            onClick={() => {
+              setTipoArchivo(null)
+              setImagenes([])
+              setDocFile(null)
+            }}
+            className="text-[10px] text-red-500 font-bold hover:underline"
+          >
+            Limpiar todo
+          </button>
+        )}
       </div>
 
       {agregadoExito ? (
         <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-sm flex flex-col items-center gap-3 text-center">
           <CheckCircle size={48} className="text-green-500 animate-bounce" />
-          <h3 className="font-bold text-gray-800 text-sm">¡Impresión añadida al carrito!</h3>
+          <h3 className="font-bold text-gray-800 text-sm">¡Añadido al carrito!</h3>
           <p className="text-xs text-gray-500">Redirigiendo a tu carrito de compras...</p>
         </div>
       ) : (
@@ -450,439 +682,373 @@ export default function ImpresionPage() {
           
           {/* 1. Subida del Archivo */}
           <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">1. Sube tu archivo</h3>
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">1. Sube tus fotos o documentos</h3>
             
-            {!archivo ? (
-              <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 hover:border-green-400 rounded-2xl py-8 px-4 cursor-pointer transition bg-gray-50/50">
-                <Upload size={32} className="text-gray-400 mb-2" />
-                <span className="text-xs font-bold text-gray-700">Seleccionar documento o imagen</span>
-                <span className="text-[10px] text-gray-400 text-center mt-1">PDF, Word, Excel, JPG, PNG, WEBP.</span>
-                <input 
-                  type="file" 
-                  accept="image/*,application/pdf,.docx,.xlsx,.doc,.xls" 
-                  className="hidden" 
-                  onChange={e => {
-                    if (e.target.files?.[0]) setArchivo(e.target.files[0])
-                  }}
-                />
-              </label>
-            ) : (
-              <div className="border border-gray-100 rounded-xl p-3 flex items-center justify-between gap-3 bg-gray-50/30">
+            <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 hover:border-green-400 rounded-2xl py-6 px-4 cursor-pointer transition bg-gray-50/50">
+              <Upload size={28} className="text-gray-400 mb-2" />
+              <span className="text-xs font-bold text-gray-700">Seleccionar fotos o documentos</span>
+              <span className="text-[9px] text-gray-400 text-center mt-1">Soporta PDF, Word, Excel, JPG, PNG, WEBP.</span>
+              <input 
+                type="file" 
+                multiple
+                accept="image/*,application/pdf,.docx,.xlsx,.doc,.xls" 
+                className="hidden" 
+                onChange={handleUploadArchivos}
+              />
+            </label>
+            
+            {msgCarga && <p className="text-[10px] font-semibold text-green-600 animate-pulse">{msgCarga}</p>}
+          </div>
+
+          {/* 2. Visualización y controles de Archivos subidos */}
+          {tipoArchivo === 'documento' && docFile && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Documento cargado</h3>
+              <div className="border border-gray-150 rounded-xl p-3 flex items-center justify-between gap-3 bg-gray-50/50">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <FileText size={18} className="text-green-600 shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-gray-800 truncate leading-snug">{archivo.name}</p>
-                    <p className="text-[10px] text-gray-400">
-                      {(archivo.size / 1024 / 1024).toFixed(2)} MB · {tipoArchivo === 'imagen' ? 'Imagen' : 'Documento'}
+                    <p className="text-xs font-semibold text-gray-800 truncate leading-snug">{docFile.name}</p>
+                    <p className="text-[9px] text-gray-400">
+                      {(docFile.size / 1024 / 1024).toFixed(2)} MB · {paginasDocumento} página(s)
                     </p>
                   </div>
                 </div>
                 <button 
                   onClick={() => {
-                    setArchivo(null)
+                    setDocFile(null)
                     setTipoArchivo(null)
-                    setPreviewUrl('')
-                    setCroppedImage(null)
                   }}
-                  className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition cursor-pointer"
+                  className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-lg transition"
                 >
                   <Trash2 size={14} />
                 </button>
               </div>
-            )}
-            {msgCarga && <p className="text-[11px] font-semibold text-green-600 animate-pulse">{msgCarga}</p>}
-          </div>
 
-          {/* 2. Recorte Inteligente (Solo si es captura de pantalla / imagen) */}
-          {archivo && tipoArchivo === 'imagen' && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">2. Recortar captura / Bordes</h3>
-                {esScreenshotDetectado && !croppedImage && (
-                  <span className="text-[9px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
-                    ✨ Captura detectada
-                  </span>
-                )}
-              </div>
-
-              {esScreenshotDetectado && !croppedImage && !cropActive && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-[11px] text-green-800 leading-relaxed">
-                  💡 <strong>Auto-recorte:</strong> Detectamos que subiste una captura de pantalla. Hemos pre-seleccionado un recorte automático para quitar la hora y los botones del teléfono. Puedes dar clic en el botón de abajo para aplicarlo o editarlo.
-                </div>
-              )}
-
-              {!cropActive && !croppedImage && previewUrl && (
-                <div className="relative rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center py-2.5">
-                  <img src={previewUrl} alt="Vista previa" className="max-h-[220px] object-contain rounded" />
-                  <button 
-                    onClick={() => setCropActive(true)}
-                    className="absolute bottom-4 bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] shadow-md transition flex items-center gap-1 cursor-pointer"
-                  >
-                    <Scissors size={11} /> Recortar imagen / Quitar bordes
-                  </button>
-                </div>
-              )}
-
-              {cropActive && previewUrl && (
-                <div className="space-y-3">
-                  <p className="text-[10px] text-gray-400">Arrastra los bordes de la caja para recortar partes no deseadas:</p>
-                  <div 
-                    ref={cropperContainerRef}
-                    className="relative max-w-full overflow-hidden bg-gray-900 rounded-xl flex items-center justify-center select-none"
-                    style={{ height: '240px' }}
-                  >
-                    <img 
-                      ref={imgRef}
-                      src={previewUrl} 
-                      alt="Para recortar" 
-                      className="max-h-full max-w-full object-contain pointer-events-none"
-                    />
-                    
-                    {/* Bounding box de recorte */}
-                    <div 
-                      className="absolute border border-green-400 bg-green-400/25 cursor-move"
-                      style={{
-                        left: `${cropBox.x}%`,
-                        top: `${cropBox.y}%`,
-                        width: `${cropBox.w}%`,
-                        height: `${cropBox.h}%`
-                      }}
-                      onTouchStart={e => handleMouseDown(e, 'move')}
-                      onMouseDown={e => handleMouseDown(e, 'move')}
-                    >
-                      {/* Control handles esquinas */}
-                      {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map(pos => (
-                        <div 
-                          key={pos}
-                          className={`absolute w-7 h-7 flex items-center justify-center z-25 cursor-pointer`}
-                          style={{
-                            top: pos.startsWith('top') ? '-10px' : 'auto',
-                            bottom: pos.startsWith('bottom') ? '-10px' : 'auto',
-                            left: pos.endsWith('left') ? '-10px' : 'auto',
-                            right: pos.endsWith('right') ? '-10px' : 'auto',
-                          }}
-                          onTouchStart={e => handleMouseDown(e, pos)}
-                          onMouseDown={e => handleMouseDown(e, pos)}
-                        >
-                          <span className="w-2.5 h-2.5 bg-green-500 border border-white rounded-full shadow" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={aplicarRecorte}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer"
-                    >
-                      Aplicar recorte
-                    </button>
-                    <button 
-                      onClick={() => setCropActive(false)}
-                      className="flex-1 bg-gray-100 hover:bg-gray-250 text-gray-700 font-semibold py-2 rounded-xl text-xs transition cursor-pointer"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {croppedImage && (
-                <div className="space-y-3">
-                  <div className="relative rounded-xl overflow-hidden border border-gray-150 bg-gray-50 flex items-center justify-center py-2.5">
-                    <img src={croppedImage} alt="Recorte aplicado" className="max-h-[200px] object-contain rounded" />
-                    <span className="absolute top-2 right-2 bg-green-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
-                      ✓ Recortado
-                    </span>
-                  </div>
-                  <button 
-                    onClick={() => {
-                      setCroppedImage(null)
-                      setCropActive(true)
-                    }}
-                    className="w-full border border-gray-200 hover:bg-gray-50 text-gray-600 font-bold py-2 rounded-xl text-[10px] transition cursor-pointer"
-                  >
-                    🔄 Ajustar / Recortar de nuevo
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* 3. Selector Gráfico dentro de Hoja A4 */}
-          {archivo && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-4">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                {tipoArchivo === 'imagen' ? '3. Tamaño de Impresión' : '2. Páginas y Tamaño'}
-              </h3>
-
-              {tipoArchivo === 'documento' && (
-                <div className="space-y-3 border-b border-gray-100 pb-3">
-                  {/* Selector de Rango */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => setRangoModo('todo')}
-                      className={`py-2 rounded-xl text-xs font-bold border transition ${
-                        rangoModo === 'todo'
-                          ? 'bg-green-600 text-white border-transparent'
-                          : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
-                      }`}
-                    >
-                      Imprimir todo ({paginasDocumento} pág)
-                    </button>
-                    <button
-                      onClick={() => setRangoModo('rango')}
-                      className={`py-2 rounded-xl text-xs font-bold border transition ${
-                        rangoModo === 'rango'
-                          ? 'bg-green-600 text-white border-transparent'
-                          : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
-                      }`}
-                    >
-                      Rango de páginas
-                    </button>
-                  </div>
-
-                  {rangoModo === 'rango' && (
-                    <div className="space-y-1 bg-gray-50 border border-gray-200 rounded-xl p-3">
-                      <label className="text-[10px] font-bold text-gray-500 block">Indica el rango de páginas a imprimir:</label>
-                      <input 
-                        type="text"
-                        value={rangoTexto}
-                        onChange={e => setRangoTexto(e.target.value)}
-                        placeholder="Ej: 1-5, 8 (Páginas totales a imprimir: 6)"
-                        className="w-full bg-white border border-gray-250 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-green-500"
-                      />
-                      <p className="text-[9px] text-gray-400">Total calculado: {paginasCalculadas} página(s)</p>
-                    </div>
-                  )}
-                  {archivo.name.endsWith('.docx') || archivo.name.endsWith('.xlsx') ? (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-[10px] text-yellow-800 leading-normal space-y-1.5">
-                      <p>⚠️ <strong>Nota sobre Word/Excel:</strong> No es posible auto-detectar las páginas de forma exacta en el navegador. Por favor, estima el número de páginas:</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-semibold">Páginas:</span>
-                        <input 
-                          type="number" 
-                          min={1} 
-                          value={paginasDocumento} 
-                          onChange={e => setPaginasDocumento(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-16 bg-white border border-gray-250 rounded-lg px-2 py-1 text-xs font-bold text-gray-800"
-                        />
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              )}
-
-              {/* Selector de Tamaño / Visual A4 */}
-              <div className="flex gap-4 items-start flex-col sm:flex-row">
-                
-                {/* Menú de Opciones de Tamaño */}
-                {tipoArchivo === 'imagen' && (
-                  <div className="flex-1 space-y-2.5 w-full">
-                    <label className="text-[11px] font-bold text-gray-500 block">Formato / Tamaño:</label>
-                    <div className="flex flex-col gap-1.5">
-                      {[
-                        { size: 'A4', label: 'Página completa (A4)', desc: '21 x 29.7 cm · 100% de la hoja' },
-                        { size: 'A5', label: 'Media página (A5)', desc: '14.8 x 21 cm · 50% de la hoja' },
-                        { size: 'A6', label: 'Un cuarto (A6)', desc: '10.5 x 14.8 cm · 25% de la hoja' },
-                        { size: 'carnet', label: 'Foto carnet', desc: '4 x 5 cm · Recuadro pequeño' },
-                        { size: 'personalizado', label: 'Tamaño personalizado', desc: 'Ajuste libre en centímetros' },
-                      ].map(item => (
-                        <button
-                          key={item.size}
-                          onClick={() => setFormatoSize(item.size as any)}
-                          className={`w-full text-left p-2.5 rounded-xl border transition flex flex-col ${
-                            formatoSize === item.size
-                              ? 'bg-green-50 border-green-500'
-                              : 'bg-white border-gray-150 hover:bg-gray-50'
-                          }`}
-                        >
-                          <span className="text-xs font-bold text-gray-700">{item.label}</span>
-                          <span className="text-[9px] text-gray-400 mt-0.5">{item.desc}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    {formatoSize === 'personalizado' && (
-                      <div className="grid grid-cols-2 gap-2 bg-gray-50 border border-gray-150 rounded-xl p-3">
-                        <div>
-                          <label className="text-[9px] font-bold text-gray-400 block mb-0.5">Ancho (cm):</label>
-                          <input 
-                            type="number"
-                            min={1} max={21}
-                            value={customWidth}
-                            onChange={e => setCustomWidth(Math.min(21, Math.max(1, parseFloat(e.target.value) || 1)))}
-                            className="w-full bg-white border border-gray-250 rounded-lg px-2 py-1 text-xs text-gray-800"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[9px] font-bold text-gray-400 block mb-0.5">Alto (cm):</label>
-                          <input 
-                            type="number"
-                            min={1} max={29.7}
-                            value={customHeight}
-                            onChange={e => setCustomHeight(Math.min(29.7, Math.max(1, parseFloat(e.target.value) || 1)))}
-                            className="w-full bg-white border border-gray-250 rounded-lg px-2 py-1 text-xs text-gray-800"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Hoja A4 Visual - Sombreado de área ocupada */}
-                <div className="flex flex-col items-center justify-center shrink-0 w-full sm:w-[200px] border-t sm:border-t-0 sm:border-l border-gray-100 pt-3 sm:pt-0 sm:pl-4">
-                  <span className="text-[9px] font-bold text-gray-450 uppercase mb-2">Vista previa de hoja A4</span>
-                  
-                  {/* Hoja A4 (Lienzo proporcional) */}
-                  <div className="w-[126px] h-[178px] bg-white border border-gray-300 rounded shadow-md relative overflow-hidden bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:6px_6px]">
-                    
-                    {/* Caja de selección / Sombreado dinámico */}
-                    {formatoSize === 'A4' && (
-                      <div className="absolute inset-0 bg-green-500/25 border-2 border-green-500 flex items-center justify-center animate-pulse">
-                        <span className="text-[10px] font-black text-green-700 bg-white/80 px-1.5 py-0.5 rounded border border-green-300">A4 (100%)</span>
-                      </div>
-                    )}
-
-                    {formatoSize === 'A5' && (
-                      <div className="absolute left-0 top-0 w-full h-1/2 bg-green-500/25 border-b-2 border-green-500 flex items-center justify-center">
-                        <span className="text-[10px] font-black text-green-700 bg-white/80 px-1.5 py-0.5 rounded border border-green-300">A5 (50%)</span>
-                      </div>
-                    )}
-
-                    {formatoSize === 'A6' && (
-                      <div className="absolute left-0 top-0 w-1/2 h-1/2 bg-green-500/25 border-r-2 border-b-2 border-green-500 flex items-center justify-center">
-                        <span className="text-[10px] font-black text-green-700 bg-white/80 px-1.5 py-0.5 rounded border border-green-300">A6 (25%)</span>
-                      </div>
-                    )}
-
-                    {formatoSize === 'carnet' && (
-                      <div className="absolute left-1 top-1 w-6 h-8 bg-green-500/25 border-2 border-green-500 flex items-center justify-center">
-                        <span className="text-[8px] font-bold text-green-700 bg-white/80 px-0.5 rounded">Carnet</span>
-                      </div>
-                    )}
-
-                    {formatoSize === 'personalizado' && (
-                      <div 
-                        className="absolute left-0 top-0 bg-green-500/25 border-r-2 border-b-2 border-green-500 flex items-center justify-center"
-                        style={{
-                          width: `${(customWidth / 21) * 100}%`,
-                          height: `${(customHeight / 29.7) * 100}%`,
-                        }}
-                      >
-                        <span className="text-[8px] font-bold text-green-700 bg-white/85 px-1 py-0.5 rounded leading-none">
-                          {customWidth}x{customHeight}cm
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-[8px] text-gray-400 mt-1.5 leading-none">Representación no apta para márgenes</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 4. Opciones Avanzadas */}
-          {archivo && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3.5">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">3. Opciones de Impresión</h3>
-
-              {/* A. Blanco y negro vs Color */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-500 block">Tinta / Color:</label>
+              {/* Rango de páginas y contador manual para Word */}
+              <div className="space-y-3 pt-2 border-t border-gray-100">
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => {
-                      setColorMode('bn')
-                      setModoMixtoDoc(false)
-                    }}
+                    onClick={() => setRangoModo('todo')}
                     className={`py-2 rounded-xl text-xs font-bold border transition ${
-                      colorMode === 'bn'
-                        ? 'bg-green-600 text-white border-transparent'
-                        : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+                      rangoModo === 'todo' ? 'bg-green-600 text-white border-transparent' : 'bg-gray-50 text-gray-500 border-gray-200'
                     }`}
                   >
-                    ⚫ Blanco y Negro ($0.05 / pág)
+                    Imprimir todo ({paginasDocumento} pág)
                   </button>
                   <button
-                    onClick={() => setColorMode('color')}
+                    onClick={() => setRangoModo('rango')}
                     className={`py-2 rounded-xl text-xs font-bold border transition ${
-                      colorMode === 'color'
-                        ? 'bg-green-600 text-white border-transparent'
-                        : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+                      rangoModo === 'rango' ? 'bg-green-600 text-white border-transparent' : 'bg-gray-50 text-gray-500 border-gray-200'
                     }`}
                   >
-                    🌈 Color
+                    Rango de páginas
                   </button>
+                </div>
+
+                {rangoModo === 'rango' && (
+                  <div className="space-y-1 bg-gray-50 border border-gray-150 rounded-xl p-3">
+                    <label className="text-[10px] font-bold text-gray-450 block">Rango de páginas a imprimir:</label>
+                    <input 
+                      type="text"
+                      value={rangoTexto}
+                      onChange={e => setRangoTexto(e.target.value)}
+                      placeholder="Ej: 1-3, 5 (Total a imprimir: 4 páginas)"
+                      className="w-full bg-white border border-gray-250 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-green-500"
+                    />
+                    <p className="text-[9px] text-gray-400">Páginas calculadas: {paginasCalculadasDoc} pág.</p>
+                  </div>
+                )}
+
+                {/* Ingreso manual para Word/Excel */}
+                {(docFile.name.endsWith('.docx') || docFile.name.endsWith('.xlsx') || docFile.name.endsWith('.doc')) && (
+                  <div className="bg-amber-50 border border-amber-150 rounded-xl p-3 text-[10px] text-amber-800 space-y-1.5">
+                    <p>⚠️ <strong>Nota:</strong> No se puede auto-detectar las páginas de Word/Excel. Por favor, indícalas manualmente:</p>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">Nro de Páginas:</span>
+                      <input 
+                        type="number" 
+                        min={1} 
+                        value={paginasDocumento} 
+                        onChange={e => setPaginasDocumento(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-16 bg-white border border-gray-250 rounded-lg px-2 py-1 text-xs font-bold text-gray-800"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 3. Panel de Diagramación y Lista de Imágenes */}
+          {tipoArchivo === 'imagen' && imagenes.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              
+              {/* Lista de Imágenes subidas y controles individuales */}
+              <div className="md:col-span-3 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3 max-h-[460px] overflow-y-auto">
+                <h3 className="text-xs font-bold text-gray-450 uppercase tracking-wider flex items-center justify-between">
+                  <span>Imágenes en el lote ({imagenes.length})</span>
+                  <span className="text-[9px] bg-green-50 text-green-700 border border-green-150 px-2 py-0.5 rounded-full font-bold uppercase">
+                    Diagramable
+                  </span>
+                </h3>
+
+                <div className="space-y-3">
+                  {imagenes.map((img) => (
+                    <div key={img.id} className="border border-gray-150 rounded-xl p-2.5 space-y-2 bg-gray-50/20">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-200 shrink-0 relative bg-gray-100">
+                          <img src={img.croppedUrl || img.rawUrl} className="w-full h-full object-cover" alt="Thumb" />
+                          {img.croppedUrl && (
+                            <span className="absolute top-0 right-0 bg-green-600 text-white text-[7px] font-bold px-0.5 rounded-bl">
+                              Cortada
+                            </span>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-gray-700 truncate leading-tight">{img.name}</p>
+                          <p className="text-[9px] text-gray-400 mt-0.5">{(img.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                        <button 
+                          onClick={() => setImagenes(prev => prev.filter(i => i.id !== img.id))}
+                          className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded transition"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+
+                      {/* Configuración individual de tamaño y tinta */}
+                      <div className="grid grid-cols-2 gap-1.5 pt-1.5 border-t border-gray-100">
+                        <div>
+                          <label className="text-[8px] font-bold text-gray-400 block uppercase">Tamaño:</label>
+                          <select
+                            value={img.formatoSize}
+                            onChange={e => {
+                              const val = e.target.value as any
+                              setImagenes(prev => prev.map(i => i.id === img.id ? { ...i, formatoSize: val } : i))
+                            }}
+                            className="w-full bg-white border border-gray-200 rounded px-1 py-0.5 text-[10px] text-gray-700 focus:outline-none"
+                          >
+                            <option value="A4">A4 (Hoja completa)</option>
+                            <option value="A5">A5 (Media hoja)</option>
+                            <option value="A6">A6 (1/4 hoja)</option>
+                            <option value="carnet">Carnet (Miniatura)</option>
+                            <option value="personalizado">Personalizado</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="text-[8px] font-bold text-gray-400 block uppercase">Tinta:</label>
+                          <select
+                            value={img.colorMode}
+                            onChange={e => {
+                              const val = e.target.value as any
+                              setImagenes(prev => prev.map(i => i.id === img.id ? { ...i, colorMode: val } : i))
+                            }}
+                            className="w-full bg-white border border-gray-200 rounded px-1 py-0.5 text-[10px] text-gray-700 focus:outline-none"
+                          >
+                            <option value="color">🌈 Color</option>
+                            <option value="bn">⚫ B/N</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Configuración personalizada de cm */}
+                      {img.formatoSize === 'personalizado' && (
+                        <div className="grid grid-cols-2 gap-1 bg-white border border-gray-150 rounded p-1.5">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[8px] text-gray-400 font-bold">Ancho (cm):</span>
+                            <input 
+                              type="number"
+                              min={1} max={21}
+                              value={img.customW}
+                              onChange={e => {
+                                const val = Math.min(21, Math.max(1, parseFloat(e.target.value) || 1))
+                                setImagenes(prev => prev.map(i => i.id === img.id ? { ...i, customW: val } : i))
+                              }}
+                              className="w-10 bg-gray-50 border border-gray-200 rounded px-1 py-0.2 text-[9px] text-center"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[8px] text-gray-400 font-bold">Alto (cm):</span>
+                            <input 
+                              type="number"
+                              min={1} max={29.7}
+                              value={img.customH}
+                              onChange={e => {
+                                const val = Math.min(29.7, Math.max(1, parseFloat(e.target.value) || 1))
+                                setImagenes(prev => prev.map(i => i.id === img.id ? { ...i, customH: val } : i))
+                              }}
+                              className="w-10 bg-gray-50 border border-gray-200 rounded px-1 py-0.2 text-[9px] text-center"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Botón de Recorte */}
+                      <button 
+                        onClick={() => abrirRecortador(img)}
+                        className="w-full py-1 bg-green-50 hover:bg-green-100 border border-green-200 text-green-700 font-bold rounded text-[9px] transition flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <Scissors size={10} /> Quitar bordes / Recortar Captura
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* B. Cobertura de tinta color (si seleccionan color) */}
-              {colorMode === 'color' && (
-                <div className="space-y-2.5 bg-gray-50 border border-gray-200 rounded-xl p-3 transition-all">
-                  
-                  {/* Si es documento, dar opción de modo mixto */}
-                  {tipoArchivo === 'documento' && (
-                    <div className="flex items-center justify-between border-b border-gray-200/60 pb-2">
-                      <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-gray-700 font-semibold">
-                        <input 
-                          type="checkbox"
-                          checked={modoMixtoDoc}
-                          onChange={e => setModoMixtoDoc(e.target.checked)}
-                          className="w-3.5 h-3.5 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                        />
-                        Impresión mixta (Color y B/N mezclados)
-                      </label>
-                    </div>
-                  )}
-
-                  {modoMixtoDoc ? (
-                    <div className="space-y-1.5 text-xs">
-                      <label className="text-[10px] font-bold text-gray-400 block">Indica cuáles páginas específicas van a color:</label>
-                      <input 
-                        type="text"
-                        value={paginasColorManual}
-                        onChange={e => setPaginasColorManual(e.target.value)}
-                        placeholder="Ej: 1, 5, 8 (las demás saldrán en B/N)"
-                        className="w-full bg-white border border-gray-250 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-green-500"
-                      />
-                    </div>
-                  ) : null}
-
-                  {/* Cobertura de Color */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1">
-                      <label className="text-[10px] font-bold text-gray-400 block">
-                        {tipoArchivo === 'documento' ? 'Cobertura de color (páginas a color):' : 'Porcentaje de color de la foto:'}
-                      </label>
-                      <HelpCircle size={10} className="text-gray-400 cursor-help" onClick={() => alert('Bajo Color: Textos y logos pequeños ($0.25).\nMedio Color: Gráficos e imágenes a media página ($0.50).\nAlto Color: Fotos completas o portadas ($1.00).')} />
-                    </div>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[
-                        { code: 'bajo', label: '🟢 Bajo (<25%)', price: 0.25 },
-                        { code: 'medio', label: '🟡 Medio (~50%)', price: 0.50 },
-                        { code: 'alto', label: '🔴 Alto (100%)', price: 1.00 },
-                      ].map(cob => (
-                        <button
-                          key={cob.code}
-                          onClick={() => setCoberturaColor(cob.code as any)}
-                          className={`py-1.5 rounded-lg text-[10px] font-bold border transition ${
-                            coberturaColor === cob.code
-                              ? 'bg-green-100 border-green-500 text-green-700'
-                              : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
-                          }`}
+              {/* Vista previa proporcional de la A4 */}
+              <div className="md:col-span-2 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center">
+                <span className="text-[10px] font-bold text-gray-450 uppercase mb-2">Previsualización de Hojas</span>
+                
+                {paginasFisicas.length > 0 ? (
+                  <div className="space-y-3 flex flex-col items-center">
+                    
+                    {/* Contenedor Hoja A4 */}
+                    <div className="w-[147px] h-[208px] bg-white border border-gray-300 rounded shadow-md relative overflow-hidden bg-[radial-gradient(#e5e7eb_1.2px,transparent_1.2px)] [background-size:6px_6px]">
+                      {paginasFisicas[paginaActivaIndex]?.items.map((item, idx) => (
+                        <div
+                          key={item.id}
+                          className={`absolute border border-green-500 bg-green-500/10 flex items-center justify-center overflow-hidden group`}
+                          style={{
+                            left: `${(item.x / 21) * 100}%`,
+                            top: `${(item.y / 29.7) * 100}%`,
+                            width: `${(item.w / 21) * 100}%`,
+                            height: `${(item.h / 29.7) * 100}%`,
+                          }}
                         >
-                          <span className="block">{cob.label}</span>
-                          <span className="block text-[8px] opacity-75">{fmt(cob.price)}</span>
-                        </button>
+                          <img src={item.imgUrl} className="w-full h-full object-cover opacity-85" alt="Item" />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                            <span className="text-[7px] text-white font-bold truncate max-w-full px-1">{item.name}</span>
+                          </div>
+                          <span className="absolute bottom-0.5 right-0.5 bg-green-700 text-white text-[7px] font-bold px-0.5 rounded leading-none">
+                            {item.w.toFixed(1)}x{item.h.toFixed(1)}cm
+                          </span>
+                        </div>
                       ))}
                     </div>
+
+                    {/* Controles de Paginación */}
+                    <div className="flex items-center gap-3">
+                      <button 
+                        disabled={paginaActivaIndex === 0}
+                        onClick={() => setPaginaActivaIndex(prev => prev - 1)}
+                        className="p-1 bg-gray-50 border border-gray-200 rounded-lg disabled:opacity-30 hover:bg-gray-100 transition text-[9px] font-bold cursor-pointer"
+                      >
+                        ◄ Ant
+                      </button>
+                      <span className="text-[10px] font-bold text-gray-550">
+                        Hoja {paginaActivaIndex + 1} de {paginasFisicas.length}
+                      </span>
+                      <button 
+                        disabled={paginaActivaIndex === paginasFisicas.length - 1}
+                        onClick={() => setPaginaActivaIndex(prev => prev + 1)}
+                        className="p-1 bg-gray-50 border border-gray-200 rounded-lg disabled:opacity-30 hover:bg-gray-100 transition text-[9px] font-bold cursor-pointer"
+                      >
+                        Sig ►
+                      </button>
+                    </div>
+
+                    <p className="text-[8px] text-gray-400 text-center leading-tight">
+                      *El sistema distribuye tus imágenes en {paginasFisicas.length} hoja(s) física(s) A4.
+                    </p>
                   </div>
+                ) : (
+                  <div className="h-[200px] flex items-center justify-center text-xs text-gray-400">
+                    Carga imágenes para diagramar
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 4. Opciones Avanzadas Globales */}
+          {tipoArchivo && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3.5">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">2. Opciones de Impresión</h3>
+
+              {/* A. Tinta / Color para Documentos */}
+              {tipoArchivo === 'documento' && (
+                <div className="space-y-2 pb-2">
+                  <label className="text-[10px] font-bold text-gray-500 block uppercase">Tinta / Color:</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => { setDocColorMode('bn'); setModoMixtoDoc(false) }}
+                      className={`py-2 rounded-xl text-xs font-bold border transition ${
+                        docColorMode === 'bn' ? 'bg-green-600 text-white border-transparent' : 'bg-white border-gray-200 text-gray-550'
+                      }`}
+                    >
+                      ⚫ Blanco y Negro ($0.05 / pág)
+                    </button>
+                    <button
+                      onClick={() => setDocColorMode('color')}
+                      className={`py-2 rounded-xl text-xs font-bold border transition ${
+                        docColorMode === 'color' ? 'bg-green-600 text-white border-transparent' : 'bg-white border-gray-200 text-gray-550'
+                      }`}
+                    >
+                      🌈 Color
+                    </button>
+                  </div>
+
+                  {docColorMode === 'color' && (
+                    <div className="space-y-2 bg-gray-50 border border-gray-150 rounded-xl p-3 transition-all">
+                      <div className="flex items-center justify-between border-b border-gray-200/60 pb-1.5">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-700 font-semibold select-none">
+                          <input 
+                            type="checkbox"
+                            checked={modoMixtoDoc}
+                            onChange={e => setModoMixtoDoc(e.target.checked)}
+                            className="w-3.5 h-3.5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                          />
+                          Impresión mixta (Color y B/N mezclados)
+                        </label>
+                      </div>
+
+                      {modoMixtoDoc && (
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-gray-400 block uppercase">¿Cuáles páginas van a color?</label>
+                          <input 
+                            type="text"
+                            value={paginasColorManual}
+                            onChange={e => setPaginasColorManual(e.target.value)}
+                            placeholder="Ej: 1, 3 (las otras saldrán en B/N)"
+                            className="w-full bg-white border border-gray-250 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none"
+                          />
+                        </div>
+                      )}
+
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1">
+                          <label className="text-[9px] font-bold text-gray-400 block uppercase">Cobertura de color:</label>
+                          <HelpCircle size={10} className="text-gray-400 cursor-help" onClick={() => alert('Bajo Color: Textos y logos pequeños ($0.25).\nMedio Color: Gráficos a media página ($0.50).\nAlto Color: Fotos completas o portadas ($1.00).')} />
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {[
+                            { code: 'bajo', label: '🟢 Bajo (<25%)', price: 0.25 },
+                            { code: 'medio', label: '🟡 Medio (~50%)', price: 0.50 },
+                            { code: 'alto', label: '🔴 Alto (100%)', price: 1.00 },
+                          ].map(cob => (
+                            <button
+                              key={cob.code}
+                              onClick={() => setCoberturaColorDoc(cob.code as any)}
+                              className={`py-1 rounded-lg text-[9px] font-bold border transition ${
+                                coberturaColorDoc === cob.code ? 'bg-green-50 border-green-500 text-green-700' : 'bg-white border-gray-200'
+                              }`}
+                            >
+                              <span className="block">{cob.label}</span>
+                              <span className="block text-[8px] opacity-75">{fmt(cob.price)}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* C. Tipo de Papel */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-gray-500 block">Tipo de Papel:</label>
+              {/* B. Tipo de Papel */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-500 block uppercase">Tipo de Papel:</label>
                 <select
                   value={tipoPapel}
                   onChange={e => setTipoPapel(e.target.value as any)}
@@ -891,16 +1057,16 @@ export default function ImpresionPage() {
                   <option value="bond75">Papel Bond 75g (Estándar)</option>
                   <option value="bond90">Papel Bond 90g (Premium +$0.02)</option>
                   <option value="cartulina">Cartulina Escolar (+$0.08)</option>
-                  <option value="foto">Papel Fotográfico Brillante (+$0.40)</option>
+                  {tipoArchivo === 'imagen' && <option value="foto">Papel Fotográfico Brillante (+$0.40)</option>}
                 </select>
               </div>
 
-              {/* D. Doble faz (Dúplex) — Solo para documentos */}
+              {/* C. Doble faz (Dúplex) — Solo para documentos */}
               {tipoArchivo === 'documento' && (
                 <div className="flex items-center justify-between border-t border-gray-100 pt-3">
                   <div>
                     <label className="text-xs font-semibold text-gray-700 block">Imprimir por ambos lados (Doble Faz)</label>
-                    <span className="text-[10px] text-gray-400 block leading-tight">Reduce el uso de hojas físicas de papel</span>
+                    <span className="text-[9px] text-gray-400 block leading-tight">Reduce a la mitad el uso de hojas físicas de papel</span>
                   </div>
                   <input
                     type="checkbox"
@@ -914,13 +1080,13 @@ export default function ImpresionPage() {
           )}
 
           {/* 5. Cantidad de Copias y Cotización */}
-          {archivo && (
+          {tipoArchivo && (
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 text-white space-y-4">
               
               {/* Selector de copias */}
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block">4. Número de copias</span>
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block">3. Número de copias</span>
                   <span className="text-[10px] text-gray-500">¿Cuántos juegos/copias idénticos deseas?</span>
                 </div>
                 <div className="flex items-center gap-3 bg-gray-850 rounded-xl px-3 py-1">
@@ -943,7 +1109,12 @@ export default function ImpresionPage() {
               {/* Cotización final */}
               <div className="border-t border-gray-800 pt-3 space-y-2 text-xs">
                 <div className="flex justify-between text-gray-400">
-                  <span>Precio por copia / juego:</span>
+                  <span>
+                    {tipoArchivo === 'imagen' 
+                      ? `Precio por lote (${paginasFisicas.length} hojas físicas A4):` 
+                      : `Precio por juego (${dobleFaz ? Math.ceil(paginasCalculadasDoc / 2) : paginasCalculadasDoc} hojas):`
+                    }
+                  </span>
                   <span>{fmt(precioUnitario)}</span>
                 </div>
                 {descuento > 0 && (
@@ -963,12 +1134,12 @@ export default function ImpresionPage() {
               <button
                 onClick={añadirAlCarrito}
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-extrabold py-3.5 rounded-xl transition text-sm cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-550 disabled:opacity-50 text-white font-extrabold py-3.5 rounded-xl transition text-sm cursor-pointer"
               >
                 {loading ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    Subiendo archivo...
+                    Subiendo archivos...
                   </>
                 ) : (
                   <>🛒 Añadir al carrito · {fmt(totalCotizado)}</>
@@ -976,6 +1147,80 @@ export default function ImpresionPage() {
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* SCREENSHOT CROPPER MODAL (OVERLAY FLOATING) */}
+      {/* ========================================== */}
+      {imagenACortarId && (
+        <div className="fixed inset-0 bg-black/80 z-[100] flex flex-col items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-4 space-y-4 shadow-2xl">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Recortar captura de pantalla</h3>
+            
+            <p className="text-[10px] text-gray-450 leading-relaxed">
+              Arrastra la caja o sus esquinas para eliminar barras de notificaciones o botones negros de tu teléfono:
+            </p>
+
+            <div 
+              ref={cropperContainerRef}
+              className="relative max-w-full overflow-hidden bg-gray-900 rounded-xl flex items-center justify-center select-none"
+              style={{ height: '260px' }}
+            >
+              <img 
+                ref={imgRef}
+                src={imagenes.find(img => img.id === imagenACortarId)?.rawUrl} 
+                alt="Para recortar" 
+                className="max-h-full max-w-full object-contain pointer-events-none"
+              />
+              
+              {/* Bounding box de recorte */}
+              <div 
+                className="absolute border border-green-400 bg-green-400/25 cursor-move"
+                style={{
+                  left: `${cropBox.x}%`,
+                  top: `${cropBox.y}%`,
+                  width: `${cropBox.w}%`,
+                  height: `${cropBox.h}%`
+                }}
+                onTouchStart={e => handleMouseDown(e, 'move')}
+                onMouseDown={e => handleMouseDown(e, 'move')}
+              >
+                {/* Control handles esquinas con 32px targets */}
+                {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map(pos => (
+                  <div 
+                    key={pos}
+                    className={`absolute w-8 h-8 flex items-center justify-center z-[110] cursor-pointer`}
+                    style={{
+                      top: pos.startsWith('top') ? '-14px' : 'auto',
+                      bottom: pos.startsWith('bottom') ? '-14px' : 'auto',
+                      left: pos.endsWith('left') ? '-14px' : 'auto',
+                      right: pos.endsWith('right') ? '-14px' : 'auto',
+                    }}
+                    onTouchStart={e => handleMouseDown(e, pos)}
+                    onMouseDown={e => handleMouseDown(e, pos)}
+                  >
+                    <span className="w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full shadow-md" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button 
+                onClick={aplicarRecorte}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer"
+              >
+                Aplicar recorte
+              </button>
+              <button 
+                onClick={() => setImagenACortarId(null)}
+                className="flex-1 bg-gray-150 hover:bg-gray-200 text-gray-700 font-semibold py-2 rounded-xl text-xs transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
