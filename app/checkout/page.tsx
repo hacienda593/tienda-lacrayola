@@ -303,12 +303,14 @@ export default function CheckoutPage() {
         const position = marker.getLatLng()
         setGeo({ lat: position.lat, lng: position.lng })
         setGeoMsg('✓ Ubicación del mapa')
+        reversoGeocoding(position.lat, position.lng)
       })
 
       map.on('click', (e: any) => {
         marker.setLatLng(e.latlng)
         setGeo({ lat: e.latlng.lat, lng: e.latlng.lng })
         setGeoMsg('✓ Ubicación del mapa')
+        reversoGeocoding(e.latlng.lat, e.latlng.lng)
       })
     }
 
@@ -378,6 +380,7 @@ export default function CheckoutPage() {
         setGeoMsg('✓ Ubicación obtenida')
         setVerMapa(true)
         setDireccionSeleccionadaId('nueva')
+        reversoGeocoding(pos.coords.latitude, pos.coords.longitude)
       },
       err => {
         console.warn('Fallo GPS alta precisión, intentando red móvil...', err)
@@ -387,6 +390,7 @@ export default function CheckoutPage() {
             setGeoMsg('✓ Ubicación (red)')
             setVerMapa(true)
             setDireccionSeleccionadaId('nueva')
+            reversoGeocoding(pos.coords.latitude, pos.coords.longitude)
           },
           err2 => {
             console.error('Fallo geolocalización total:', err2)
@@ -405,6 +409,37 @@ export default function CheckoutPage() {
       },
       options
     )
+  }
+
+  async function reversoGeocoding(lat: number, lng: number) {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`, {
+        headers: {
+          'User-Agent': 'TiendaLaCrayola/1.0'
+        }
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      if (data) {
+        const addr = data.address || {}
+        const calle = addr.road || addr.pedestrian || addr.path || addr.footway || ''
+        const num = addr.house_number || ''
+        const sector = addr.neighbourhood || addr.suburb || addr.village || addr.hamlet || ''
+        
+        let direccionFormateada = [calle, num, sector].filter(Boolean).join(', ')
+        if (!direccionFormateada && data.display_name) {
+          direccionFormateada = data.display_name.split(',').slice(0, 3).join(',').trim()
+        }
+        
+        const ciudadFormateada = addr.town || addr.city || addr.village || addr.municipality || 'Los Bancos'
+        
+        if (direccionFormateada) {
+          setForm(f => ({ ...f, direccion: direccionFormateada, ciudad: ciudadFormateada }))
+        }
+      }
+    } catch (err) {
+      console.error('Error reverse geocoding:', err)
+    }
   }
 
   async function confirmar(e: React.SyntheticEvent<HTMLFormElement>) {

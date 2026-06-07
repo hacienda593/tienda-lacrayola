@@ -288,6 +288,7 @@ function PanelRegistrado() {
         setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude })
         setGeoMsg('✓ Ubicación obtenida')
         setVerMapa(true)
+        reversoGeocoding(pos.coords.latitude, pos.coords.longitude)
       },
       err => {
         console.warn('Fallo GPS alta precisión, intentando red móvil...', err)
@@ -296,6 +297,7 @@ function PanelRegistrado() {
             setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude })
             setGeoMsg('✓ Ubicación (red)')
             setVerMapa(true)
+            reversoGeocoding(pos.coords.latitude, pos.coords.longitude)
           },
           err2 => {
             console.error('Fallo geolocalización total:', err2)
@@ -314,6 +316,38 @@ function PanelRegistrado() {
       },
       options
     )
+  }
+
+  async function reversoGeocoding(lat: number, lng: number) {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`, {
+        headers: {
+          'User-Agent': 'TiendaLaCrayola/1.0'
+        }
+      })
+      if (!res.ok) return
+      const data = await res.json()
+      if (data) {
+        const addr = data.address || {}
+        const calle = addr.road || addr.pedestrian || addr.path || addr.footway || ''
+        const num = addr.house_number || ''
+        const sector = addr.neighbourhood || addr.suburb || addr.village || addr.hamlet || ''
+        
+        let direccionFormateada = [calle, num, sector].filter(Boolean).join(', ')
+        if (!direccionFormateada && data.display_name) {
+          direccionFormateada = data.display_name.split(',').slice(0, 3).join(',').trim()
+        }
+        
+        const ciudadFormateada = addr.town || addr.city || addr.village || addr.municipality || 'Los Bancos'
+        
+        if (direccionFormateada) {
+          setDireccionTexto(direccionFormateada)
+          setCiudad(ciudadFormateada)
+        }
+      }
+    } catch (err) {
+      console.error('Error reverse geocoding:', err)
+    }
   }
 
   // Cargar e inicializar Leaflet dinámicamente para el formulario
@@ -355,12 +389,14 @@ function PanelRegistrado() {
         const position = marker.getLatLng()
         setGeo({ lat: position.lat, lng: position.lng })
         setGeoMsg('✓ Ubicación del mapa')
+        reversoGeocoding(position.lat, position.lng)
       })
 
       map.on('click', (e: any) => {
         marker.setLatLng(e.latlng)
         setGeo({ lat: e.latlng.lat, lng: e.latlng.lng })
         setGeoMsg('✓ Ubicación del mapa')
+        reversoGeocoding(e.latlng.lat, e.latlng.lng)
       })
     }
 
