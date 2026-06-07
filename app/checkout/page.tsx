@@ -27,7 +27,8 @@ function abrirWhatsApp(
   ciudad: string, 
   referencias: string, 
   numeroPedido: number,
-  metodoEntrega: 'domicilio' | 'retiro'
+  metodoEntrega: 'domicilio' | 'retiro',
+  geo: { lat: number; lng: number } | null
 ) {
   // Agrupar ítems por tienda para el mensaje
   const agrupados: Record<string, ItemCarrito[]> = {}
@@ -43,6 +44,10 @@ function abrirWhatsApp(
   }).join('\n\n')
 
   const entrega = metodoEntrega === 'retiro' ? 'Retiro en local principal (La Crayola)' : [direccion, ciudad, referencias].filter(Boolean).join(', ')
+  const gpsLink = metodoEntrega === 'domicilio'
+    ? (geo ? `\n📍 *Ubicación GPS:* https://www.google.com/maps?q=${geo.lat},${geo.lng}` : `\n📍 *Ubicación GPS:* ⚠️ (Por favor, comparte tu ubicación actual de WhatsApp por aquí)`)
+    : ''
+
   const msg = [
     `🛒 *Nuevo pedido #${String(numeroPedido).padStart(4,'0')}*`,
     `👤 *Cliente:* ${nombre}`,
@@ -54,7 +59,7 @@ function abrirWhatsApp(
     `  • Subtotal: ${fmt(subtotal)}`,
     metodoEntrega === 'domicilio' ? `  • Envío Consolidado: ${fmt(costoEnvio)}` : `  • Entrega: Retiro en tienda (Gratis)`,
     `  • *Total a pagar: ${fmt(granTotal)}*`,
-    `📍 *Forma de entrega:* ${entrega}`,
+    `📍 *Forma de entrega:* ${entrega}${gpsLink}`,
   ].filter(l => l !== undefined).join('\n')
   window.open(`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, '_blank')
 }
@@ -391,7 +396,8 @@ export default function CheckoutPage() {
       metodoEntrega === 'retiro' ? 'Los Bancos' : form.ciudad, 
       metodoEntrega === 'retiro' ? 'Retiro directo en local' : form.referencias, 
       resultado.numeroPedido!,
-      metodoEntrega
+      metodoEntrega,
+      metodoEntrega === 'retiro' ? null : geo
     )
 
     setTimeout(() => router.push(`/pedido/${resultado.pedidoId}`), 1800)
@@ -509,34 +515,31 @@ export default function CheckoutPage() {
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dirección de entrega</div>
-              {geo ? (
-                <div className="flex gap-3">
-                  <button type="button" onClick={pedirUbicacion}
-                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-green-400 transition cursor-pointer">
-                    <MapPin size={10}/>{geoMsg || 'Re-detectar GPS'}
-                  </button>
-                  <button type="button" onClick={() => setVerMapa(!verMapa)}
-                    className="flex items-center gap-1 text-[10px] text-green-400 hover:text-green-300 font-bold underline cursor-pointer">
-                    🗺️ {verMapa ? 'Ocultar mapa' : 'Ver mapa'}
-                  </button>
-                </div>
-              ) : (
-                <div className="flex gap-3">
-                  <button type="button" onClick={pedirUbicacion}
-                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-green-400 transition cursor-pointer">
-                    <MapPin size={10}/>{geoMsg || 'Obtener GPS'}
-                  </button>
-                  <button type="button" onClick={() => {
-                    setGeo({ lat: -0.0221, lng: -78.8983 })
-                    setVerMapa(true)
-                    setDireccionSeleccionadaId('nueva')
-                    setGeoMsg('✓ Ubicación manual')
-                  }}
-                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-green-400 transition cursor-pointer">
-                    🗺️ Ubicar en mapa
-                  </button>
-                </div>
+              {geoMsg && (
+                <span className={`text-[10px] font-semibold ${
+                  geoMsg.includes('denegado') || geoMsg.includes('No') || geoMsg.includes('agotado')
+                    ? 'text-orange-400'
+                    : 'text-green-400'
+                }`}>{geoMsg}</span>
               )}
+            </div>
+
+            <div className="flex gap-3 justify-end border-b border-gray-800 pb-2">
+              <button type="button" onClick={pedirUbicacion}
+                className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-green-400 transition cursor-pointer">
+                <MapPin size={10}/> Obtener GPS
+              </button>
+              <button type="button" onClick={() => {
+                if (!geo) {
+                  setGeo({ lat: -0.0221, lng: -78.8983 })
+                  setGeoMsg('✓ Ubicación manual')
+                }
+                setVerMapa(!verMapa)
+                setDireccionSeleccionadaId('nueva')
+              }}
+                className="flex items-center gap-1 text-[10px] text-green-400 hover:text-green-300 font-bold underline cursor-pointer">
+                🗺️ {verMapa ? 'Ocultar mapa' : 'Ver mapa'}
+              </button>
             </div>
 
             {/* Selector de direcciones guardadas */}
@@ -568,6 +571,11 @@ export default function CheckoutPage() {
                     <button type="button" onClick={() => setVerMapa(false)} className="text-red-400 hover:underline">Ocultar</button>
                   </div>
                 </div>
+                {geoMsg?.includes('denegado') && (
+                  <div className="bg-yellow-950/40 border border-yellow-850/40 rounded-xl p-3 text-[11px] text-yellow-200 leading-relaxed">
+                    💡 <strong>GPS bloqueado:</strong> Puedes activarlo tocando el candado/ajustes ⚙️ en la barra de direcciones de tu navegador (arriba) y permitiendo la ubicación. Si no sabes cómo, puedes arrastrar la chincheta azul en el mapa, o simplemente <strong>enviarnos tu ubicación de WhatsApp</strong> al finalizar el pedido.
+                  </div>
+                )}
                 <div 
                   ref={mapContainerRef} 
                   className="w-full h-[220px] rounded-xl border border-gray-800 bg-gray-950 overflow-hidden relative z-10" 
