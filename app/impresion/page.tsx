@@ -995,22 +995,51 @@ export default function ImpresionPage() {
           
           {/* 1. Subida del Archivo */}
           <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">1. Sube tus fotos o documentos</h3>
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">1. Sube tus archivos</h3>
             
-            <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 hover:border-green-400 rounded-2xl py-6 px-4 cursor-pointer transition bg-gray-50/50">
-              <Upload size={28} className="text-gray-400 mb-2" />
-              <span className="text-xs font-bold text-gray-700">Seleccionar fotos o documentos</span>
-              <span className="text-[9px] text-gray-400 text-center mt-1">Soporta PDF, Word, Excel, JPG, PNG, WEBP.</span>
-              <input 
-                type="file" 
-                multiple
-                accept="image/*,application/pdf,.docx,.xlsx,.doc,.xls" 
-                className="hidden" 
-                onChange={handleUploadArchivos}
-              />
-            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {/* Opción Fotos */}
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-250 hover:border-green-500 rounded-2xl p-3 cursor-pointer transition bg-gray-50/50 hover:bg-green-50/20 text-center select-none active:scale-95">
+                <span className="text-xl mb-1">📸</span>
+                <span className="text-[10px] font-bold text-gray-700 block leading-tight">Fotos / Capturas</span>
+                <span className="text-[8px] text-gray-400 mt-1 block">Fotos y Capturas</span>
+                <input 
+                  type="file" 
+                  multiple
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={handleUploadArchivos}
+                />
+              </label>
+
+              {/* Opción PDF */}
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-250 hover:border-green-500 rounded-2xl p-3 cursor-pointer transition bg-gray-50/50 hover:bg-green-50/20 text-center select-none active:scale-95">
+                <span className="text-xl mb-1">📄</span>
+                <span className="text-[10px] font-bold text-gray-700 block leading-tight">Documento PDF</span>
+                <span className="text-[8px] text-gray-400 mt-1 block">Archivos PDF</span>
+                <input 
+                  type="file" 
+                  accept="application/pdf" 
+                  className="hidden" 
+                  onChange={handleUploadArchivos}
+                />
+              </label>
+
+              {/* Opción Word/Excel */}
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-250 hover:border-green-500 rounded-2xl p-3 cursor-pointer transition bg-gray-50/50 hover:bg-green-50/20 text-center select-none active:scale-95">
+                <span className="text-xl mb-1">📝</span>
+                <span className="text-[10px] font-bold text-gray-700 block leading-tight">Word / Excel</span>
+                <span className="text-[8px] text-gray-400 mt-1 block">DOCX, XLSX, etc.</span>
+                <input 
+                  type="file" 
+                  accept=".docx,.doc,.xlsx,.xls,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+                  className="hidden" 
+                  onChange={handleUploadArchivos}
+                />
+              </label>
+            </div>
             
-            {msgCarga && <p className="text-[10px] font-semibold text-green-600 animate-pulse">{msgCarga}</p>}
+            {msgCarga && <p className="text-[10px] font-semibold text-green-600 animate-pulse text-center">{msgCarga}</p>}
           </div>
 
           {/* 2. Visualización y controles de Archivos subidos */}
