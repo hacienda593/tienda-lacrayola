@@ -27,6 +27,7 @@ interface ImagenImpresion {
   aspectRatio: number // width / height
   originalAspectRatio: number // always stores the original image aspect ratio
   requiereEdicionTienda: boolean // true if the customer requests the store to edit/crop for +$0.25
+  copias: number // cantidad de copias de la imagen
 }
 
 interface PackedItem {
@@ -80,6 +81,7 @@ export default function ImpresionPage() {
   const [dobleFaz, setDobleFaz] = useState(false)
   const [numeroCopias, setNumeroCopias] = useState(1)
   const [paginaActivaIndex, setPaginaActivaIndex] = useState(0)
+  const [orientacionHoja, setOrientacionHoja] = useState<'portrait' | 'landscape'>('portrait')
 
   // Estados de UI
   const [loading, setLoading] = useState(false)
@@ -143,7 +145,8 @@ export default function ImpresionPage() {
               esScreenshot,
               aspectRatio: aspect,
               originalAspectRatio: aspect,
-              requiereEdicionTienda: false
+              requiereEdicionTienda: false,
+              copias: 1
             })
           }
           tempImg.src = url
@@ -218,13 +221,12 @@ export default function ImpresionPage() {
     const aspect = img.aspectRatio || 1.0
     
     if (img.formatoSize === 'A4') {
-      // Caja contenedora de A4: 21 x 29.7
+      const anchoMax = orientacionHoja === 'portrait' ? 21 : 29.7
+      const altoMax = orientacionHoja === 'portrait' ? 29.7 : 21
       if (aspect >= 1) {
-        // Horizontal: usar ancho máximo
-        return { w: 21, h: parseFloat((21 / aspect).toFixed(1)) }
+        return { w: anchoMax, h: parseFloat((anchoMax / aspect).toFixed(1)) }
       } else {
-        // Vertical: usar alto máximo
-        return { w: parseFloat((29.7 * aspect).toFixed(1)), h: 29.7 }
+        return { w: parseFloat((altoMax * aspect).toFixed(1)), h: altoMax }
       }
     }
     
@@ -288,28 +290,40 @@ export default function ImpresionPage() {
     const pages: PhysicalPage[] = []
     let currentPage: PhysicalPage = { items: [], hasColor: false, colorArea: 0 }
     
+    const anchoHoja = orientacionHoja === 'portrait' ? 21 : 29.7
+    const altoHoja = orientacionHoja === 'portrait' ? 29.7 : 21
+    
     let x = 0
     let y = 0
     let shelfHeight = 0
     
+    // Expandir imágenes según cantidad de copias
+    const imagenesExpandidas: ImagenImpresion[] = []
+    imagenes.forEach(img => {
+      const c = img.copias || 1
+      for (let i = 0; i < c; i++) {
+        imagenesExpandidas.push(img)
+      }
+    })
+    
     // Ordenar de mayor a menor altura para empaquetamiento óptimo
-    const ordenadas = [...imagenes].sort((a, b) => {
+    const ordenadas = [...imagenesExpandidas].sort((a, b) => {
       const hA = getImgDimensions(a).h
       const hB = getImgDimensions(b).h
       return hB - hA
     })
     
-    ordenadas.forEach(img => {
+    ordenadas.forEach((img) => {
       let { w, h } = getImgDimensions(img)
       
-      // Limitar al máximo absoluto de la hoja A4
-      if (w > 21) w = 21
-      if (h > 29.7) h = 29.7
+      // Limitar al máximo absoluto de la hoja
+      if (w > anchoHoja) w = anchoHoja
+      if (h > altoHoja) h = altoHoja
       
       // Probar si cabe en el estante actual
-      if (x + w <= 21 && y + h <= 29.7) {
+      if (x + w <= anchoHoja && y + h <= altoHoja) {
         currentPage.items.push({
-          id: img.id,
+          id: `${img.id}-copy-${Math.random().toString(36).substr(2, 9)}`,
           x,
           y,
           w,
@@ -326,9 +340,9 @@ export default function ImpresionPage() {
         y += shelfHeight
         shelfHeight = h
         
-        if (y + h <= 29.7) {
+        if (y + h <= altoHoja) {
           currentPage.items.push({
-            id: img.id,
+            id: `${img.id}-copy-${Math.random().toString(36).substr(2, 9)}`,
             x,
             y,
             w,
@@ -347,7 +361,7 @@ export default function ImpresionPage() {
           shelfHeight = h
           
           currentPage.items.push({
-            id: img.id,
+            id: `${img.id}-copy-${Math.random().toString(36).substr(2, 9)}`,
             x,
             y,
             w,
@@ -378,7 +392,7 @@ export default function ImpresionPage() {
     })
     
     return pages
-  }, [imagenes, tipoArchivo])
+  }, [imagenes, tipoArchivo, orientacionHoja])
 
   // Ajustar página activa si se reduce el número de hojas
   useEffect(() => {
@@ -601,7 +615,98 @@ export default function ImpresionPage() {
     }
   }
 
-  // 6. Añadir al Carrito (Subida múltiple a Supabase Storage con fallback)
+  // Auto-detectar contornos del contenido real de la imagen usando canvas
+  const autoDetectarContorno = () => {
+    if (!imagenACortarId) return
+    const imgItem = imagenes.find(i => i.id === imagenACortarId)
+    if (!imgItem) return
+    
+    setMsgCarga('Analizando contornos...')
+    const tempImg = new Image()
+    tempImg.crossOrigin = 'anonymous'
+    tempImg.onload = () => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        setMsgCarga('')
+        return
+      }
+      
+      const scale = Math.min(1, 300 / Math.max(tempImg.width, tempImg.height))
+      const w = Math.round(tempImg.width * scale)
+      const h = Math.round(tempImg.height * scale)
+      canvas.width = w
+      canvas.height = h
+      
+      ctx.drawImage(tempImg, 0, 0, w, h)
+      const imgData = ctx.getImageData(0, 0, w, h)
+      const data = imgData.data
+      
+      // Obtener el color de la esquina superior izquierda
+      const bgR = data[0]
+      const bgG = data[1]
+      const bgB = data[2]
+      const bgA = data[3]
+      const isBgTransparent = bgA < 10
+      const tolerance = 25
+      
+      const isBgColor = (r: number, g: number, b: number, a: number) => {
+        if (isBgTransparent) return a < 15
+        if (a < 15) return true
+        return Math.abs(r - bgR) < tolerance &&
+               Math.abs(g - bgG) < tolerance &&
+               Math.abs(b - bgB) < tolerance
+      }
+      
+      let minX = w
+      let minY = h
+      let maxX = 0
+      let maxY = 0
+      let contentFound = false
+      
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const idx = (y * w + x) * 4
+          const r = data[idx]
+          const g = data[idx + 1]
+          const b = data[idx + 2]
+          const a = data[idx + 3]
+          
+          if (!isBgColor(r, g, b, a)) {
+            contentFound = true
+            if (x < minX) minX = x
+            if (x > maxX) maxX = x
+            if (y < minY) minY = y
+            if (y > maxY) maxY = y
+          }
+        }
+      }
+      
+      if (contentFound) {
+        const paddingX = Math.round(w * 0.015)
+        const paddingY = Math.round(h * 0.015)
+        
+        const cropX = Math.max(0, minX - paddingX)
+        const cropY = Math.max(0, minY - paddingY)
+        const cropW = Math.min(w - cropX, (maxX - minX) + paddingX * 2)
+        const cropH = Math.min(h - cropY, (maxY - minY) + paddingY * 2)
+        
+        setCropBox({
+          x: parseFloat(((cropX / w) * 100).toFixed(1)),
+          y: parseFloat(((cropY / h) * 100).toFixed(1)),
+          w: parseFloat(((cropW / w) * 100).toFixed(1)),
+          h: parseFloat(((cropH / h) * 100).toFixed(1))
+        })
+      }
+      setMsgCarga('')
+    }
+    tempImg.onerror = () => {
+      setMsgCarga('')
+    }
+    tempImg.src = imgItem.rawUrl
+  }
+
+  // 6. Añadir al Carrito (Compilación a PDF o subida de documento a Supabase Storage)
   const añadirAlCarrito = async () => {
     if (tipoArchivo === 'imagen' && imagenes.length === 0) {
       setErrorMsg('Sube al menos una imagen.')
@@ -621,29 +726,93 @@ export default function ImpresionPage() {
     
     try {
       if (tipoArchivo === 'imagen') {
-        for (let i = 0; i < imagenes.length; i++) {
-          const img = imagenes[i]
-          const extension = img.name.split('.').pop()
-          const fileName = `imp-${Date.now()}-${i}.${extension}`
+        setMsgCarga('Preparando lienzo de impresión...')
+        const { jsPDF } = await import('jspdf')
+        
+        const isPortrait = orientacionHoja === 'portrait'
+        const orientationChar = isPortrait ? 'p' : 'l'
+        const pdf = new jsPDF(orientationChar, 'mm', 'a4')
+        
+        const a4W_mm = isPortrait ? 210 : 297
+        const a4H_mm = isPortrait ? 297 : 210
+        
+        // Canvas de alta resolución (300 DPI)
+        const scaleDPI = 300 / 25.4 // pixels por mm
+        const canvasW = Math.round(a4W_mm * scaleDPI)
+        const canvasH = Math.round(a4H_mm * scaleDPI)
+        
+        const cargarImagenHTML = (src: string): Promise<HTMLImageElement> => {
+          return new Promise((resolve, reject) => {
+            const img = new Image()
+            img.crossOrigin = 'anonymous'
+            img.onload = () => resolve(img)
+            img.onerror = (e) => reject(e)
+            img.src = src
+          })
+        }
+        
+        for (let pageIdx = 0; pageIdx < paginasFisicas.length; pageIdx++) {
+          setMsgCarga(`Generando hoja ${pageIdx + 1} de ${paginasFisicas.length}...`)
+          const page = paginasFisicas[pageIdx]
           
-          let fileToUpload: Blob = img.file
-          if (img.croppedUrl) {
-            const res = await fetch(img.croppedUrl)
-            fileToUpload = await res.blob()
+          const canvas = document.createElement('canvas')
+          canvas.width = canvasW
+          canvas.height = canvasH
+          const ctx = canvas.getContext('2d')
+          if (!ctx) throw new Error('No se pudo obtener el contexto 2D del Canvas')
+          
+          ctx.fillStyle = '#ffffff'
+          ctx.fillRect(0, 0, canvasW, canvasH)
+          
+          for (const item of page.items) {
+            try {
+              const htmlImg = await cargarImagenHTML(item.imgUrl)
+              
+              // item.x, item.y, item.w, item.h están en cm.
+              // Convertir a mm (x10), luego a píxeles (* scaleDPI)
+              const itemX_px = (item.x * 10) * scaleDPI
+              const itemY_px = (item.y * 10) * scaleDPI
+              const itemW_px = (item.w * 10) * scaleDPI
+              const itemH_px = (item.h * 10) * scaleDPI
+              
+              ctx.save()
+              if (item.colorMode === 'bn') {
+                ctx.filter = 'grayscale(100%)'
+              }
+              ctx.drawImage(htmlImg, itemX_px, itemY_px, itemW_px, itemH_px)
+              ctx.restore()
+            } catch (err) {
+              console.error(`Error dibujando imagen ${item.name}:`, err)
+            }
           }
           
-          const { data, error } = await supabase.storage
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.95)
+          if (pageIdx > 0) {
+            pdf.addPage('a4', orientationChar)
+          }
+          pdf.addImage(dataUrl, 'JPEG', 0, 0, a4W_mm, a4H_mm)
+        }
+        
+        const pdfBlob = pdf.output('blob')
+        setMsgCarga('Subiendo documento de impresión PDF...')
+        const fileName = `imp-${Date.now()}.pdf`
+        
+        const { data, error } = await supabase.storage
+          .from('ol_impresiones')
+          .upload(fileName, pdfBlob, { 
+            contentType: 'application/pdf',
+            cacheControl: '3600', 
+            upsert: true 
+          })
+          
+        if (!error && data) {
+          const { data: publicData } = supabase.storage
             .from('ol_impresiones')
-            .upload(fileName, fileToUpload, { cacheControl: '3600', upsert: true })
-            
-          if (!error && data) {
-            const { data: publicData } = supabase.storage
-              .from('ol_impresiones')
-              .getPublicUrl(fileName)
-            if (publicData?.publicUrl) urlsDescarga.push(publicData.publicUrl)
-          } else {
-            fallbacks.push(img.name)
-          }
+            .getPublicUrl(fileName)
+          if (publicData?.publicUrl) urlsDescarga.push(publicData.publicUrl)
+        } else {
+          if (error) throw error
+          fallbacks.push('Documento_Compilado.pdf')
         }
       } else if (tipoArchivo === 'documento' && docFile) {
         const extension = docFile.name.split('.').pop()
@@ -662,8 +831,11 @@ export default function ImpresionPage() {
           fallbacks.push(docFile.name)
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Error en subida, se usará envío manual por WhatsApp:', err)
+      setErrorMsg(`Error al subir archivos: ${err?.message || err}. Puedes intentar agregarlo de nuevo.`)
+      setLoading(false)
+      return
     }
     
     setMsgCarga('Agregando al carrito...')
@@ -675,7 +847,8 @@ export default function ImpresionPage() {
       totalPagsFisicas = paginasFisicas.length
       const necesitaEdicion = imagenes.some(img => img.requiereEdicionTienda && !img.croppedUrl)
       const edicionTag = necesitaEdicion ? ' +EdiciónTienda' : ''
-      configStr = `Pack Fotos (${totalPagsFisicas} hojas, ${imagenes.length} arch, ${tipoPapel.toUpperCase()}${edicionTag})`
+      const orientacionTag = orientacionHoja === 'landscape' ? ' HORIZONTAL' : ''
+      configStr = `Pack Fotos (${totalPagsFisicas} hojas, ${imagenes.length} arch, ${tipoPapel.toUpperCase()}${orientacionTag}${edicionTag})`
     } else {
       totalPagsFisicas = dobleFaz ? Math.ceil(paginasCalculadasDoc / 2) : paginasCalculadasDoc
       const colorStr = docColorMode === 'bn' ? 'B/N' : (modoMixtoDoc ? 'Mixto' : 'Color')
@@ -699,7 +872,7 @@ export default function ImpresionPage() {
       tienda_id: null,
       tienda_nombre: 'Servicio de Impresión'
     }
-
+ 
     const prevCarrito = getCarrito()
     prevCarrito.push(itemCarrito)
     setCarrito(prevCarrito)
@@ -959,8 +1132,8 @@ export default function ImpresionPage() {
                         </button>
                       </div>
 
-                      {/* Configuración individual de tamaño y tinta */}
-                      <div className="grid grid-cols-2 gap-1.5 pt-1.5 border-t border-gray-100">
+                      {/* Configuración individual de tamaño, tinta y copias */}
+                      <div className="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-gray-100">
                         <div>
                           <label className="text-[8px] font-bold text-gray-400 block uppercase">Tamaño:</label>
                           <select
@@ -986,12 +1159,12 @@ export default function ImpresionPage() {
                                 return i
                               }))
                             }}
-                            className="w-full bg-white border border-gray-200 rounded px-1 py-0.5 text-[10px] text-gray-700 focus:outline-none"
+                            className="w-full bg-white border border-gray-200 rounded px-0.5 py-0.5 text-[9px] text-gray-700 focus:outline-none"
                           >
-                            <option value="A4">A4 (Hoja completa)</option>
-                            <option value="A5">A5 (Media hoja)</option>
-                            <option value="A6">A6 (1/4 hoja)</option>
-                            <option value="carnet">Carnet (Miniatura)</option>
+                            <option value="A4">A4 (Completa)</option>
+                            <option value="A5">A5 (Media)</option>
+                            <option value="A6">A6 (1/4)</option>
+                            <option value="carnet">Carnet</option>
                             <option value="personalizado">Personalizado</option>
                           </select>
                         </div>
@@ -1004,11 +1177,38 @@ export default function ImpresionPage() {
                               const val = e.target.value as any
                               setImagenes(prev => prev.map(i => i.id === img.id ? { ...i, colorMode: val } : i))
                             }}
-                            className="w-full bg-white border border-gray-200 rounded px-1 py-0.5 text-[10px] text-gray-700 focus:outline-none"
+                            className="w-full bg-white border border-gray-200 rounded px-0.5 py-0.5 text-[9px] text-gray-700 focus:outline-none"
                           >
                             <option value="color">🌈 Color</option>
                             <option value="bn">⚫ B/N</option>
                           </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[8px] font-bold text-gray-400 block uppercase">Copias:</label>
+                          <div className="flex items-center border border-gray-200 rounded bg-white px-1 py-0.5 justify-between select-none">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setImagenes(prev => prev.map(i => i.id === img.id ? { ...i, copias: Math.max(1, (i.copias || 1) - 1) } : i))
+                              }}
+                              className="text-gray-500 hover:text-green-650 font-extrabold px-1 text-[10px] cursor-pointer"
+                            >
+                              -
+                            </button>
+                            <span className="text-[9px] font-bold text-gray-800">
+                              {img.copias || 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setImagenes(prev => prev.map(i => i.id === img.id ? { ...i, copias: (i.copias || 1) + 1 } : i))
+                              }}
+                              className="text-gray-500 hover:text-green-650 font-extrabold px-1 text-[10px] cursor-pointer"
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -1104,29 +1304,45 @@ export default function ImpresionPage() {
                 {paginasFisicas.length > 0 ? (
                   <div className="space-y-3 flex flex-col items-center">
                     
-                    {/* Contenedor Hoja A4 */}
-                    <div className="w-[147px] h-[208px] bg-white border border-gray-300 rounded shadow-md relative overflow-hidden bg-[radial-gradient(#e5e7eb_1.2px,transparent_1.2px)] [background-size:6px_6px]">
-                      {paginasFisicas[paginaActivaIndex]?.items.map((item) => (
-                        <div
-                          key={item.id}
-                          className="absolute border border-green-500 bg-green-500/10 flex items-center justify-center overflow-hidden group"
+                    {/* Contenedor Hoja A4 Dinámico (Portrait / Landscape) */}
+                    {(() => {
+                      const isPortrait = orientacionHoja === 'portrait'
+                      const containerW = isPortrait ? 147 : 208
+                      const containerH = isPortrait ? 208 : 147
+                      const anchoHoja = isPortrait ? 21 : 29.7
+                      const altoHoja = isPortrait ? 29.7 : 21
+                      
+                      return (
+                        <div 
+                          className="bg-white border border-gray-300 rounded shadow-md relative overflow-hidden bg-[radial-gradient(#e5e7eb_1.2px,transparent_1.2px)] [background-size:6px_6px] transition-all duration-300"
                           style={{
-                            left: `${(item.x / 21) * 100}%`,
-                            top: `${(item.y / 29.7) * 100}%`,
-                            width: `${(item.w / 21) * 100}%`,
-                            height: `${(item.h / 29.7) * 100}%`,
+                            width: `${containerW}px`,
+                            height: `${containerH}px`
                           }}
                         >
-                          <img src={item.imgUrl} className="w-full h-full object-contain opacity-95" alt="Item" />
-                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                            <span className="text-[7px] text-white font-bold truncate max-w-full px-1">{item.name}</span>
-                          </div>
-                          <span className="absolute bottom-0.5 right-0.5 bg-green-700 text-white text-[7px] font-bold px-0.5 rounded leading-none">
-                            {item.w.toFixed(1)}x{item.h.toFixed(1)}cm
-                          </span>
+                          {paginasFisicas[paginaActivaIndex]?.items.map((item) => (
+                            <div
+                              key={item.id}
+                              className="absolute border border-green-500 bg-green-500/10 flex items-center justify-center overflow-hidden group"
+                              style={{
+                                left: `${(item.x / anchoHoja) * 100}%`,
+                                top: `${(item.y / altoHoja) * 100}%`,
+                                width: `${(item.w / anchoHoja) * 100}%`,
+                                height: `${(item.h / altoHoja) * 100}%`,
+                              }}
+                            >
+                              <img src={item.imgUrl} className="w-full h-full object-contain opacity-95" alt="Item" />
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                <span className="text-[7px] text-white font-bold truncate max-w-full px-1">{item.name}</span>
+                              </div>
+                              <span className="absolute bottom-0.5 right-0.5 bg-green-700 text-white text-[7px] font-bold px-0.5 rounded leading-none">
+                                {item.w.toFixed(1)}x{item.h.toFixed(1)}cm
+                              </span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      )
+                    })()}
 
                     {/* Controles de Paginación */}
                     <div className="flex items-center gap-3">
@@ -1137,7 +1353,7 @@ export default function ImpresionPage() {
                       >
                         ◄ Ant
                       </button>
-                      <span className="text-[10px] font-bold text-gray-550">
+                      <span className="text-[10px] font-bold text-gray-555">
                         Hoja {paginaActivaIndex + 1} de {paginasFisicas.length}
                       </span>
                       <button 
@@ -1243,6 +1459,33 @@ export default function ImpresionPage() {
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Orientación de Hoja (Solo para Imágenes) */}
+              {tipoArchivo === 'imagen' && (
+                <div className="space-y-2 pb-2 border-b border-gray-100">
+                  <label className="text-[10px] font-bold text-gray-500 block uppercase">Orientación de las Hojas:</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setOrientacionHoja('portrait')}
+                      className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                        orientacionHoja === 'portrait' ? 'bg-green-600 text-white border-transparent' : 'bg-white border-gray-200 text-gray-550 hover:bg-gray-50'
+                      }`}
+                    >
+                      Vertical (Portrait)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOrientacionHoja('landscape')}
+                      className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                        orientacionHoja === 'landscape' ? 'bg-green-600 text-white border-transparent' : 'bg-white border-gray-200 text-gray-550 hover:bg-gray-50'
+                      }`}
+                    >
+                      Horizontal (Landscape)
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1414,16 +1657,25 @@ export default function ImpresionPage() {
               </div>
             </div>
 
-            <div className="flex gap-2 w-full pt-2">
+            <div className="grid grid-cols-3 gap-2 w-full pt-2">
               <button 
-                onClick={aplicarRecorte}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer"
+                type="button"
+                onClick={autoDetectarContorno}
+                className="bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer"
               >
-                Aplicar recorte
+                ✨ Auto-detectar
               </button>
               <button 
+                type="button"
+                onClick={aplicarRecorte}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer"
+              >
+                Aplicar
+              </button>
+              <button 
+                type="button"
                 onClick={() => setImagenACortarId(null)}
-                className="flex-1 bg-gray-150 hover:bg-gray-200 text-gray-700 font-semibold py-2 rounded-xl text-xs transition cursor-pointer"
+                className="bg-gray-150 hover:bg-gray-200 text-gray-700 font-semibold py-2 rounded-xl text-xs transition cursor-pointer"
               >
                 Cancelar
               </button>
