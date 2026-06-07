@@ -9,6 +9,7 @@ const supabaseServer = createClient(
 export interface LineaCarrito {
   codigo: string
   cantidad: number
+  precio_unitario?: number
 }
 
 export interface DatosCliente {
@@ -42,20 +43,29 @@ export async function crearPedido(
     return { ok: false, error: 'El carrito está vacío' }
   }
 
-  // Consultar precios reales desde la base de datos
+  // Consultar precios reales desde la base de datos (excluyendo items de impresión)
   const codigos = lineas.map(l => l.codigo)
-  const { data: productos, error: errP } = await supabaseServer
-    .from('ol_productos')
-    .select('codigo, precio_con_iva, stock')
-    .in('codigo', codigos)
+  const codigosFiltrados = codigos.filter(c => !c.startsWith('IMP-'))
+  
+  let productos: any[] = []
+  if (codigosFiltrados.length > 0) {
+    const { data: prods, error: errP } = await supabaseServer
+      .from('ol_productos')
+      .select('codigo, precio_con_iva, stock')
+      .in('codigo', codigosFiltrados)
 
-  if (errP || !productos) {
-    return { ok: false, error: 'Error al verificar productos' }
+    if (errP || !prods) {
+      return { ok: false, error: 'Error al verificar productos' }
+    }
+    productos = prods
   }
 
   // Verificar que todos los productos existen y tienen stock
   const mapaProductos = new Map(productos.map(p => [p.codigo, p]))
   for (const linea of lineas) {
+    if (linea.codigo.startsWith('IMP-')) {
+      continue // Bypass para items de impresión
+    }
     const prod = mapaProductos.get(linea.codigo)
     if (!prod) return { ok: false, error: `Producto ${linea.codigo} no encontrado` }
     if (prod.stock < linea.cantidad) {
@@ -65,6 +75,13 @@ export async function crearPedido(
 
   // Calcular total con precios del servidor
   const items = lineas.map(linea => {
+    if (linea.codigo.startsWith('IMP-')) {
+      return {
+        codigo: linea.codigo,
+        cantidad: linea.cantidad,
+        precio_unitario: linea.precio_unitario ?? 0.25,
+      }
+    }
     const prod = mapaProductos.get(linea.codigo)!
     return {
       codigo: linea.codigo,

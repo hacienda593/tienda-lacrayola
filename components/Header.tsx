@@ -123,6 +123,11 @@ export default function Header() {
                   🔄 Frecuentes
                 </Link>
                 <span className="text-gray-200 py-0.5">|</span>
+                <Link href="/impresion"
+                  className="shrink-0 text-sm font-bold text-green-700 hover:text-green-900 transition whitespace-nowrap py-0.5 flex items-center gap-1">
+                  🖨️ Impresiones
+                </Link>
+                <span className="text-gray-200 py-0.5">|</span>
                 {['Escolar','Arte','Oficina','Tecnologia','Juguetes','Manualidades','Libros','Pintura'].map(c => (
                   <Link key={c} href={`/productos?cat=${encodeURIComponent(c)}`}
                     className="shrink-0 text-sm text-gray-600 hover:text-green-700 font-medium transition whitespace-nowrap py-0.5">
@@ -136,6 +141,10 @@ export default function Header() {
                 <Link href="/productos?frecuentes=true"
                   className="shrink-0 text-xs text-green-700 hover:text-green-900 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200 transition whitespace-nowrap flex items-center gap-1">
                   🔄 Frecuentes
+                </Link>
+                <Link href="/impresion"
+                  className="shrink-0 text-xs text-green-700 hover:text-green-900 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200 transition whitespace-nowrap flex items-center gap-1">
+                  🖨️ Impresiones
                 </Link>
                 {['Escolar','Arte','Oficina','Juguetes','Libros'].map(c => (
                   <Link key={c} href={`/productos?cat=${encodeURIComponent(c)}`}
