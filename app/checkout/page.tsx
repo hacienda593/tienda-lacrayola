@@ -28,7 +28,8 @@ function abrirWhatsApp(
   referencias: string, 
   numeroPedido: number,
   metodoEntrega: 'domicilio' | 'retiro',
-  geo: { lat: number; lng: number } | null
+  geo: { lat: number; lng: number } | null,
+  pedirUbicacionChat: boolean
 ) {
   // Agrupar ítems por tienda para el mensaje
   const agrupados: Record<string, ItemCarrito[]> = {}
@@ -48,6 +49,10 @@ function abrirWhatsApp(
     ? (geo ? `\n📍 *Ubicación GPS:* https://www.google.com/maps?q=${geo.lat},${geo.lng}` : `\n📍 *Ubicación GPS:* ⚠️ (Por favor, comparte tu ubicación actual de WhatsApp por aquí)`)
     : ''
 
+  const notaUbicacion = pedirUbicacionChat && metodoEntrega === 'domicilio'
+    ? `\n\n🚚 *Para una entrega sin retrasos:* Por favor, compártenos tu ubicación por aquí (presionando el botón de clip 📎 > Ubicación en tu WhatsApp) para que nuestro repartidor encuentre tu casa fácilmente.`
+    : ''
+
   const msg = [
     `🛒 *Nuevo pedido #${String(numeroPedido).padStart(4,'0')}*`,
     `👤 *Cliente:* ${nombre}`,
@@ -59,7 +64,7 @@ function abrirWhatsApp(
     `  • Subtotal: ${fmt(subtotal)}`,
     metodoEntrega === 'domicilio' ? `  • Envío Consolidado: ${fmt(costoEnvio)}` : `  • Entrega: Retiro en tienda (Gratis)`,
     `  • *Total a pagar: ${fmt(granTotal)}*`,
-    `📍 *Forma de entrega:* ${entrega}${gpsLink}`,
+    `📍 *Forma de entrega:* ${entrega}${gpsLink}${notaUbicacion}`,
   ].filter(l => l !== undefined).join('\n')
   window.open(`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, '_blank')
 }
@@ -76,6 +81,7 @@ export default function CheckoutPage() {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [puntosGanados, setPuntosGanados] = useState<number | null>(null)
+  const [pedidoCompletado, setPedidoCompletado] = useState(false)
   const [metodoEntrega, setMetodoEntrega] = useState<'domicilio' | 'retiro'>('domicilio')
 
   const [verMapa, setVerMapa] = useState(false)
@@ -374,16 +380,17 @@ export default function CheckoutPage() {
       items:  items.map(i => ({ codigo: i.codigo, descripcion: i.descripcion, cantidad: i.cantidad, precio_unitario: i.precio_unitario })),
     })
 
-    // Sumar puntos: en nube si está registrado, local si es invitado
-    let ganados: number
+    // Sumar puntos: solo si el usuario está registrado
+    let ganados = 0
     if (user) {
       ganados = await sumarPuntosCloud(user.id, total)
+      setPuntosGanados(ganados)
     } else {
-      ganados = sumarPuntos(total)
+      setPuntosGanados(0)
     }
-    setPuntosGanados(ganados)
 
     vaciarCarrito()
+    setPedidoCompletado(true)
 
     abrirWhatsApp(
       WA_NUMERO, 
@@ -397,27 +404,30 @@ export default function CheckoutPage() {
       metodoEntrega === 'retiro' ? 'Retiro directo en local' : form.referencias, 
       resultado.numeroPedido!,
       metodoEntrega,
-      metodoEntrega === 'retiro' ? null : geo
+      metodoEntrega === 'retiro' ? null : geo,
+      direccionSeleccionadaId === 'nueva'
     )
 
     setTimeout(() => router.push(`/pedido/${resultado.pedidoId}`), 1800)
   }
 
-  if (items.length === 0 && !puntosGanados) {
+  if (items.length === 0 && !pedidoCompletado) {
     router.replace('/carrito')
     return null
   }
 
   // Pantalla de éxito brevemente antes de redirigir
-  if (puntosGanados !== null) {
+  if (pedidoCompletado) {
     return (
       <div className="max-w-lg mx-auto px-4 py-16 flex flex-col items-center gap-4 text-center">
         <CheckCircle size={56} className="text-green-500" />
         <h2 className="text-xl font-bold text-gray-800">¡Pedido enviado!</h2>
-        <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-5 py-3">
-          <Star size={18} className="text-yellow-500 fill-yellow-400" />
-          <span className="text-sm font-semibold text-yellow-800">+{puntosGanados} puntos ganados</span>
-        </div>
+        {user && puntosGanados !== null && puntosGanados > 0 && (
+          <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-5 py-3">
+            <Star size={18} className="text-yellow-500 fill-yellow-400" />
+            <span className="text-sm font-semibold text-yellow-800">+{puntosGanados} puntos ganados</span>
+          </div>
+        )}
         <p className="text-sm text-gray-500">Redirigiendo al seguimiento...</p>
       </div>
     )
@@ -647,13 +657,15 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* Puntos a ganar */}
-        <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2.5">
-          <Star size={15} className="text-yellow-500 fill-yellow-400 shrink-0" />
-          <span className="text-xs text-yellow-800">
-            Ganarás <strong>+{Math.floor(total)} puntos</strong> con esta compra
-          </span>
-        </div>
+        {/* Puntos a ganar (solo registrados) */}
+        {user && (
+          <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2.5">
+            <Star size={15} className="text-yellow-500 fill-yellow-400 shrink-0" />
+            <span className="text-xs text-yellow-800">
+              Ganarás <strong>+{Math.floor(total)} puntos</strong> con esta compra
+            </span>
+          </div>
+        )}
 
         {/* Resumen */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3.5">
