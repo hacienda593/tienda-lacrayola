@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('lc_perfil')
       localStorage.removeItem('lc_puntos')
       localStorage.removeItem('lc_favoritos')
+      localStorage.removeItem('lc_pedidos_local')
       window.dispatchEvent(new Event('puntos-update'))
       window.dispatchEvent(new Event('favoritos-update'))
       window.location.href = '/'

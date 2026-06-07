@@ -1,9 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { getPuntosCloud, progresoNivel, BADGE_NIVEL, EstadoPuntosCloud } from '@/lib/puntosCloud'
+import { getPuntosCloud, progresoNivel, BADGE_NIVEL, EstadoPuntosCloud, sincronizarPuntosLocales } from '@/lib/puntosCloud'
 import { getFavoritosCloud, sincronizarFavoritosLocales } from '@/lib/favoritosCloud'
 import { getFavoritos } from '@/lib/favoritos'
+import { getPuntos } from '@/lib/puntos'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import {
@@ -15,12 +16,82 @@ import Link from 'next/link'
 function fmt(n: number) { return '$' + n.toFixed(2) }
 
 // ── Login / consulta invitado ──────────────────────────────────────
-function PanelInvitado({ onBuscar }: { onBuscar: (tel: string) => void }) {
+function PanelInvitado() {
   const { loginGoogle } = useAuth()
-  const [tel, setTel] = useState('')
+  const [localPuntos, setLocalPuntos] = useState<any | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+
+  useEffect(() => {
+    setLocalPuntos(getPuntos())
+  }, [])
 
   return (
     <div className="space-y-5">
+      {/* Tarjeta de puntos acumulados para invitados */}
+      {localPuntos && localPuntos.total > 0 && (
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Trophy size={17} className="text-yellow-500" />
+              <span className="font-bold text-gray-800 text-sm">Mis puntos acumulados</span>
+            </div>
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
+              Temporal (Invitado)
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-center">
+            <div className="bg-yellow-50 rounded-xl p-3">
+              <div className="text-lg font-extrabold text-yellow-700">{localPuntos.disponibles}</div>
+              <div className="text-[10px] text-yellow-600 font-medium">Disponibles</div>
+            </div>
+            <div className="bg-green-50 rounded-xl p-3">
+              <div className="text-lg font-extrabold text-green-700">{fmt(localPuntos.disponibles / 100)}</div>
+              <div className="text-[10px] text-green-600 font-medium">En descuentos</div>
+            </div>
+          </div>
+          
+          <button
+            onClick={() => setModalOpen(true)}
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            🎟️ Canjear puntos
+          </button>
+        </div>
+      )}
+
+      {/* Modal de Advertencia de Registro */}
+      {modalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-xl animate-fade-in text-left">
+            <div className="text-center space-y-2">
+              <div className="text-4xl">🔑</div>
+              <h3 className="font-bold text-gray-800 text-base">Registro Requerido</h3>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Para hacer uso de tus **{localPuntos?.disponibles} puntos** y convertirlos en descuentos, debes registrarte con Google. 
+                <br/><br/>
+                ¡Tus puntos acumulados se guardarán permanentemente en tu cuenta!
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  setModalOpen(false)
+                  loginGoogle()
+                }}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                🔐 Registrarme con Google
+              </button>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl text-xs transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-4">
         <div className="text-center space-y-1">
           <div className="text-4xl mb-2">🖍️</div>
@@ -54,28 +125,6 @@ function PanelInvitado({ onBuscar }: { onBuscar: (tel: string) => void }) {
         </div>
       </div>
 
-      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-3">
-        <div className="flex items-center gap-2">
-          <Phone size={17} className="text-green-600" />
-          <h3 className="font-bold text-gray-800 text-sm">Consultar mis pedidos sin cuenta</h3>
-        </div>
-        <p className="text-xs text-gray-400">Ingresa tu número de WhatsApp para ver tus pedidos anteriores.</p>
-        <div className="flex gap-2">
-          <input
-            value={tel}
-            onChange={e => setTel(e.target.value.replace(/\D/g, ''))}
-            placeholder="0991234567"
-            maxLength={10}
-            className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-500"
-          />
-          <button
-            onClick={() => tel.length >= 9 && onBuscar(tel)}
-            disabled={tel.length < 9}
-            className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition">
-            Buscar
-          </button>
-        </div>
-      </div>
     </div>
   )
 }
@@ -87,6 +136,7 @@ function PanelRegistrado() {
   const [numFavs,    setNumFavs]    = useState(0)
   const [numPedidos, setNumPedidos] = useState(0)
   const [sincronizado, setSincronizado] = useState(false)
+  const [sincronizadoPuntos, setSincronizadoPuntos] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -98,6 +148,14 @@ function PanelRegistrado() {
     const locales = getFavoritos()
     if (locales.length > 0) {
       sincronizarFavoritosLocales(user.id, locales).then(() => setSincronizado(true))
+    }
+    const localPpts = getPuntos()
+    if (localPpts.total > 0) {
+      sincronizarPuntosLocales(user.id, localPpts.total).then(() => {
+        localStorage.removeItem('lc_puntos')
+        setSincronizadoPuntos(true)
+        getPuntosCloud(user.id).then(setPuntos)
+      })
     }
   }, [user])
 
@@ -197,6 +255,12 @@ function PanelRegistrado() {
         </div>
       )}
 
+      {sincronizadoPuntos && (
+        <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2.5 text-xs text-yellow-800">
+          <CheckCircle size={13} className="text-yellow-600" /> Tus puntos acumulados como invitado se guardaron en tu cuenta.
+        </div>
+      )}
+
       <button onClick={logout}
         className="w-full flex items-center justify-center gap-2 border border-gray-200 hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-gray-500 font-semibold py-3 rounded-xl transition text-sm">
         <LogOut size={14} /> Cerrar sesión
@@ -205,63 +269,11 @@ function PanelRegistrado() {
   )
 }
 
-// ── Pedidos por teléfono ───────────────────────────────────────────
-function PanelPedidosTel({ telefono, onVolver }: { telefono: string; onVolver: () => void }) {
-  const router = useRouter()
-  const [pedidos, setPedidos] = useState<{ id: string; numero: number; estado: string; total: number; created_at: string }[]>([])
-  const [cargando, setCargando] = useState(true)
 
-  useEffect(() => {
-    supabase.from('ol_pedidos')
-      .select('id,numero,estado,total,created_at')
-      .eq('telefono', telefono)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => { setPedidos(data ?? []); setCargando(false) })
-  }, [telefono])
-
-  const ESTADOS: Record<string, string> = {
-    pendiente: 'bg-yellow-100 text-yellow-700', confirmado: 'bg-blue-100 text-blue-700',
-    preparando: 'bg-purple-100 text-purple-700', enviado: 'bg-green-100 text-green-700',
-    entregado: 'bg-green-200 text-green-800',   cancelado: 'bg-red-100 text-red-700',
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-bold text-gray-800">Pedidos · {telefono}</h2>
-        <button onClick={onVolver} className="text-xs text-gray-400 underline hover:text-gray-600">← Volver</button>
-      </div>
-      {cargando ? (
-        <div className="flex justify-center py-10"><Loader2 size={24} className="animate-spin text-green-500" /></div>
-      ) : pedidos.length === 0 ? (
-        <div className="text-center py-12 space-y-2">
-          <Package size={40} className="text-gray-200 mx-auto" />
-          <p className="text-gray-500 font-medium">No encontramos pedidos con ese número</p>
-          <p className="text-xs text-gray-400">Verifica que sea el mismo número que usaste al hacer el pedido.</p>
-        </div>
-      ) : (
-        pedidos.map(p => (
-          <div key={p.id} onClick={() => router.push(`/pedido/${p.id}`)}
-            className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm cursor-pointer hover:shadow-md transition">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-bold text-gray-800 text-sm">Pedido #{String(p.numero).padStart(4,'0')}</span>
-              <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${ESTADOS[p.estado] ?? 'bg-gray-100 text-gray-600'}`}>{p.estado}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">{new Date(p.created_at).toLocaleDateString('es')}</span>
-              <span className="font-bold text-green-700 text-sm">{fmt(p.total)}</span>
-            </div>
-          </div>
-        ))
-      )}
-    </div>
-  )
-}
 
 // ── Página ─────────────────────────────────────────────────────────
 export default function CuentaPage() {
   const { user, loading } = useAuth()
-  const [telBusqueda, setTelBusqueda] = useState<string | null>(null)
 
   if (loading) {
     return (
@@ -276,10 +288,8 @@ export default function CuentaPage() {
       <h1 className="text-lg font-bold text-gray-800 mb-5">Mi cuenta</h1>
       {user ? (
         <PanelRegistrado />
-      ) : telBusqueda ? (
-        <PanelPedidosTel telefono={telBusqueda} onVolver={() => setTelBusqueda(null)} />
       ) : (
-        <PanelInvitado onBuscar={setTelBusqueda} />
+        <PanelInvitado />
       )}
     </div>
   )

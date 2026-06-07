@@ -115,29 +115,29 @@ export default function CheckoutPage() {
   // Cargar direcciones guardadas
   useEffect(() => {
     async function cargarDirecciones() {
-      const tel = form.telefono.trim()
-      const userId = user?.id || null
-
-      if (!userId && !tel) {
-        setDirecciones([])
-        return
-      }
-
-      let query = supabase.from('ol_direcciones_cliente').select('*')
-      if (userId) {
-        query = query.or(`user_id.eq.${userId},telefono.eq.${tel}`)
+      if (user) {
+        // Registrado: consultar en Supabase (solo por user_id, 100% seguro)
+        const { data } = await supabase
+          .from('ol_direcciones_cliente')
+          .select('*')
+          .eq('user_id', user.id)
+        if (data) {
+          setDirecciones(data)
+        }
       } else {
-        query = query.eq('telefono', tel)
-      }
-
-      const { data } = await query
-      if (data) {
-        setDirecciones(data)
+        // Invitado: cargar localmente de localStorage
+        if (typeof window !== 'undefined') {
+          try {
+            const raw = JSON.parse(localStorage.getItem('lc_direcciones') || 'null')
+            setDirecciones(raw || [])
+          } catch {
+            setDirecciones([])
+          }
+        }
       }
     }
-    const timer = setTimeout(cargarDirecciones, 600)
-    return () => clearTimeout(timer)
-  }, [form.telefono, user])
+    cargarDirecciones()
+  }, [user])
 
   function alSeleccionarDireccion(id: string) {
     setDireccionSeleccionadaId(id)
@@ -169,31 +169,61 @@ export default function CheckoutPage() {
     setGuardandoDir(true)
     setDirMsg('')
 
-    const { data, error } = await supabase.from('ol_direcciones_cliente')
-      .upsert({
-        user_id: user?.id || null,
-        telefono: form.telefono.trim(),
-        nombre_etiqueta: nombreEtiqueta.trim(),
-        direccion_texto: form.direccion.trim(),
-        ciudad: form.ciudad,
-        referencias: form.referencias || null,
-        geo_lat: geo.lat,
-        geo_lng: geo.lng,
-      }, { onConflict: user?.id ? 'user_id,nombre_etiqueta' : 'telefono,nombre_etiqueta' })
-      .select()
+    if (user) {
+      // Registrado: guardar en Supabase (seguro, por user_id)
+      const { data, error } = await supabase.from('ol_direcciones_cliente')
+        .upsert({
+          user_id: user.id,
+          telefono: form.telefono.trim(),
+          nombre_etiqueta: nombreEtiqueta.trim(),
+          direccion_texto: form.direccion.trim(),
+          ciudad: form.ciudad,
+          referencias: form.referencias || null,
+          geo_lat: geo.lat,
+          geo_lng: geo.lng,
+        }, { onConflict: 'user_id,nombre_etiqueta' })
+        .select()
 
-    setGuardandoDir(false)
-    if (error) {
-      setDirMsg('Error al guardar: ' + error.message)
+      setGuardandoDir(false)
+      if (error) {
+        setDirMsg('Error al guardar: ' + error.message)
+      } else {
+        setDirMsg('✓ Guardada con éxito')
+        if (data && data[0]) {
+          setDirecciones(prev => {
+            const filtered = prev.filter(x => x.nombre_etiqueta !== nombreEtiqueta.trim())
+            return [...filtered, data[0]]
+          })
+          setDireccionSeleccionadaId(data[0].id)
+          setNombreEtiqueta('')
+        }
+      }
     } else {
-      setDirMsg('✓ Guardada con éxito')
-      if (data && data[0]) {
-        setDirecciones(prev => {
-          const filtered = prev.filter(x => x.nombre_etiqueta !== nombreEtiqueta.trim())
-          return [...filtered, data[0]]
-        })
-        setDireccionSeleccionadaId(data[0].id)
+      // Invitado: guardar únicamente en localStorage (100% seguro contra espionaje)
+      try {
+        const localDir = {
+          id: 'local-' + Date.now(),
+          user_id: null,
+          telefono: form.telefono.trim(),
+          nombre_etiqueta: nombreEtiqueta.trim(),
+          direccion_texto: form.direccion.trim(),
+          ciudad: form.ciudad,
+          referencias: form.referencias || null,
+          geo_lat: geo.lat,
+          geo_lng: geo.lng,
+        }
+        const prev = JSON.parse(localStorage.getItem('lc_direcciones') || '[]')
+        const filtered = prev.filter((x: any) => x.nombre_etiqueta !== nombreEtiqueta.trim())
+        const nuevaLista = [...filtered, localDir]
+        localStorage.setItem('lc_direcciones', JSON.stringify(nuevaLista))
+        setDirecciones(nuevaLista)
+        setDireccionSeleccionadaId(localDir.id)
         setNombreEtiqueta('')
+        setDirMsg('✓ Guardada en tu dispositivo')
+      } catch (err: any) {
+        setDirMsg('Error al guardar localmente')
+      } finally {
+        setGuardandoDir(false)
       }
     }
   }
@@ -380,13 +410,14 @@ export default function CheckoutPage() {
       items:  items.map(i => ({ codigo: i.codigo, descripcion: i.descripcion, cantidad: i.cantidad, precio_unitario: i.precio_unitario })),
     })
 
-    // Sumar puntos: solo si el usuario está registrado
+    // Sumar puntos: registrados en la nube, invitados localmente
     let ganados = 0
     if (user) {
       ganados = await sumarPuntosCloud(user.id, total)
       setPuntosGanados(ganados)
     } else {
-      setPuntosGanados(0)
+      ganados = sumarPuntos(total)
+      setPuntosGanados(ganados)
     }
 
     vaciarCarrito()
@@ -422,10 +453,12 @@ export default function CheckoutPage() {
       <div className="max-w-lg mx-auto px-4 py-16 flex flex-col items-center gap-4 text-center">
         <CheckCircle size={56} className="text-green-500" />
         <h2 className="text-xl font-bold text-gray-800">¡Pedido enviado!</h2>
-        {user && puntosGanados !== null && puntosGanados > 0 && (
+        {puntosGanados !== null && puntosGanados > 0 && (
           <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-5 py-3">
             <Star size={18} className="text-yellow-500 fill-yellow-400" />
-            <span className="text-sm font-semibold text-yellow-800">+{puntosGanados} puntos ganados</span>
+            <span className="text-sm font-semibold text-yellow-800">
+              {user ? `+${puntosGanados} puntos ganados` : `+${puntosGanados} puntos temporales acumulados`}
+            </span>
           </div>
         )}
         <p className="text-sm text-gray-500">Redirigiendo al seguimiento...</p>
@@ -657,15 +690,17 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* Puntos a ganar (solo registrados) */}
-        {user && (
-          <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2.5">
-            <Star size={15} className="text-yellow-500 fill-yellow-400 shrink-0" />
-            <span className="text-xs text-yellow-800">
-              Ganarás <strong>+{Math.floor(total)} puntos</strong> con esta compra
-            </span>
-          </div>
-        )}
+        {/* Puntos a ganar */}
+        <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2.5">
+          <Star size={15} className="text-yellow-500 fill-yellow-400 shrink-0" />
+          <span className="text-xs text-yellow-800">
+            {user ? (
+              <>Ganarás <strong>+{Math.floor(total)} puntos</strong> con esta compra</>
+            ) : (
+              <>Ganarás <strong>+{Math.floor(total)} puntos temporales</strong>. Regístrate para guardarlos de forma permanente y poder canjearlos.</>
+            )}
+          </span>
+        </div>
 
         {/* Resumen */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3.5">

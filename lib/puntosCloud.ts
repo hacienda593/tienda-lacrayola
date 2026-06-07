@@ -41,6 +41,19 @@ export async function sumarPuntosCloud(userId: string, totalCompra: number): Pro
   return ganados
 }
 
+export async function sincronizarPuntosLocales(userId: string, totalPuntosLocales: number): Promise<void> {
+  if (totalPuntosLocales <= 0) return
+  const actual = await getPuntosCloud(userId)
+  await supabase.from('ol_puntos').upsert({
+    user_id:     userId,
+    total:       actual.total + totalPuntosLocales,
+    disponibles: actual.disponibles + totalPuntosLocales,
+    canjeados:   actual.canjeados,
+    updated_at:  new Date().toISOString(),
+  })
+}
+
+
 export function progresoNivel(total: number) {
   if (total < 300)  return { siguiente: 'Plata',   faltan: 300  - total, porcentaje: (total / 300)  * 100 }
   if (total < 800)  return { siguiente: 'Oro',     faltan: 800  - total, porcentaje: ((total - 300) / 500) * 100 }
