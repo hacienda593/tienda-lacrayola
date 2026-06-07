@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { getPuntosCloud, progresoNivel, BADGE_NIVEL, EstadoPuntosCloud, sincronizarPuntosLocales } from '@/lib/puntosCloud'
 import { getFavoritosCloud, sincronizarFavoritosLocales } from '@/lib/favoritosCloud'
@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import {
   LogOut, User, Trophy, Heart,
   Package, Phone, ChevronRight, Loader2, CheckCircle, Shield,
+  MapPin, Trash2, Edit, Plus, X,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -138,6 +139,252 @@ function PanelRegistrado() {
   const [sincronizado, setSincronizado] = useState(false)
   const [sincronizadoPuntos, setSincronizadoPuntos] = useState(false)
 
+  // Estados de direcciones
+  const [direcciones, setDirecciones] = useState<any[]>([])
+  const [cargandoDirs, setCargandoDirs] = useState(true)
+  const [editandoDir, setEditandoDir] = useState<any | null>(null)
+
+  // Formulario states
+  const [nombreEtiqueta, setNombreEtiqueta] = useState('')
+  const [telefonoForm, setTelefonoForm] = useState('')
+  const [direccionTexto, setDireccionTexto] = useState('')
+  const [referencias, setReferencias] = useState('')
+  const [ciudad, setCiudad] = useState('Los Bancos')
+  const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null)
+  const [verMapa, setVerMapa] = useState(false)
+  const [geoMsg, setGeoMsg] = useState('')
+  const [guardandoDir, setGuardandoDir] = useState(false)
+  const [dirMsg, setDirMsg] = useState('')
+
+  const mapContainerRef = useRef<HTMLDivElement | null>(null)
+  const mapInstanceRef = useRef<any>(null)
+  const markerRef = useRef<any>(null)
+
+  async function cargarDirecciones() {
+    if (!user) return
+    setCargandoDirs(true)
+    const { data } = await supabase
+      .from('ol_direcciones_cliente')
+      .select('*')
+      .eq('user_id', user.id)
+    if (data) {
+      setDirecciones(data)
+    }
+    setCargandoDirs(false)
+  }
+
+  function iniciarNuevaDireccion() {
+    setEditandoDir({ nuevo: true })
+    setNombreEtiqueta('')
+    const perfil = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('lc_perfil') || 'null') : null
+    setTelefonoForm(perfil?.telefono || '')
+    setDireccionTexto('')
+    setReferencias('')
+    setCiudad('Los Bancos')
+    setGeo(null)
+    setVerMapa(false)
+    setGeoMsg('')
+    setDirMsg('')
+  }
+
+  function iniciarEdicion(d: any) {
+    setEditandoDir(d)
+    setNombreEtiqueta(d.nombre_etiqueta)
+    setTelefonoForm(d.telefono)
+    setDireccionTexto(d.direccion_texto)
+    setReferencias(d.referencias || '')
+    setCiudad(d.ciudad || 'Los Bancos')
+    setGeo({ lat: d.geo_lat, lng: d.geo_lng })
+    setVerMapa(true)
+    setGeoMsg('✓ Ubicación cargada')
+    setDirMsg('')
+  }
+
+  async function eliminarDireccion(id: string) {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta dirección?')) return
+    const { error } = await supabase
+      .from('ol_direcciones_cliente')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      alert('Error al eliminar: ' + error.message)
+    } else {
+      setDirecciones(prev => prev.filter(x => x.id !== id))
+    }
+  }
+
+  async function guardarDireccion() {
+    if (!user) return
+    if (!nombreEtiqueta.trim()) { setDirMsg('Escribe un nombre (ej: Casa, Trabajo)'); return }
+    if (!telefonoForm.trim()) { setDirMsg('Ingresa tu teléfono de contacto'); return }
+    if (!direccionTexto.trim()) { setDirMsg('Ingresa la dirección detallada'); return }
+    if (!geo) { setDirMsg('Obtén tu ubicación GPS en el mapa'); return }
+
+    const duplicado = direcciones.find(d =>
+      d.nombre_etiqueta.toLowerCase() === nombreEtiqueta.trim().toLowerCase() &&
+      (!editandoDir || editandoDir.id !== d.id)
+    )
+    if (duplicado) {
+      setDirMsg(`Ya tienes una dirección guardada como "${nombreEtiqueta.trim()}". Por favor, usa otra etiqueta.`)
+      return
+    }
+
+    setGuardandoDir(true)
+    setDirMsg('')
+
+    const payload = {
+      user_id: user.id,
+      telefono: telefonoForm.trim(),
+      nombre_etiqueta: nombreEtiqueta.trim(),
+      direccion_texto: direccionTexto.trim(),
+      ciudad: ciudad,
+      referencias: referencias.trim() || null,
+      geo_lat: geo.lat,
+      geo_lng: geo.lng
+    }
+
+    let res
+    if (editandoDir && !editandoDir.nuevo) {
+      res = await supabase
+        .from('ol_direcciones_cliente')
+        .update(payload)
+        .eq('id', editandoDir.id)
+        .select()
+    } else {
+      res = await supabase
+        .from('ol_direcciones_cliente')
+        .insert(payload)
+        .select()
+    }
+
+    const { error } = res
+    setGuardandoDir(false)
+
+    if (error) {
+      setDirMsg('Error al guardar: ' + error.message)
+    } else {
+      setDirMsg('✓ Guardado con éxito')
+      setEditandoDir(null)
+      cargarDirecciones()
+    }
+  }
+
+  function pedirUbicacion() {
+    if (!navigator.geolocation) {
+      setGeoMsg('No disponible')
+      return
+    }
+    setGeoMsg('Obteniendo...')
+
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 8000,
+      maximumAge: 0
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setGeoMsg('✓ Ubicación obtenida')
+        setVerMapa(true)
+      },
+      err => {
+        console.warn('Fallo GPS alta precisión, intentando red móvil...', err)
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+            setGeoMsg('✓ Ubicación (red)')
+            setVerMapa(true)
+          },
+          err2 => {
+            console.error('Fallo geolocalización total:', err2)
+            let msg = 'No se pudo obtener'
+            if (err2.code === err2.PERMISSION_DENIED) {
+              msg = 'Permiso denegado'
+            } else if (err2.code === err2.POSITION_UNAVAILABLE) {
+              msg = 'No disponible'
+            } else if (err2.code === err2.TIMEOUT) {
+              msg = 'Tiempo agotado'
+            }
+            setGeoMsg(msg)
+          },
+          { enableHighAccuracy: false, timeout: 8000 }
+        )
+      },
+      options
+    )
+  }
+
+  // Cargar e inicializar Leaflet dinámicamente para el formulario
+  useEffect(() => {
+    if (typeof window === 'undefined' || !mapContainerRef.current || !verMapa) return
+
+    let LInstance: any = null
+
+    async function initMap() {
+      LInstance = (await import('leaflet')).default
+      await import('leaflet/dist/leaflet.css')
+
+      delete LInstance.Icon.Default.prototype._getIconUrl
+      LInstance.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+      })
+
+      const centerLat = geo?.lat ?? -0.0221
+      const centerLng = geo?.lng ?? -78.8983
+
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove()
+        mapInstanceRef.current = null
+      }
+
+      const map = LInstance.map(mapContainerRef.current).setView([centerLat, centerLng], 15)
+      mapInstanceRef.current = map
+
+      LInstance.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map)
+
+      const marker = LInstance.marker([centerLat, centerLng], { draggable: true }).addTo(map)
+      markerRef.current = marker
+
+      marker.on('dragend', () => {
+        const position = marker.getLatLng()
+        setGeo({ lat: position.lat, lng: position.lng })
+        setGeoMsg('✓ Ubicación del mapa')
+      })
+
+      map.on('click', (e: any) => {
+        marker.setLatLng(e.latlng)
+        setGeo({ lat: e.latlng.lat, lng: e.latlng.lng })
+        setGeoMsg('✓ Ubicación del mapa')
+      })
+    }
+
+    initMap()
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove()
+        mapInstanceRef.current = null
+      }
+    }
+  }, [verMapa])
+
+  // Sincronizar mapa si geo cambia externamente
+  useEffect(() => {
+    if (mapInstanceRef.current && markerRef.current && geo && verMapa) {
+      const currentPos = markerRef.current.getLatLng()
+      if (Math.abs(currentPos.lat - geo.lat) > 0.00001 || Math.abs(currentPos.lng - geo.lng) > 0.00001) {
+        mapInstanceRef.current.setView([geo.lat, geo.lng], 15)
+        markerRef.current.setLatLng([geo.lat, geo.lng])
+      }
+    }
+  }, [geo, verMapa])
+
   useEffect(() => {
     if (!user) return
     getPuntosCloud(user.id).then(setPuntos)
@@ -145,6 +392,9 @@ function PanelRegistrado() {
     supabase.from('ol_pedidos').select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .then(({ count }) => setNumPedidos(count ?? 0))
+    
+    cargarDirecciones()
+
     const locales = getFavoritos()
     if (locales.length > 0) {
       sincronizarFavoritosLocales(user.id, locales).then(() => setSincronizado(true))
@@ -247,6 +497,188 @@ function PanelRegistrado() {
           </div>
           <ChevronRight size={14} className="text-gray-300" />
         </Link>
+      </div>
+
+      {/* Direcciones de entrega */}
+      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MapPin size={17} className="text-green-600" />
+            <span className="font-bold text-gray-800">Direcciones de entrega</span>
+          </div>
+          {!editandoDir && (
+            <button
+              onClick={iniciarNuevaDireccion}
+              className="flex items-center gap-1 text-xs font-bold text-green-600 hover:text-green-700 transition cursor-pointer"
+            >
+              <Plus size={14} /> Agregar
+            </button>
+          )}
+        </div>
+
+        {cargandoDirs ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 size={20} className="animate-spin text-green-500" />
+          </div>
+        ) : direcciones.length === 0 && !editandoDir ? (
+          <p className="text-xs text-gray-400 italic">No tienes direcciones guardadas. Agrega una para que aparezca precargada al finalizar tus pedidos.</p>
+        ) : (
+          <div className="space-y-3">
+            {!editandoDir && direcciones.map(d => (
+              <div key={d.id} className="border border-gray-100 rounded-xl p-3 flex items-start justify-between gap-3 bg-gray-50/50 hover:bg-gray-50 transition">
+                <div className="space-y-1 text-left min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[9px] font-bold bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      {d.nombre_etiqueta}
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-semibold">{d.telefono}</span>
+                  </div>
+                  <p className="text-xs text-gray-750 font-semibold mt-1 break-words">{d.direccion_texto}, {d.ciudad}</p>
+                  {d.referencias && <p className="text-[10px] text-gray-500 italic truncate">Ref: {d.referencias}</p>}
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button onClick={() => iniciarEdicion(d)} className="text-gray-400 hover:text-green-600 p-1 transition cursor-pointer">
+                    <Edit size={14} />
+                  </button>
+                  <button onClick={() => eliminarDireccion(d.id)} className="text-gray-400 hover:text-red-650 p-1 transition cursor-pointer">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Formulario de creación/edición */}
+        {editandoDir && (
+          <div className="border border-gray-150 rounded-xl p-4 bg-gray-50/50 space-y-3.5 transition-all text-left">
+            <div className="flex items-center justify-between border-b border-gray-150 pb-2">
+              <span className="text-xs font-bold text-gray-700">
+                {editandoDir.nuevo ? '➕ Nueva dirección de entrega' : '📝 Editar dirección de entrega'}
+              </span>
+              <button onClick={() => setEditandoDir(null)} className="text-gray-400 hover:text-red-500 cursor-pointer">
+                <X size={15} />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-left">
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 block mb-1">Nombre / Etiqueta *</label>
+                <input
+                  type="text"
+                  value={nombreEtiqueta}
+                  onChange={e => setNombreEtiqueta(e.target.value)}
+                  placeholder="Ej: Casa, Trabajo, Escuela, Casa Mamá..."
+                  className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 block mb-1">Teléfono de contacto *</label>
+                <input
+                  type="tel"
+                  value={telefonoForm}
+                  onChange={e => setTelefonoForm(e.target.value)}
+                  placeholder="Ej: 0991234567"
+                  className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 block mb-1">Ciudad</label>
+                <input
+                  type="text"
+                  value={ciudad}
+                  onChange={e => setCiudad(e.target.value)}
+                  placeholder="Ej: Los Bancos"
+                  className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 block mb-1">Dirección exacta *</label>
+                <input
+                  type="text"
+                  value={direccionTexto}
+                  onChange={e => setDireccionTexto(e.target.value)}
+                  placeholder="Calle, número de casa, barrio..."
+                  className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-500 block mb-1">Referencias de entrega (Opcional)</label>
+                <input
+                  type="text"
+                  value={referencias}
+                  onChange={e => setReferencias(e.target.value)}
+                  placeholder="Frente a la tienda, portón negro..."
+                  className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500"
+                />
+              </div>
+
+              {/* Botones del mapa */}
+              <div className="flex gap-3 justify-end items-center border-t border-gray-150/50 pt-2 flex-wrap">
+                {geoMsg && (
+                  <span className={`text-[10px] font-bold ${geoMsg.includes('denegado') || geoMsg.includes('No') ? 'text-orange-600' : 'text-green-600'}`}>
+                    {geoMsg}
+                  </span>
+                )}
+                <button type="button" onClick={pedirUbicacion}
+                  className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-green-600 transition cursor-pointer">
+                  <MapPin size={11}/> Obtener GPS
+                </button>
+                <button type="button" onClick={() => {
+                  if (!geo) {
+                    setGeo({ lat: -0.0221, lng: -78.8983 })
+                    setGeoMsg('✓ Ubicación manual')
+                  }
+                  setVerMapa(!verMapa)
+                }}
+                  className="flex items-center gap-1 text-[10px] text-green-600 font-bold underline cursor-pointer">
+                  🗺️ {verMapa ? 'Ocultar mapa' : 'Ubicar en mapa'}
+                </button>
+              </div>
+
+              {/* Contenedor del mapa */}
+              {verMapa && (
+                <div className="space-y-1.5 pt-1 border-t border-gray-150/50 relative z-10">
+                  <div className="text-[10px] text-gray-450 flex items-center justify-between">
+                    <span>Arrastra la chincheta sobre tu ubicación exacta:</span>
+                    <button type="button" onClick={() => setVerMapa(false)} className="text-red-500 hover:underline">Ocultar</button>
+                  </div>
+                  <div 
+                    ref={mapContainerRef} 
+                    className="w-full h-[180px] rounded-xl border border-gray-200 bg-gray-100 overflow-hidden relative z-10" 
+                  />
+                  {geo && (
+                    <div className="text-[9px] text-gray-450 text-right">
+                      Lat: {geo.lat.toFixed(5)} · Lng: {geo.lng.toFixed(5)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {dirMsg && <p className="text-[10px] text-center font-bold text-orange-600">{dirMsg}</p>}
+
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={guardarDireccion}
+                disabled={guardandoDir}
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer"
+              >
+                {guardandoDir ? 'Guardando...' : '💾 Guardar dirección'}
+              </button>
+              <button
+                onClick={() => setEditandoDir(null)}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl text-xs transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {sincronizado && (
