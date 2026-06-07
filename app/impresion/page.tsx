@@ -24,6 +24,7 @@ interface ImagenImpresion {
   customH: number
   colorMode: 'bn' | 'color'
   esScreenshot: boolean
+  aspectRatio: number // width / height
 }
 
 interface PackedItem {
@@ -84,7 +85,10 @@ export default function ImpresionPage() {
   const [errorMsg, setErrorMsg] = useState('')
   const [msgCarga, setMsgCarga] = useState('')
 
-  // 1. Manejador de Carga de Archivos
+  // Bloqueo de Proporciones en personalizado
+  const [bloquearProporcion, setBloquearProporcion] = useState(true)
+
+  // 1. Manejador de Carga de Archivos con detección asíncrona de Aspect Ratio
   const handleUploadArchivos = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
     setErrorMsg('')
@@ -98,33 +102,56 @@ export default function ImpresionPage() {
     
     if (isImg) {
       if (tipoArchivo === 'documento') {
-        // Reiniciar documento si cambia a imagen
         setDocFile(null)
       }
       setTipoArchivo('imagen')
+      setMsgCarga('Procesando imágenes...')
       
-      const nuevasImgs: ImagenImpresion[] = files.filter(f => f.type.startsWith('image/')).map(f => {
-        const url = URL.createObjectURL(f)
-        const nameLower = f.name.toLowerCase()
-        const esScreenshot = nameLower.includes('screenshot') || nameLower.includes('captura')
-        
-        return {
-          id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          file: f,
-          name: f.name,
-          size: f.size,
-          rawUrl: url,
-          croppedUrl: null,
-          formatoSize: 'A6', // default to A6 (1/4 page) to showcase packing
-          customW: 10,
-          customH: 15,
-          colorMode: 'color',
-          esScreenshot
-        }
+      const promesas = files.filter(f => f.type.startsWith('image/')).map(f => {
+        return new Promise<ImagenImpresion>((resolve) => {
+          const url = URL.createObjectURL(f)
+          const tempImg = new Image()
+          tempImg.onload = () => {
+            const aspect = tempImg.width / tempImg.height
+            const nameLower = f.name.toLowerCase()
+            const esScreenshot = nameLower.includes('screenshot') || nameLower.includes('captura')
+            
+            // Si la imagen es horizontal, adaptamos su tamaño personalizado inicial
+            let customW = 10
+            let customH = 15
+            if (aspect > 1) {
+              customW = 15
+              customH = parseFloat((15 / aspect).toFixed(1))
+            } else {
+              customH = 15
+              customW = parseFloat((15 * aspect).toFixed(1))
+            }
+
+            resolve({
+              id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              file: f,
+              name: f.name,
+              size: f.size,
+              rawUrl: url,
+              croppedUrl: null,
+              formatoSize: 'A6', // default to A6 (1/4 page)
+              customW,
+              customH,
+              colorMode: 'color',
+              esScreenshot,
+              aspectRatio: aspect
+            })
+          }
+          tempImg.src = url
+        })
       })
-      setImagenes(prev => [...prev, ...nuevasImgs])
+
+      Promise.all(promesas).then(nuevasImgs => {
+        setImagenes(prev => [...prev, ...nuevasImgs])
+        setMsgCarga('')
+      })
     } else {
-      // Documento (PDF/Word/Excel) - Solo uno a la vez
+      // Documento (PDF/Word/Excel)
       setTipoArchivo('documento')
       setImagenes([])
       setDocFile(file)
@@ -145,7 +172,6 @@ export default function ImpresionPage() {
         reader.readAsBinaryString(file)
       }
     }
-    // Limpiar input
     e.target.value = ''
   }
 
@@ -183,6 +209,74 @@ export default function ImpresionPage() {
     }
   }, [rangoModo, rangoTexto, paginasDocumento, docFile, tipoArchivo])
 
+  // Función para obtener las dimensiones proporcionales exactas de una imagen según el formato seleccionado
+  const getImgDimensions = (img: ImagenImpresion) => {
+    const aspect = img.aspectRatio || 1.0
+    
+    if (img.formatoSize === 'A4') {
+      // Caja contenedora de A4: 21 x 29.7
+      if (aspect >= 1) {
+        // Horizontal: usar ancho máximo
+        return { w: 21, h: parseFloat((21 / aspect).toFixed(1)) }
+      } else {
+        // Vertical: usar alto máximo
+        return { w: parseFloat((29.7 * aspect).toFixed(1)), h: 29.7 }
+      }
+    }
+    
+    if (img.formatoSize === 'A5') {
+      // Caja contenedora de A5: 21 x 14.8 (Horizontal) o 14.8 x 21 (Vertical)
+      if (aspect >= 1) {
+        // Horizontal: cabe en 21 x 14.8
+        const w = 21
+        const h = w / aspect
+        if (h > 14.8) {
+          return { w: parseFloat((14.8 * aspect).toFixed(1)), h: 14.8 }
+        }
+        return { w, h: parseFloat(h.toFixed(1)) }
+      } else {
+        // Vertical: cabe en 14.8 x 21
+        const h = 21
+        const w = h * aspect
+        if (w > 14.8) {
+          return { w: 14.8, h: parseFloat((14.8 / aspect).toFixed(1)) }
+        }
+        return { w: parseFloat(w.toFixed(1)), h }
+      }
+    }
+    
+    if (img.formatoSize === 'A6') {
+      // Caja contenedora de A6: 14.8 x 10.5 (Horizontal) o 10.5 x 14.8 (Vertical)
+      if (aspect >= 1) {
+        const w = 14.8
+        const h = w / aspect
+        if (h > 10.5) {
+          return { w: parseFloat((10.5 * aspect).toFixed(1)), h: 10.5 }
+        }
+        return { w, h: parseFloat(h.toFixed(1)) }
+      } else {
+        const h = 14.8
+        const w = h * aspect
+        if (w > 10.5) {
+          return { w: 10.5, h: parseFloat((10.5 / aspect).toFixed(1)) }
+        }
+        return { w: parseFloat(w.toFixed(1)), h }
+      }
+    }
+    
+    if (img.formatoSize === 'carnet') {
+      // Bounding box de Carnet: 4 x 5 (Vertical) o 5 x 4 (Horizontal)
+      if (aspect >= 1) {
+        return { w: 5, h: parseFloat((5 / aspect).toFixed(1)) }
+      } else {
+        return { w: parseFloat((5 * aspect).toFixed(1)), h: 5 }
+      }
+    }
+    
+    // Personalizado
+    return { w: img.customW, h: img.customH }
+  }
+
   // 3. Algoritmo 2D de Empaquetado (2D Shelf Packing) para Imágenes
   const paginasFisicas = useMemo(() => {
     if (tipoArchivo !== 'imagen' || imagenes.length === 0) return []
@@ -196,26 +290,15 @@ export default function ImpresionPage() {
     
     // Ordenar de mayor a menor altura para empaquetamiento óptimo
     const ordenadas = [...imagenes].sort((a, b) => {
-      const getH = (img: ImagenImpresion) => {
-        if (img.formatoSize === 'A4') return 29.7
-        if (img.formatoSize === 'A5') return 14.8
-        if (img.formatoSize === 'A6') return 14.8
-        if (img.formatoSize === 'carnet') return 5
-        return img.customH
-      }
-      return getH(b) - getH(a)
+      const hA = getImgDimensions(a).h
+      const hB = getImgDimensions(b).h
+      return hB - hA
     })
     
     ordenadas.forEach(img => {
-      let w = 21
-      let h = 29.7
+      let { w, h } = getImgDimensions(img)
       
-      if (img.formatoSize === 'A5') { w = 21; h = 14.8 } // stack horizontal
-      else if (img.formatoSize === 'A6') { w = 10.5; h = 14.8 }
-      else if (img.formatoSize === 'carnet') { w = 4; h = 5 }
-      else if (img.formatoSize === 'personalizado') { w = img.customW; h = img.customH }
-      
-      // Limitar al máximo de la hoja
+      // Limitar al máximo absoluto de la hoja A4
       if (w > 21) w = 21
       if (h > 29.7) h = 29.7
       
@@ -459,6 +542,8 @@ export default function ImpresionPage() {
     const naturalW = img.naturalWidth
     const naturalH = img.naturalHeight
     
+    // Como ahora el contenedor cropperContainerRef está ceñido estrictamente al tamaño de la imagen,
+    // el cálculo de porcentajes mapea al 100% de forma proporcional sin distorsiones
     const rx = (cropBox.x / 100) * naturalW
     const ry = (cropBox.y / 100) * naturalH
     const rw = (cropBox.w / 100) * naturalW
@@ -471,13 +556,36 @@ export default function ImpresionPage() {
       ctx.drawImage(img, rx, ry, rw, rh, 0, 0, rw, rh)
       const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
       
-      setImagenes(prev => prev.map(imgItem => {
-        if (imgItem.id === imagenACortarId) {
-          return { ...imgItem, croppedUrl: dataUrl }
-        }
-        return imgItem
-      }))
-      setImagenACortarId(null)
+      // Creamos una imagen temporal para obtener el nuevo aspecto ratio del recorte
+      const tempImg = new Image()
+      tempImg.onload = () => {
+        const aspect = tempImg.width / tempImg.height
+        
+        setImagenes(prev => prev.map(imgItem => {
+          if (imgItem.id === imagenACortarId) {
+            // Actualizamos la URL recortada y el aspect ratio a partir del corte
+            let customW = imgItem.customW
+            let customH = imgItem.customH
+            
+            if (imgItem.formatoSize === 'personalizado') {
+              if (bloquearProporcion) {
+                customH = parseFloat((customW / aspect).toFixed(1))
+              }
+            }
+            
+            return { 
+              ...imgItem, 
+              croppedUrl: dataUrl,
+              aspectRatio: aspect,
+              customW,
+              customH
+            }
+          }
+          return imgItem
+        }))
+        setImagenACortarId(null)
+      }
+      tempImg.src = dataUrl
     }
   }
 
@@ -550,15 +658,12 @@ export default function ImpresionPage() {
     
     let configStr = ''
     let totalPagsFisicas = 0
-    let filesCount = 0
     
     if (tipoArchivo === 'imagen') {
       totalPagsFisicas = paginasFisicas.length
-      filesCount = imagenes.length
       configStr = `Pack Fotos (${totalPagsFisicas} hojas, ${imagenes.length} arch, ${tipoPapel.toUpperCase()})`
     } else {
       totalPagsFisicas = dobleFaz ? Math.ceil(paginasCalculadasDoc / 2) : paginasCalculadasDoc
-      filesCount = 1
       const colorStr = docColorMode === 'bn' ? 'B/N' : (modoMixtoDoc ? 'Mixto' : 'Color')
       configStr = `Doc (${paginasCalculadasDoc} pág, ${colorStr}, ${tipoPapel.toUpperCase()}, ${dobleFaz ? 'Doble Faz' : 'Simple Faz'})`
     }
@@ -593,6 +698,27 @@ export default function ImpresionPage() {
       router.push('/carrito')
     }, 1200)
   }
+
+  // Dimensiones calculadas del cropper para centrar y ajustar al tamaño real de la imagen en pantalla
+  const cropperDimensions = useMemo(() => {
+    if (!imagenACortarId) return { w: 320, h: 240 }
+    const img = imagenes.find(i => i.id === imagenACortarId)
+    if (!img) return { w: 320, h: 240 }
+    
+    const aspect = img.aspectRatio || 1.0
+    const maxW = 380 // ancho máximo modal
+    const maxH = 260 // alto máximo modal
+    
+    let renderW = maxW
+    let renderH = maxW / aspect
+    
+    if (renderH > maxH) {
+      renderH = maxH
+      renderW = maxH * aspect
+    }
+    
+    return { w: Math.round(renderW), h: Math.round(renderH) }
+  }, [imagenACortarId, imagenes])
 
   // Si está cargando auth
   if (authLoading) {
@@ -748,7 +874,7 @@ export default function ImpresionPage() {
 
                 {rangoModo === 'rango' && (
                   <div className="space-y-1 bg-gray-50 border border-gray-150 rounded-xl p-3">
-                    <label className="text-[10px] font-bold text-gray-450 block">Rango de páginas a imprimir:</label>
+                    <label className="text-[10px] font-bold text-gray-455 block">Rango de páginas a imprimir:</label>
                     <input 
                       type="text"
                       value={rangoTexto}
@@ -797,8 +923,8 @@ export default function ImpresionPage() {
                   {imagenes.map((img) => (
                     <div key={img.id} className="border border-gray-150 rounded-xl p-2.5 space-y-2 bg-gray-50/20">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-200 shrink-0 relative bg-gray-100">
-                          <img src={img.croppedUrl || img.rawUrl} className="w-full h-full object-cover" alt="Thumb" />
+                        <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-200 shrink-0 relative bg-gray-100 flex items-center justify-center">
+                          <img src={img.croppedUrl || img.rawUrl} className="max-w-full max-h-full object-contain" alt="Thumb" />
                           {img.croppedUrl && (
                             <span className="absolute top-0 right-0 bg-green-600 text-white text-[7px] font-bold px-0.5 rounded-bl">
                               Cortada
@@ -807,7 +933,9 @@ export default function ImpresionPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-bold text-gray-700 truncate leading-tight">{img.name}</p>
-                          <p className="text-[9px] text-gray-400 mt-0.5">{(img.size / 1024).toFixed(1)} KB</p>
+                          <p className="text-[9px] text-gray-400 mt-0.5">
+                            {(img.size / 1024).toFixed(1)} KB · Relación: {img.aspectRatio > 1 ? 'Horizontal' : 'Vertical'} ({img.aspectRatio.toFixed(2)})
+                          </p>
                         </div>
                         <button 
                           onClick={() => setImagenes(prev => prev.filter(i => i.id !== img.id))}
@@ -825,7 +953,24 @@ export default function ImpresionPage() {
                             value={img.formatoSize}
                             onChange={e => {
                               const val = e.target.value as any
-                              setImagenes(prev => prev.map(i => i.id === img.id ? { ...i, formatoSize: val } : i))
+                              setImagenes(prev => prev.map(i => {
+                                if (i.id === img.id) {
+                                  let customW = i.customW
+                                  let customH = i.customH
+                                  // Re-calcular según aspecto si se selecciona personalizado
+                                  if (val === 'personalizado') {
+                                    if (i.aspectRatio > 1) {
+                                      customW = 15
+                                      customH = parseFloat((15 / i.aspectRatio).toFixed(1))
+                                    } else {
+                                      customH = 15
+                                      customW = parseFloat((15 * i.aspectRatio).toFixed(1))
+                                    }
+                                  }
+                                  return { ...i, formatoSize: val, customW, customH }
+                                }
+                                return i
+                              }))
                             }}
                             className="w-full bg-white border border-gray-200 rounded px-1 py-0.5 text-[10px] text-gray-700 focus:outline-none"
                           >
@@ -853,35 +998,60 @@ export default function ImpresionPage() {
                         </div>
                       </div>
 
-                      {/* Configuración personalizada de cm */}
+                      {/* Configuración personalizada de cm con bloqueo de proporciones */}
                       {img.formatoSize === 'personalizado' && (
-                        <div className="grid grid-cols-2 gap-1 bg-white border border-gray-150 rounded p-1.5">
-                          <div className="flex items-center gap-1">
-                            <span className="text-[8px] text-gray-400 font-bold">Ancho (cm):</span>
-                            <input 
-                              type="number"
-                              min={1} max={21}
-                              value={img.customW}
-                              onChange={e => {
-                                const val = Math.min(21, Math.max(1, parseFloat(e.target.value) || 1))
-                                setImagenes(prev => prev.map(i => i.id === img.id ? { ...i, customW: val } : i))
-                              }}
-                              className="w-10 bg-gray-50 border border-gray-200 rounded px-1 py-0.2 text-[9px] text-center"
-                            />
+                        <div className="space-y-1.5 bg-white border border-gray-150 rounded p-1.5">
+                          <div className="grid grid-cols-2 gap-1">
+                            <div className="flex items-center gap-1">
+                              <span className="text-[8px] text-gray-400 font-bold">Ancho (cm):</span>
+                              <input 
+                                type="number"
+                                min={1} max={21}
+                                step="0.1"
+                                value={img.customW}
+                                onChange={e => {
+                                  const val = Math.min(21, Math.max(1, parseFloat(e.target.value) || 1))
+                                  setImagenes(prev => prev.map(i => {
+                                    if (i.id === img.id) {
+                                      const newH = bloquearProporcion ? parseFloat((val / i.aspectRatio).toFixed(1)) : i.customH
+                                      return { ...i, customW: val, customH: newH > 29.7 ? 29.7 : newH }
+                                    }
+                                    return i
+                                  }))
+                                }}
+                                className="w-12 bg-gray-50 border border-gray-200 rounded px-1 py-0.2 text-[9px] text-center"
+                              />
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[8px] text-gray-400 font-bold">Alto (cm):</span>
+                              <input 
+                                type="number"
+                                min={1} max={29.7}
+                                step="0.1"
+                                value={img.customH}
+                                onChange={e => {
+                                  const val = Math.min(29.7, Math.max(1, parseFloat(e.target.value) || 1))
+                                  setImagenes(prev => prev.map(i => {
+                                    if (i.id === img.id) {
+                                      const newW = bloquearProporcion ? parseFloat((val * i.aspectRatio).toFixed(1)) : i.customW
+                                      return { ...i, customH: val, customW: newW > 21 ? 21 : newW }
+                                    }
+                                    return i
+                                  }))
+                                }}
+                                className="w-12 bg-gray-50 border border-gray-200 rounded px-1 py-0.2 text-[9px] text-center"
+                              />
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <span className="text-[8px] text-gray-400 font-bold">Alto (cm):</span>
+                          <label className="flex items-center gap-1 text-[8px] text-gray-450 select-none cursor-pointer">
                             <input 
-                              type="number"
-                              min={1} max={29.7}
-                              value={img.customH}
-                              onChange={e => {
-                                const val = Math.min(29.7, Math.max(1, parseFloat(e.target.value) || 1))
-                                setImagenes(prev => prev.map(i => i.id === img.id ? { ...i, customH: val } : i))
-                              }}
-                              className="w-10 bg-gray-50 border border-gray-200 rounded px-1 py-0.2 text-[9px] text-center"
+                              type="checkbox"
+                              checked={bloquearProporcion}
+                              onChange={e => setBloquearProporcion(e.target.checked)}
+                              className="w-2.5 h-2.5 rounded border-gray-300 text-green-650"
                             />
-                          </div>
+                            Mantener proporción original
+                          </label>
                         </div>
                       )}
 
@@ -899,17 +1069,17 @@ export default function ImpresionPage() {
 
               {/* Vista previa proporcional de la A4 */}
               <div className="md:col-span-2 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center">
-                <span className="text-[10px] font-bold text-gray-450 uppercase mb-2">Previsualización de Hojas</span>
+                <span className="text-[10px] font-bold text-gray-455 uppercase mb-2">Previsualización de Hojas</span>
                 
                 {paginasFisicas.length > 0 ? (
                   <div className="space-y-3 flex flex-col items-center">
                     
                     {/* Contenedor Hoja A4 */}
                     <div className="w-[147px] h-[208px] bg-white border border-gray-300 rounded shadow-md relative overflow-hidden bg-[radial-gradient(#e5e7eb_1.2px,transparent_1.2px)] [background-size:6px_6px]">
-                      {paginasFisicas[paginaActivaIndex]?.items.map((item, idx) => (
+                      {paginasFisicas[paginaActivaIndex]?.items.map((item) => (
                         <div
                           key={item.id}
-                          className={`absolute border border-green-500 bg-green-500/10 flex items-center justify-center overflow-hidden group`}
+                          className="absolute border border-green-500 bg-green-500/10 flex items-center justify-center overflow-hidden group"
                           style={{
                             left: `${(item.x / 21) * 100}%`,
                             top: `${(item.y / 29.7) * 100}%`,
@@ -917,7 +1087,7 @@ export default function ImpresionPage() {
                             height: `${(item.h / 29.7) * 100}%`,
                           }}
                         >
-                          <img src={item.imgUrl} className="w-full h-full object-cover opacity-85" alt="Item" />
+                          <img src={item.imgUrl} className="w-full h-full object-contain opacity-95" alt="Item" />
                           <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                             <span className="text-[7px] text-white font-bold truncate max-w-full px-1">{item.name}</span>
                           </div>
@@ -1155,58 +1325,66 @@ export default function ImpresionPage() {
       {/* ========================================== */}
       {imagenACortarId && (
         <div className="fixed inset-0 bg-black/80 z-[100] flex flex-col items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-4 space-y-4 shadow-2xl">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider block">Recortar captura de pantalla</h3>
+          <div className="bg-white rounded-2xl w-full max-w-md p-4 space-y-4 shadow-2xl flex flex-col items-center text-center">
+            <h3 className="text-xs font-bold text-gray-450 uppercase tracking-wider block self-start">Recortar captura de pantalla</h3>
             
-            <p className="text-[10px] text-gray-450 leading-relaxed">
+            <p className="text-[10px] text-gray-450 leading-relaxed text-left self-start">
               Arrastra la caja o sus esquinas para eliminar barras de notificaciones o botones negros de tu teléfono:
             </p>
 
-            <div 
-              ref={cropperContainerRef}
-              className="relative max-w-full overflow-hidden bg-gray-900 rounded-xl flex items-center justify-center select-none"
-              style={{ height: '260px' }}
-            >
-              <img 
-                ref={imgRef}
-                src={imagenes.find(img => img.id === imagenACortarId)?.rawUrl} 
-                alt="Para recortar" 
-                className="max-h-full max-w-full object-contain pointer-events-none"
-              />
+            {/* Contenedor externo gris */}
+            <div className="relative w-full overflow-hidden bg-gray-900 rounded-xl flex items-center justify-center p-4" style={{ height: '280px' }}>
               
-              {/* Bounding box de recorte */}
+              {/* Contenedor del Cropper ceñido estrictamente al tamaño renderizado de la imagen */}
               <div 
-                className="absolute border border-green-400 bg-green-400/25 cursor-move"
+                ref={cropperContainerRef}
+                className="relative select-none"
                 style={{
-                  left: `${cropBox.x}%`,
-                  top: `${cropBox.y}%`,
-                  width: `${cropBox.w}%`,
-                  height: `${cropBox.h}%`
+                  width: `${cropperDimensions.w}px`,
+                  height: `${cropperDimensions.h}px`
                 }}
-                onTouchStart={e => handleMouseDown(e, 'move')}
-                onMouseDown={e => handleMouseDown(e, 'move')}
               >
-                {/* Control handles esquinas con 32px targets */}
-                {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map(pos => (
-                  <div 
-                    key={pos}
-                    className={`absolute w-8 h-8 flex items-center justify-center z-[110] cursor-pointer`}
-                    style={{
-                      top: pos.startsWith('top') ? '-14px' : 'auto',
-                      bottom: pos.startsWith('bottom') ? '-14px' : 'auto',
-                      left: pos.endsWith('left') ? '-14px' : 'auto',
-                      right: pos.endsWith('right') ? '-14px' : 'auto',
-                    }}
-                    onTouchStart={e => handleMouseDown(e, pos)}
-                    onMouseDown={e => handleMouseDown(e, pos)}
-                  >
-                    <span className="w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full shadow-md" />
-                  </div>
-                ))}
+                <img 
+                  ref={imgRef}
+                  src={imagenes.find(img => img.id === imagenACortarId)?.rawUrl} 
+                  alt="Para recortar" 
+                  className="w-full h-full object-contain pointer-events-none"
+                />
+                
+                {/* Bounding box de recorte */}
+                <div 
+                  className="absolute border border-green-400 bg-green-400/20 cursor-move"
+                  style={{
+                    left: `${cropBox.x}%`,
+                    top: `${cropBox.y}%`,
+                    width: `${cropBox.w}%`,
+                    height: `${cropBox.h}%`
+                  }}
+                  onTouchStart={e => handleMouseDown(e, 'move')}
+                  onMouseDown={e => handleMouseDown(e, 'move')}
+                >
+                  {/* Control handles esquinas con 32px targets */}
+                  {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map(pos => (
+                    <div 
+                      key={pos}
+                      className={`absolute w-8 h-8 flex items-center justify-center z-[110] cursor-pointer`}
+                      style={{
+                        top: pos.startsWith('top') ? '-14px' : 'auto',
+                        bottom: pos.startsWith('bottom') ? '-14px' : 'auto',
+                        left: pos.endsWith('left') ? '-14px' : 'auto',
+                        right: pos.endsWith('right') ? '-14px' : 'auto',
+                      }}
+                      onTouchStart={e => handleMouseDown(e, pos)}
+                      onMouseDown={e => handleMouseDown(e, pos)}
+                    >
+                      <span className="w-3 h-3 bg-green-500 border-2 border-white rounded-full shadow-md" />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full pt-2">
               <button 
                 onClick={aplicarRecorte}
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer"
