@@ -25,6 +25,8 @@ interface ImagenImpresion {
   colorMode: 'bn' | 'color'
   esScreenshot: boolean
   aspectRatio: number // width / height
+  originalAspectRatio: number // always stores the original image aspect ratio
+  requiereEdicionTienda: boolean // true if the customer requests the store to edit/crop for +$0.25
 }
 
 interface PackedItem {
@@ -139,7 +141,9 @@ export default function ImpresionPage() {
               customH,
               colorMode: 'color',
               esScreenshot,
-              aspectRatio: aspect
+              aspectRatio: aspect,
+              originalAspectRatio: aspect,
+              requiereEdicionTienda: false
             })
           }
           tempImg.src = url
@@ -409,7 +413,14 @@ export default function ImpresionPage() {
         costoHojas += (costoBasePag + recargoPapelPorHoja)
       })
       
-      return costoHojas
+      let costoEdicion = 0
+      imagenes.forEach(img => {
+        if (img.requiereEdicionTienda && !img.croppedUrl) {
+          costoEdicion += 0.25
+        }
+      })
+      
+      return costoHojas + costoEdicion
     }
     
     // B. Documento Individual (PDF/Word/Excel)
@@ -578,7 +589,8 @@ export default function ImpresionPage() {
               croppedUrl: dataUrl,
               aspectRatio: aspect,
               customW,
-              customH
+              customH,
+              requiereEdicionTienda: false
             }
           }
           return imgItem
@@ -661,7 +673,9 @@ export default function ImpresionPage() {
     
     if (tipoArchivo === 'imagen') {
       totalPagsFisicas = paginasFisicas.length
-      configStr = `Pack Fotos (${totalPagsFisicas} hojas, ${imagenes.length} arch, ${tipoPapel.toUpperCase()})`
+      const necesitaEdicion = imagenes.some(img => img.requiereEdicionTienda && !img.croppedUrl)
+      const edicionTag = necesitaEdicion ? ' +EdiciónTienda' : ''
+      configStr = `Pack Fotos (${totalPagsFisicas} hojas, ${imagenes.length} arch, ${tipoPapel.toUpperCase()}${edicionTag})`
     } else {
       totalPagsFisicas = dobleFaz ? Math.ceil(paginasCalculadasDoc / 2) : paginasCalculadasDoc
       const colorStr = docColorMode === 'bn' ? 'B/N' : (modoMixtoDoc ? 'Mixto' : 'Color')
@@ -705,7 +719,7 @@ export default function ImpresionPage() {
     const img = imagenes.find(i => i.id === imagenACortarId)
     if (!img) return { w: 320, h: 240 }
     
-    const aspect = img.aspectRatio || 1.0
+    const aspect = img.originalAspectRatio || 1.0
     const maxW = 380 // ancho máximo modal
     const maxH = 260 // alto máximo modal
     
@@ -1055,12 +1069,28 @@ export default function ImpresionPage() {
                         </div>
                       )}
 
+                      {/* Cargo por edición si no está recortada */}
+                      {!img.croppedUrl && (
+                        <label className="flex items-center gap-1.5 text-[9px] text-amber-800 select-none cursor-pointer bg-amber-50/50 border border-amber-200 p-1.5 rounded-lg">
+                          <input 
+                            type="checkbox"
+                            checked={img.requiereEdicionTienda}
+                            onChange={e => {
+                              const val = e.target.checked
+                              setImagenes(prev => prev.map(i => i.id === img.id ? { ...i, requiereEdicionTienda: val } : i))
+                            }}
+                            className="w-3 h-3 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                          />
+                          <span>Solicitar recorte en tienda (+$0.25)</span>
+                        </label>
+                      )}
+
                       {/* Botón de Recorte */}
                       <button 
                         onClick={() => abrirRecortador(img)}
                         className="w-full py-1 bg-green-50 hover:bg-green-100 border border-green-200 text-green-700 font-bold rounded text-[9px] transition flex items-center justify-center gap-1 cursor-pointer"
                       >
-                        <Scissors size={10} /> Quitar bordes / Recortar Captura
+                        <Scissors size={10} /> {img.croppedUrl ? '🔄 Recortar de nuevo' : '✂️ Recortar yo mismo (Ahorrar $0.25)'}
                       </button>
                     </div>
                   ))}
