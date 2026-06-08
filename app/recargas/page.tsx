@@ -33,22 +33,22 @@ const OPERADORES: Operador[] = [
     bg: 'bg-red-50 border-red-200',
     gradient: 'from-red-500 to-red-700',
     paquetes: [
-      { id: 'c1', precio: 1.05, vigencia: '1 Día', descripcion: '512 MB + 1GB Redes + 100 SMS a Claro' },
-      { id: 'c2', precio: 1.50, vigencia: '1 Día', descripcion: '1 GB + 1GB Redes + llamadas ilimitadas a Claro + 10 MIN todos + 100 SMS' },
-      { id: 'c3', precio: 2.05, vigencia: '2 Días', descripcion: '1 GB + 1GB Redes + llamadas ilimitadas a Claro + 20 MIN todos + 200 SMS' },
-      { id: 'c4', precio: 2.50, vigencia: '3 Días', descripcion: '2 GB + 1GB Redes + llamadas ilimitadas a Claro + 20 MIN todos + 200 SMS' },
-      { id: 'c5', precio: 3.10, vigencia: '3 Días', descripcion: '4 GB + 2GB Redes + llamadas ilimitadas a Claro + 30 MIN todos + 300 SMS' },
-      { id: 'c6', precio: 3.50, vigencia: '7 Días', descripcion: '4 GB + 2GB Redes + llamadas ilimitadas a Claro + 30 MIN todos + 300 SMS' },
-      { id: 'c7', precio: 4.00, vigencia: '10 Días', descripcion: '5 GB + 1GB Redes + llamadas ilimitadas a Claro + 40 MIN todos' },
-      { id: 'c8', precio: 5.15, vigencia: '15 Días', descripcion: '3 GB + 4GB Redes + llamadas ilimitadas a Claro + 10 GB Suscripción' },
-      { id: 'c9', precio: 5.50, vigencia: '15 Días', descripcion: '5 GB + 4GB Redes + llamadas ilimitadas a Claro + 10 GB Suscripción' },
-      { id: 'c10', precio: 6.00, vigencia: '3 Días', descripcion: '4 GB + llamadas ilim Claro + 30 MIN todos + 2GB Gratis' },
-      { id: 'c11', precio: 8.00, vigencia: '25 Días', descripcion: '7 GB + 5GB Redes + llamadas ilimitadas a Claro + 15 GB Suscripción' },
-      { id: 'c12', precio: 10.50, vigencia: '30 Días', descripcion: '10 GB + 5GB Redes + llamadas ilimitadas a Claro + 15 GB Suscripción' },
-      { id: 'c13', precio: 12.50, vigencia: '30 Días', descripcion: '13 GB + 6GB Redes + llamadas ilimitadas a Claro + 15 GB Suscripción' },
-      { id: 'c14', precio: 15.50, vigencia: '30 Días', descripcion: '15 GB + 2GB Redes + llamadas ilimitadas a Claro + 150 MIN todos + 5GB Gratis' },
-      { id: 'c15', precio: 20.50, vigencia: '30 Días', descripcion: '20 GB + 2GB Redes + llamadas ilimitadas a Claro + 150 MIN todos + 5GB Gratis' },
-      { id: 'c16', precio: 2.05, vigencia: '4 Horas', descripcion: 'Paquete de Horas Ilimitadas de Internet' }
+      { id: 'c1', precio: 1.05, vigencia: '1 día', descripcion: '512 MB + 1 GB en redes (WhatsApp, Facebook, X) + Llamadas ilimitadas a Claro + 100 SMS a Claro' },
+      { id: 'c2', precio: 1.50, vigencia: '1 día', descripcion: '1 GB + 1 GB en apps + Redes ilimitadas + Llamadas ilim. a Claro + 10 min a todos + 100 SMS a Claro' },
+      { id: 'c3', precio: 2.05, vigencia: '2 días', descripcion: '1 GB + 1 GB en video + 1 GB en redes + Llamadas ilim. a Claro + 20 min a otras + 200 SMS a Claro' },
+      { id: 'c4', precio: 2.50, vigencia: '3 días', descripcion: '2 GB + 3 GB en video + 1 GB en redes + Llamadas ilim. a Claro + 20 min a otras + 200 SMS a Claro' },
+      { id: 'c5', precio: 3.10, vigencia: '3 días', descripcion: '4 GB + 3 GB en video + 2 GB en redes + Llamadas ilim. a Claro + 30 min a todos + 300 SMS a Claro' },
+      { id: 'c6', precio: 3.50, vigencia: '7 días', descripcion: '4 GB + 5 GB en video + 2 GB en redes + Llamadas ilim. a Claro + 30 min a todos + 300 SMS a Claro' },
+      { id: 'c7', precio: 4.00, vigencia: '10 días', descripcion: '5 GB + 5 GB en video + 1 GB en redes + Llamadas ilim. a Claro + 40 min a todos' },
+      { id: 'c8', precio: 5.15, vigencia: '15 días', descripcion: '3 GB + 5 GB en video + 4 GB en redes + Llamadas ilim. a Claro + 50 min a todos + Suscripción Claro Video' },
+      { id: 'c9', precio: 5.50, vigencia: '15 días', descripcion: '5 GB + 5 GB en video + 4 GB en redes + Llamadas ilim. a Claro + 50 min a todos + Suscripción Claro Video' },
+      { id: 'c10', precio: 6.00, vigencia: '30 días', descripcion: '4 GB + 2 GB en video + Llamadas ilim. a Claro + 50 min a todos + 300 SMS + 2 GB gratis + Claro Video' },
+      { id: 'c11', precio: 8.00, vigencia: '25 días', descripcion: '7 GB + 5 GB en video + 4 GB gratis + Llamadas ilim. a Claro + 80 min a todos + Claro Video' },
+      { id: 'c12', precio: 10.50, vigencia: '30 días', descripcion: '10 GB + 6 GB en video + 5 GB gratis + Llamadas ilim. a Claro + 100 min a todos + Claro Video' },
+      { id: 'c13', precio: 12.50, vigencia: '30 días', descripcion: '13 GB + 6 GB en video + 5 GB gratis + Llamadas ilim. a Claro + 120 min a todos + Claro Video' },
+      { id: 'c14', precio: 15.50, vigencia: '30 días', descripcion: '15 GB + 5 GB en video + 2 GB en redes + 5 GB gratis + Llamadas ilim. a Claro + 150 min a todos + Claro Video' },
+      { id: 'c15', precio: 20.50, vigencia: '30 días', descripcion: '20 GB + 5 GB en video + 2 GB en redes + 5 GB gratis + Llamadas ilim. a Claro + 150 min a todos + Claro Video' },
+      { id: 'c16', precio: 2.05, vigencia: '4 horas', descripcion: 'Paquete de Gigas: Horas Ilimitadas' }
     ]
   },
   {
@@ -59,12 +59,15 @@ const OPERADORES: Operador[] = [
     bg: 'bg-sky-50 border-sky-200',
     gradient: 'from-sky-400 to-blue-600',
     paquetes: [
-      { id: 'm1', precio: 1.00, vigencia: '1 Día', descripcion: 'Combo Ahorro: 500 MB + llamadas ilimitadas a Movistar' },
-      { id: 'm2', precio: 1.50, vigencia: '1 Día', descripcion: '1.5 GB + Redes sociales ilimitadas + llamadas ilim Movistar + 10 MIN todos' },
-      { id: 'm3', precio: 2.50, vigencia: '3 Días', descripcion: '3 GB + Redes sociales ilimitadas + llamadas ilim Movistar + 20 MIN todos' },
-      { id: 'm4', precio: 3.50, vigencia: '5 Días', descripcion: '5 GB + Redes sociales ilimitadas + llamadas ilim Movistar + 30 MIN todos' },
-      { id: 'm5', precio: 5.00, vigencia: '10 Días', descripcion: '8 GB + Redes sociales ilimitadas + llamadas ilim Movistar + 60 MIN todos' },
-      { id: 'm6', precio: 10.00, vigencia: '30 Días', descripcion: '20 GB + Redes sociales ilimitadas + llamadas ilim Movistar + 150 MIN todos' }
+      { id: 'm1', precio: 1.05, vigencia: '1 día', descripcion: '1 GB total (512 MB libres) + WhatsApp gratis + 10 min a otras operadoras + 10 SMS' },
+      { id: 'm2', precio: 3.00, vigencia: '2 días', descripcion: 'Bono de llamadas y minutos ilimitados' },
+      { id: 'm3', precio: 3.00, vigencia: '7 días', descripcion: '5 GB total (2 GB libres) + WhatsApp gratis + 5 GB Spotify + 30 min a otras + 10 SMS' },
+      { id: 'm4', precio: 5.00, vigencia: '15 días', descripcion: '6 GB total (3 GB libres) + WhatsApp gratis + 5 GB Spotify + 70 min a otras + 10 SMS' },
+      { id: 'm5', precio: 7.00, vigencia: '20 días', descripcion: '8 GB total (4 GB libres) + WhatsApp gratis + 5 GB Spotify + 80 min a otras + 10 SMS' },
+      { id: 'm6', precio: 8.00, vigencia: '30 días', descripcion: '8 GB total (4 GB libres) + WhatsApp gratis + 10 GB Spotify + 70 min a otras + 10 SMS' },
+      { id: 'm7', precio: 9.00, vigencia: '30 días', descripcion: '10 GB total (4 GB libres) + WhatsApp gratis + 10 GB Spotify + 100 min a otras + 10 SMS' },
+      { id: 'm8', precio: 10.25, vigencia: '30 días', descripcion: '14 GB total (10 GB libres) + WhatsApp gratis + 120 min a otras + 10 min LDI + 50 SMS' },
+      { id: 'm9', precio: 15.50, vigencia: '30 días', descripcion: '19 GB total (15 GB libres) + WhatsApp gratis + 10 GB Spotify + 150 min a otras + 20 min LDI + 50 SMS' }
     ]
   },
   {
@@ -75,11 +78,13 @@ const OPERADORES: Operador[] = [
     bg: 'bg-pink-50 border-pink-200',
     gradient: 'from-pink-500 to-rose-600',
     paquetes: [
-      { id: 't1', precio: 2.00, vigencia: '3 Días', descripcion: 'Combo $2: 1.5 GB + 1 GB Spotify + llamadas ilimitadas a Tuenti + 15 MIN' },
-      { id: 't2', precio: 7.00, vigencia: '30 Días', descripcion: 'Combo $7: 7 GB + 2 GB Spotify + llamadas ilimitadas a Tuenti + 100 MIN + WhatsApp Gratis' },
-      { id: 't3', precio: 10.00, vigencia: '30 Días', descripcion: 'Combo $10: 15 GB + 2 GB Spotify + llamadas ilimitadas a Tuenti + 200 MIN + WhatsApp Gratis' },
-      { id: 't4', precio: 15.00, vigencia: '30 Días', descripcion: 'Combo $15: 25 GB + 2 GB Spotify + llamadas ilimitadas a Tuenti + llamadas ilim a todos' },
-      { id: 't5', precio: 25.00, vigencia: '30 Días', descripcion: 'Combo $25: 45 GB + 2 GB Spotify + llamadas ilimitadas a Tuenti + llamadas ilim a todos' }
+      { id: 't1', precio: 1.00, vigencia: '1 día', descripcion: '1 GB + 10 min + Llamadas ilimitadas entre Tuentis + 50 SMS + Gratis Spotify/WhatsApp' },
+      { id: 't2', precio: 3.00, vigencia: '7 días', descripcion: '5 GB + 30 min + Llamadas ilimitadas entre Tuentis + 50 SMS + Gratis Spotify/WhatsApp' },
+      { id: 't3', precio: 5.00, vigencia: '15 días', descripcion: '6 GB + 70 min + Llamadas ilimitadas entre Tuentis + 50 SMS + Gratis Spotify/WhatsApp' },
+      { id: 't4', precio: 8.00, vigencia: '30 días', descripcion: '8 GB + 80 min + Llamadas ilim. Tuentis + 50 SMS + Gratis Spotify/WA + 15 min LDI + 2 GB TikTok' },
+      { id: 't5', precio: 10.00, vigencia: '30 días', descripcion: '12 GB + 100 min + Llamadas ilim. Tuentis + 50 SMS + Gratis Spotify/WA + 25 min LDI + 2 GB TikTok' },
+      { id: 't6', precio: 15.00, vigencia: '30 días', descripcion: '17 GB + 150 min + Llamadas ilim. Tuentis + 50 SMS + Gratis Spotify/WA + 40 min LDI + 2 GB TikTok' },
+      { id: 't7', precio: 25.00, vigencia: '30 días', descripcion: '25 GB + Minutos ilimitados + Llamadas ilim. Tuentis + 50 SMS + Gratis Spotify/WA + 60 min LDI + 2 GB TikTok' }
     ]
   },
   {
@@ -90,10 +95,18 @@ const OPERADORES: Operador[] = [
     bg: 'bg-sky-50 border-sky-100',
     gradient: 'from-sky-400 to-sky-600',
     paquetes: [
-      { id: 'cn1', precio: 1.00, vigencia: '1 Día', descripcion: 'Paquete Mixto $1: 500 MB + redes + 10 MIN' },
-      { id: 'cn2', precio: 3.00, vigencia: '5 Días', descripcion: 'Paquete Mixto $3: 2 GB + redes + 30 MIN' },
-      { id: 'cn3', precio: 5.00, vigencia: '10 Días', descripcion: 'Paquete Mixto $5: 5 GB + redes + 50 MIN' },
-      { id: 'cn4', precio: 10.00, vigencia: '30 Días', descripcion: 'Paquete Mixto $10: 12 GB + redes + 100 MIN' }
+      { id: 'cn1', precio: 1.00, vigencia: '1 día', descripcion: '1 GB en total + 15 min a otras operadoras + Minutos ilimitados a CNT + 50 SMS' },
+      { id: 'cn2', precio: 1.00, vigencia: '1 día', descripcion: '1 GB específico para una app (a elegir entre: Instagram, Spotify, TikTok, Waze, Netflix o YouTube)' },
+      { id: 'cn3', precio: 2.00, vigencia: '3 días', descripcion: '2 GB en total + 25 min a otras operadoras + Minutos ilimitados a CNT + 50 SMS' },
+      { id: 'cn4', precio: 3.00, vigencia: '7 días', descripcion: '4 GB en total + 35 min a todas las operadoras + Minutos ilimitados a CNT + 50 SMS + CNT Play' },
+      { id: 'cn5', precio: 5.00, vigencia: '5 días', descripcion: '5 GB específicos para Apps de teletrabajo (Zoom, Teams, Webex)' },
+      { id: 'cn6', precio: 5.00, vigencia: '30 días', descripcion: '5 GB en total + 50 min a otras + Min. ilim. CNT + 30 min internacionales + 50 SMS + CNT Play' },
+      { id: 'cn7', precio: 6.00, vigencia: '30 días', descripcion: '7 GB en total + 100 min a otras + Min. ilim. CNT + 30 min internacionales + 50 SMS + CNT Play' },
+      { id: 'cn8', precio: 10.00, vigencia: '30 días', descripcion: '15 GB en total + 200 min a otras + Min. ilim. CNT + 30 min internacionales + 50 SMS + CNT Play' },
+      { id: 'cn9', precio: 10.00, vigencia: 'N/A', descripcion: 'Combos de Datos: 25 GB' },
+      { id: 'cn10', precio: 15.00, vigencia: '30 días', descripcion: '20 GB en total + 300 min a otras + Min. ilim. CNT + 30 min internacionales + 50 SMS + CNT Play' },
+      { id: 'cn11', precio: 20.00, vigencia: '30 días', descripcion: '25 GB en total + Minutos ilim. a otras + Min. ilim. CNT + 30 min internacionales + 50 SMS + CNT Play' },
+      { id: 'cn12', precio: 20.00, vigencia: 'N/A', descripcion: 'Combos de Datos: 45 GB' }
     ]
   },
   {
