@@ -2,18 +2,16 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
-  Smartphone, Wifi, Tv, CheckCircle, Phone, ArrowRight, ArrowLeft, 
-  Copy, Plus, History, User, DollarSign, AlertCircle, Trash2, 
-  ExternalLink, ShieldCheck, Gamepad2, FileSignature 
+  Smartphone, Wifi, CheckCircle, Phone, ArrowRight, ArrowLeft, 
+  History, DollarSign, AlertCircle, Trash2, ShieldCheck 
 } from 'lucide-react'
 
-// Definiciones de operadores y servicios
+// Definiciones de operadores
 interface Paquete {
   id: string
   precio: number
   vigencia: string
   descripcion: string
-  nombre?: string
 }
 
 interface Operador {
@@ -123,62 +121,6 @@ const OPERADORES: Operador[] = [
       { id: 'ak2', precio: 3.00, vigencia: '5 Días', descripcion: 'Combo Akí $3: 2 GB + redes + llamadas ilimitadas a Akí + 20 MIN todos' },
       { id: 'ak3', precio: 5.00, vigencia: '15 Días', descripcion: 'Combo Akí $5: 5 GB + redes + llamadas ilimitadas a Akí + 50 MIN todos' }
     ]
-  },
-  {
-    id: 'freefire',
-    nombre: 'Free Fire',
-    emoji: '🎮',
-    color: 'text-orange-600',
-    bg: 'bg-stone-50 border-stone-300',
-    gradient: 'from-orange-500 to-stone-900',
-    paquetes: [
-      { id: 'ff1', precio: 1.20, vigencia: 'Inmediato', descripcion: '78 Diamantes + Promociones del día' },
-      { id: 'ff2', precio: 2.30, vigencia: 'Inmediato', descripcion: '110 Diamantes directos al ID' },
-      { id: 'ff3', precio: 4.50, vigencia: 'Inmediato', descripcion: '341 Diamantes directos al ID' },
-      { id: 'ff4', precio: 9.50, vigencia: 'Inmediato', descripcion: '572 Diamantes directos al ID' },
-      { id: 'ff5', precio: 19.00, vigencia: 'Inmediato', descripcion: '1166 Diamantes directos al ID' }
-    ]
-  },
-  {
-    id: 'firma_electronica',
-    nombre: 'Firma Electrónica',
-    emoji: '📝',
-    color: 'text-amber-700',
-    bg: 'bg-amber-50 border-amber-200',
-    gradient: 'from-blue-700 to-amber-600',
-    paquetes: [
-      { id: 'fe1', precio: 15.00, vigencia: '1 Año', descripcion: 'Firma Electrónica en Archivo (.p12) - Persona Natural o Jurídica' },
-      { id: 'fe2', precio: 25.00, vigencia: '2 Años', descripcion: 'Firma Electrónica en Archivo (.p12) - Persona Natural o Jurídica' },
-      { id: 'fe3', precio: 35.00, vigencia: '3 Años', descripcion: 'Firma Electrónica en Archivo (.p12) - Persona Natural o Jurídica' },
-      { id: 'fe4', precio: 45.00, vigencia: '5 Años', descripcion: 'Firma Electrónica en Archivo (.p12) - Persona Natural o Jurídica' }
-    ]
-  },
-  {
-    id: 'streaming',
-    nombre: 'Streaming TV',
-    emoji: '🍿',
-    color: 'text-purple-600',
-    bg: 'bg-purple-50 border-purple-200',
-    gradient: 'from-purple-600 to-indigo-800',
-    paquetes: [
-      { id: 'st1', precio: 4.50, vigencia: '30 Días', descripcion: '1 Pantalla Netflix Premium Ultra HD' },
-      { id: 'st2', precio: 3.50, vigencia: '30 Días', descripcion: '1 Pantalla Disney+ Premium' },
-      { id: 'st3', precio: 3.50, vigencia: '30 Días', descripcion: '1 Pantalla Max (HBO) Premium' },
-      { id: 'st4', precio: 3.00, vigencia: '30 Días', descripcion: '1 Pantalla Amazon Prime Video' }
-    ]
-  },
-  {
-    id: 'kaspersky',
-    nombre: 'Kaspersky',
-    emoji: '🛡️',
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-50 border-emerald-200',
-    gradient: 'from-emerald-600 to-teal-800',
-    paquetes: [
-      { id: 'kp1', precio: 12.00, vigencia: '1 Año', descripcion: 'Kaspersky Internet Security - 1 PC/Android' },
-      { id: 'kp2', precio: 18.00, vigencia: '1 Año', descripcion: 'Kaspersky Internet Security - 3 Dispositivos' },
-      { id: 'kp3', precio: 24.00, vigencia: '1 Año', descripcion: 'Kaspersky Internet Security - 5 Dispositivos' }
-    ]
   }
 ]
 
@@ -226,9 +168,6 @@ export default function RecargasPage() {
   const [selectedPaquete, setSelectedPaquete] = useState<Paquete | null>(null)
   const [customMonto, setCustomMonto] = useState<string>('')
   const [telefono, setTelefono] = useState<string>('')
-  const [confirmTelefono, setConfirmTelefono] = useState<string>('')
-  const [ffId, setFfId] = useState<string>('') // Para diamantes Free Fire
-  const [firmaDatos, setFirmaDatos] = useState<{ ci: string; nombre: string; correo: string }>({ ci: '', nombre: '', correo: '' }) // Para firmas
   
   // Estados para Servicios
   const [selectedServicio, setSelectedServicio] = useState<ServicioEmpresa | null>(null)
@@ -285,15 +224,7 @@ export default function RecargasPage() {
           setRecargaType('saldo')
           setCustomMonto(item.amount?.toString() || '')
         }
-        
-        if (op.id === 'freefire') {
-          setFfId(item.numberOrCode)
-        } else if (op.id === 'firma_electronica') {
-          setFirmaDatos({ ci: item.numberOrCode, nombre: '', correo: '' })
-        } else {
-          setTelefono(item.numberOrCode)
-          setConfirmTelefono(item.numberOrCode)
-        }
+        setTelefono(item.numberOrCode)
         setCurrentStep(2)
       }
     } else {
@@ -335,11 +266,18 @@ export default function RecargasPage() {
     if (activeTab === 'recargas') {
       if (currentStep === 1) {
         if (!selectedOp) {
-          setAlerta('Por favor selecciona una operadora o servicio.')
+          setAlerta('Por favor selecciona una operadora.')
           return
         }
         setCurrentStep(2)
       } else if (currentStep === 2) {
+        // Validar número primero
+        const numRegex = /^09\d{8}$|^0\d{9}$/ // 10 dígitos
+        if (!numRegex.test(telefono)) {
+          setAlerta('Ingresa un número de celular correcto (10 dígitos, empieza con 0).')
+          return
+        }
+
         // Validar selección de monto/paquete
         if (recargaType === 'saldo') {
           const m = parseFloat(customMonto)
@@ -350,29 +288,6 @@ export default function RecargasPage() {
         } else {
           if (!selectedPaquete) {
             setAlerta('Selecciona un paquete o combo de la lista.')
-            return
-          }
-        }
-        
-        // Validar número o ID
-        if (selectedOp?.id === 'freefire') {
-          if (!ffId.trim()) {
-            setAlerta('Ingresa tu ID de Jugador de Free Fire.')
-            return
-          }
-        } else if (selectedOp?.id === 'firma_electronica') {
-          if (!firmaDatos.ci.trim() || !firmaDatos.nombre.trim() || !firmaDatos.correo.trim()) {
-            setAlerta('Por favor completa todos los datos solicitados para la Firma Electrónica.')
-            return
-          }
-        } else {
-          const numRegex = /^09\d{8}$|^0\d{9}$/ // 10 dígitos
-          if (!numRegex.test(telefono)) {
-            setAlerta('El número de teléfono debe tener 10 dígitos y empezar con 0.')
-            return
-          }
-          if (telefono !== confirmTelefono) {
-            setAlerta('Los números de teléfono ingresados no coinciden.')
             return
           }
         }
@@ -403,26 +318,12 @@ export default function RecargasPage() {
     
     if (activeTab === 'recargas' && selectedOp) {
       const opName = selectedOp.nombre
-      const esFF = selectedOp.id === 'freefire'
-      const esFirma = selectedOp.id === 'firma_electronica'
-      
-      let refNumber = telefono
-      let detail = ''
-      
-      if (esFF) {
-        refNumber = ffId
-        detail = `Diamantes Free Fire: ${selectedPaquete?.descripcion || `$${customMonto} Saldo`}`
-      } else if (esFirma) {
-        refNumber = firmaDatos.ci
-        detail = `Firma Electrónica: ${selectedPaquete?.descripcion || `$${customMonto} Saldo`}\n👤 Nombre: ${firmaDatos.nombre}\n📧 Correo: ${firmaDatos.correo}`
-      } else {
-        detail = recargaType === 'combo' 
-          ? `Combo/Paquete: ${selectedPaquete?.descripcion || ''} (${selectedPaquete?.vigencia || ''})` 
-          : 'Recarga de Saldo Libre'
-      }
+      let detail = recargaType === 'combo' 
+        ? `Combo/Paquete: ${selectedPaquete?.descripcion || ''} (${selectedPaquete?.vigencia || ''})` 
+        : 'Recarga de Saldo Libre'
 
       msg = `Hola Tienda La Crayola, solicito una recarga con los siguientes datos:
-📱 Número/ID: *${refNumber}*
+📱 Número a Recargar: *${telefono}*
 🏢 Operadora: *${opName}*
 📄 Detalle: *${detail}*
 💵 Valor Recarga: *$${calc.subtotal.toFixed(2)}*
@@ -436,7 +337,7 @@ export default function RecargasPage() {
         type: 'recarga',
         operatorOrServiceId: selectedOp.id,
         name: opName,
-        numberOrCode: refNumber,
+        numberOrCode: telefono,
         amount: calc.subtotal,
         packageName: selectedPaquete?.id || undefined
       })
@@ -469,7 +370,7 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
       {/* Botón Volver */}
       <button 
         onClick={() => router.push('/tiendas')}
-        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-green-600 font-bold transition"
+        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-green-600 font-bold transition cursor-pointer"
       >
         <ArrowLeft size={14} /> Volver a Tiendas
       </button>
@@ -498,7 +399,7 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
             setSelectedServicio(null)
             setAlerta(null)
           }}
-          className={`flex-1 py-3.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+          className={`flex-1 py-3.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
             activeTab === 'recargas' 
               ? 'bg-green-600 text-white shadow-sm' 
               : 'text-gray-500 hover:text-gray-800'
@@ -513,7 +414,7 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
             setSelectedOp(null)
             setAlerta(null)
           }}
-          className={`flex-1 py-3.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+          className={`flex-1 py-3.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
             activeTab === 'servicios' 
               ? 'bg-green-600 text-white shadow-sm' 
               : 'text-gray-500 hover:text-gray-800'
@@ -566,7 +467,7 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
             {/* PASO 1: Seleccionar Operador */}
             {currentStep === 1 && (
               <div className="space-y-4">
-                <div className="text-sm font-extrabold text-gray-800">1. Selecciona tu operadora o servicio:</div>
+                <div className="text-sm font-extrabold text-gray-800">1. Selecciona tu operadora móvil:</div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {OPERADORES.map(op => {
                     const isSelected = selectedOp?.id === op.id
@@ -580,7 +481,7 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
                         }}
                         className={`p-4 rounded-2xl border text-left flex flex-col items-center justify-center gap-3 transition-all relative group cursor-pointer ${
                           isSelected 
-                            ? 'bg-green-50 border-green-500 text-green-700 shadow-sm scale-102' 
+                            ? 'bg-green-50 border-green-500 text-green-700 shadow-sm scale-102 font-black' 
                             : 'bg-white border-gray-200 text-gray-700 hover:border-green-300'
                         }`}
                       >
@@ -603,56 +504,95 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
               <div className="space-y-6">
                 
                 {/* Cabecera Operador Seleccionado */}
-                <div className={`flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r ${selectedOp.gradient} text-white`}>
+                <div className={`flex items-center gap-3 p-3.5 rounded-2xl bg-gradient-to-r ${selectedOp.gradient} text-white shadow-sm`}>
                   <span className="text-2xl">{selectedOp.emoji}</span>
                   <div>
                     <h3 className="font-extrabold text-sm">{selectedOp.nombre}</h3>
-                    <p className="text-[10px] text-white/80">Configura tu recarga</p>
+                    <p className="text-[10px] text-white/80 font-bold">Configurando recarga</p>
                   </div>
                   <button 
                     onClick={() => { setCurrentStep(1); setSelectedPaquete(null); }} 
-                    className="ml-auto text-xs underline font-bold bg-white/20 hover:bg-white/35 px-2.5 py-1 rounded-lg transition"
+                    className="ml-auto text-xs underline font-bold bg-white/20 hover:bg-white/35 px-2.5 py-1.5 rounded-xl transition cursor-pointer"
                   >
                     Cambiar
                   </button>
                 </div>
 
-                {/* Switch Tipo de Recarga (Solo si no es Firma, FF, Streaming, Kaspersky) */}
-                {selectedOp.paquetes.length > 0 && 
-                 !['freefire', 'firma_electronica', 'streaming', 'kaspersky'].includes(selectedOp.id) && (
-                  <div className="flex gap-2 bg-gray-50 border border-gray-100 rounded-xl p-1">
+                {/* 1. NÚMERO DE TELÉFONO (AL INICIO - UX MEJORADO) */}
+                <div className="bg-gray-50 border border-gray-100 p-4 rounded-2xl space-y-3">
+                  <div className="flex items-center gap-1.5 text-xs font-black text-gray-800 uppercase tracking-wide">
+                    <Phone size={13} className="text-green-600" />
+                    <span>Número de Celular a Recargar</span>
+                  </div>
+                  
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-extrabold text-base select-none">📱</span>
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      value={telefono}
+                      onChange={e => setTelefono(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Ej: 0980937186 (10 dígitos)"
+                      className="w-full pl-10 pr-4 py-3.5 bg-white border border-gray-200 rounded-xl text-base font-extrabold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition shadow-sm"
+                    />
+                  </div>
+                  
+                  {telefono.length > 0 && telefono.length < 10 && (
+                    <p className="text-[10px] text-orange-500 font-bold flex items-center gap-1">
+                      <AlertCircle size={10} /> Faltan {10 - telefono.length} dígitos
+                    </p>
+                  )}
+                  {telefono.length === 10 && !telefono.startsWith('0') && (
+                    <p className="text-[10px] text-red-500 font-bold flex items-center gap-1">
+                      <AlertCircle size={10} /> El número debe iniciar con 0 (Ej: 09...)
+                    </p>
+                  )}
+                  {telefono.length === 10 && telefono.startsWith('0') && (
+                    <p className="text-[10px] text-green-600 font-bold flex items-center gap-1">
+                      <CheckCircle size={10} className="fill-green-600 text-white" /> ¡Número listo! Por favor verifica que esté correcto.
+                    </p>
+                  )}
+                </div>
+
+                {/* 2. SWITCH TIPO DE RECARGA (MÁS VISIBLE Y ACCESIBLE) */}
+                <div className="space-y-2">
+                  <div className="text-xs font-black text-gray-800 uppercase tracking-wide">¿Qué deseas recargar?</div>
+                  <div className="grid grid-cols-2 gap-2 bg-gray-100 p-1.5 rounded-2xl border border-gray-200">
                     <button
                       onClick={() => { setRecargaType('saldo'); setSelectedPaquete(null); }}
-                      className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-                        recargaType === 'saldo' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                      className={`py-3.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        recargaType === 'saldo' 
+                          ? 'bg-green-600 text-white shadow-md' 
+                          : 'text-gray-500 hover:text-gray-800 hover:bg-white/50'
                       }`}
                     >
-                      Recarga Saldo Libre
+                      <Smartphone size={14} /> Recargar Saldo
                     </button>
                     <button
                       onClick={() => setRecargaType('combo')}
-                      className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-                        recargaType === 'combo' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                      className={`py-3.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        recargaType === 'combo' 
+                          ? 'bg-green-600 text-white shadow-md' 
+                          : 'text-gray-500 hover:text-gray-800 hover:bg-white/50'
                       }`}
                     >
-                      Paquetes y Combos
+                      <Wifi size={14} /> Paquetes y Combos
                     </button>
                   </div>
-                )}
+                </div>
 
-                {/* Formulario de saldo libre */}
-                {recargaType === 'saldo' && 
-                 !['freefire', 'firma_electronica', 'streaming', 'kaspersky'].includes(selectedOp.id) && (
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold text-gray-700 block">¿Cuánto deseas recargar? (USD):</label>
+                {/* 3. DETALLE: SALDO LIBRE O COMBOS (SIN SCROLL ANIDADO) */}
+                {recargaType === 'saldo' ? (
+                  <div className="space-y-3 pt-2">
+                    <label className="text-xs font-black text-gray-800 uppercase tracking-wide block">¿Cuánto deseas recargar? (USD):</label>
                     <div className="grid grid-cols-5 gap-2">
                       {[1, 2, 3, 5, 10].map(val => (
                         <button
                           key={val}
                           onClick={() => setCustomMonto(val.toString())}
-                          className={`py-2 rounded-xl border font-bold text-xs transition cursor-pointer ${
+                          className={`py-2.5 rounded-xl border-2 font-black text-xs transition cursor-pointer ${
                             customMonto === val.toString() 
-                              ? 'bg-green-600 border-green-600 text-white' 
+                              ? 'bg-green-600 border-green-600 text-white shadow-sm' 
                               : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                           }`}
                         >
@@ -661,48 +601,46 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
                       ))}
                     </div>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-extrabold text-sm">$</span>
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-extrabold text-base">$</span>
                       <input
                         type="number"
                         step="0.01"
                         min="1.00"
                         value={customMonto}
                         onChange={e => setCustomMonto(e.target.value)}
-                        placeholder="Otro valor (Ej: 1.50, 4.00, etc.)"
-                        className="w-full pl-7 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500 focus:bg-white transition"
+                        placeholder="Ingresa otro valor (Ej: 1.50, 4.50, etc.)"
+                        className="w-full pl-8 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-extrabold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition"
                       />
                     </div>
                   </div>
-                )}
-
-                {/* Formulario de Paquetes / Combos */}
-                {(recargaType === 'combo' || 
-                  ['freefire', 'firma_electronica', 'streaming', 'kaspersky'].includes(selectedOp.id)) && (
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold text-gray-700 block">Selecciona tu combo o paquete:</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1">
+                ) : (
+                  <div className="space-y-3 pt-2">
+                    <label className="text-xs font-black text-gray-800 uppercase tracking-wide block">Selecciona tu combo o paquete:</label>
+                    
+                    {/* Renderizado directo en la página, sin scroll anidado para facilitar el scroll móvil */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {selectedOp.paquetes.map(pack => {
                         const isSelected = selectedPaquete?.id === pack.id
                         return (
                           <div
                             key={pack.id}
                             onClick={() => setSelectedPaquete(pack)}
-                            className={`p-3.5 rounded-2xl border text-left cursor-pointer transition-all flex flex-col justify-between relative hover:border-green-400 select-none ${
+                            className={`p-4 rounded-2xl border-2 text-left cursor-pointer transition-all flex flex-col justify-between relative hover:border-green-400 select-none shadow-sm ${
                               isSelected 
-                                ? 'bg-green-50/50 border-green-500 shadow-sm' 
-                                : 'bg-white border-gray-100'
+                                ? 'bg-green-50/50 border-green-500 shadow-md scale-[1.01]' 
+                                : 'bg-white border-gray-200'
                             }`}
                           >
-                            <div className="flex justify-between items-start gap-2 mb-1.5">
-                              <span className="text-sm font-black text-gray-900">${pack.precio.toFixed(2)}</span>
-                              <span className="text-[9px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full shrink-0">
+                            <div className="flex justify-between items-start gap-2 mb-2">
+                              <span className="text-base font-black text-gray-900">${pack.precio.toFixed(2)}</span>
+                              <span className="text-[10px] font-black bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full shrink-0">
                                 📅 {pack.vigencia}
                               </span>
                             </div>
-                            <p className="text-[11px] text-gray-500 leading-snug font-medium">{pack.descripcion}</p>
+                            <p className="text-xs text-gray-500 leading-relaxed font-semibold">{pack.descripcion}</p>
                             {isSelected && (
-                              <span className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-0.5">
-                                <CheckCircle size={8} className="fill-white text-green-500" />
+                              <span className="absolute top-2.5 right-2.5 bg-green-500 text-white rounded-full p-0.5 shadow-sm">
+                                <CheckCircle size={10} className="fill-white text-green-500" />
                               </span>
                             )}
                           </div>
@@ -711,86 +649,6 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
                     </div>
                   </div>
                 )}
-
-                {/* Formulario de Identificadores (Celular / ID Free Fire / Datos Firma) */}
-                <div className="border-t border-gray-100 pt-4 space-y-4">
-                  {selectedOp.id === 'freefire' ? (
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-700 block">ID de Jugador (Free Fire) *</label>
-                      <input
-                        type="text"
-                        value={ffId}
-                        onChange={e => setFfId(e.target.value)}
-                        placeholder="Ej: 192837461"
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500 focus:bg-white transition"
-                      />
-                    </div>
-                  ) : selectedOp.id === 'firma_electronica' ? (
-                    <div className="space-y-3">
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-700 block">Cédula de Identidad / RUC *</label>
-                        <input
-                          type="text"
-                          value={firmaDatos.ci}
-                          onChange={e => setFirmaDatos({ ...firmaDatos, ci: e.target.value })}
-                          placeholder="Ej: 1712345678"
-                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500 focus:bg-white transition"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-700 block">Nombre Completo *</label>
-                        <input
-                          type="text"
-                          value={firmaDatos.nombre}
-                          onChange={e => setFirmaDatos({ ...firmaDatos, nombre: e.target.value })}
-                          placeholder="Ej: Juan Pérez Almendariz"
-                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500 focus:bg-white transition"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-700 block">Correo Electrónico *</label>
-                        <input
-                          type="email"
-                          value={firmaDatos.correo}
-                          onChange={e => setFirmaDatos({ ...firmaDatos, correo: e.target.value })}
-                          placeholder="Ej: juan.perez@gmail.com"
-                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500 focus:bg-white transition"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-700 block">Número de Celular a Recargar *</label>
-                        <div className="relative">
-                          <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                          <input
-                            type="tel"
-                            maxLength={10}
-                            value={telefono}
-                            onChange={e => setTelefono(e.target.value.replace(/\D/g, ''))}
-                            placeholder="Ej: 0980937186"
-                            className="w-full pl-9 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500 focus:bg-white transition"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-700 block">Confirmar Celular *</label>
-                        <div className="relative">
-                          <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                          <input
-                            type="tel"
-                            maxLength={10}
-                            value={confirmTelefono}
-                            onChange={e => setConfirmTelefono(e.target.value.replace(/\D/g, ''))}
-                            placeholder="Repite el número de celular"
-                            className="w-full pl-9 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500 focus:bg-white transition"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
 
               </div>
             )}
@@ -806,33 +664,19 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
                     <span className="text-2xl">{selectedOp.emoji}</span>
                     <div>
                       <h4 className="font-extrabold text-sm">{selectedOp.nombre}</h4>
-                      <p className="text-[10px] text-gray-500">
-                        {selectedOp.id === 'freefire' 
-                          ? `ID de Jugador: ${ffId}` 
-                          : selectedOp.id === 'firma_electronica' 
-                            ? `CI/RUC: ${firmaDatos.ci}` 
-                            : `Celular: ${telefono}`
-                        }
-                      </p>
+                      <p className="text-xs text-gray-500 font-extrabold">Celular: {telefono}</p>
                     </div>
                   </div>
 
-                  <div className="space-y-2 text-xs">
+                  <div className="space-y-2 text-xs font-semibold">
                     <div className="flex justify-between text-gray-600">
                       <span>Valor de recarga/paquete:</span>
                       <span className="font-bold">${getCalculos().subtotal.toFixed(2)}</span>
                     </div>
-                    {recargaType === 'combo' || ['freefire', 'firma_electronica', 'streaming', 'kaspersky'].includes(selectedOp.id) ? (
-                      <div className="flex justify-between text-gray-600">
-                        <span>Recargo por trámite (Paquetes/Especial):</span>
-                        <span className="font-bold text-green-700">+${getCalculos().recargo.toFixed(2)}</span>
-                      </div>
-                    ) : (
-                      <div className="flex justify-between text-gray-600">
-                        <span>Recargo por trámite (Saldo libre):</span>
-                        <span className="font-bold text-green-700">+${getCalculos().recargo.toFixed(2)}</span>
-                      </div>
-                    )}
+                    <div className="flex justify-between text-gray-600">
+                      <span>Recargo por trámite ({recargaType === 'combo' ? 'Combo' : 'Saldo'}):</span>
+                      <span className="font-bold text-green-700">+${getCalculos().recargo.toFixed(2)}</span>
+                    </div>
                     <div className="border-t border-gray-200 pt-2.5 flex justify-between font-black text-sm text-gray-900">
                       <span>Total Neto a Transferir:</span>
                       <span className="text-green-600 font-extrabold text-base">${getCalculos().total.toFixed(2)}</span>
@@ -999,7 +843,7 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
                 setAlerta(null)
                 setCurrentStep((s) => (s - 1) as 1 | 2 | 3)
               }}
-              className="py-3 px-5 border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+              className="py-3.5 px-5 border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer"
             >
               <ArrowLeft size={14} /> Anterior
             </button>
@@ -1010,14 +854,14 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
           {currentStep < 3 ? (
             <button
               onClick={handleNextStep}
-              className="py-3 px-6 bg-green-600 hover:bg-green-700 text-white text-xs font-black rounded-xl transition shadow-md flex items-center gap-1.5 cursor-pointer"
+              className="py-3.5 px-6 bg-green-600 hover:bg-green-700 text-white text-xs font-black rounded-xl transition shadow-md flex items-center gap-1.5 cursor-pointer"
             >
               Siguiente <ArrowRight size={14} />
             </button>
           ) : (
             <button
               onClick={handleSendWhatsApp}
-              className="py-3 px-6 bg-[#25D366] hover:bg-[#20c05a] text-white text-xs font-black rounded-xl transition shadow-md flex items-center gap-1.5 cursor-pointer animate-pulse"
+              className="py-3.5 px-6 bg-[#25D366] hover:bg-[#20c05a] text-white text-xs font-black rounded-xl transition shadow-md flex items-center gap-1.5 cursor-pointer animate-pulse"
             >
               <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white inline">
                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
