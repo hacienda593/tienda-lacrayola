@@ -128,6 +128,11 @@ export default function Header() {
                   🖨️ Impresiones
                 </Link>
                 <span className="text-gray-200 py-0.5">|</span>
+                <Link href="/recargas"
+                  className="shrink-0 text-sm font-bold text-green-700 hover:text-green-900 transition whitespace-nowrap py-0.5 flex items-center gap-1">
+                  📱 Recargas
+                </Link>
+                <span className="text-gray-200 py-0.5">|</span>
                 {['Escolar','Arte','Oficina','Tecnologia','Juguetes','Manualidades','Libros','Pintura'].map(c => (
                   <Link key={c} href={`/productos?cat=${encodeURIComponent(c)}`}
                     className="shrink-0 text-sm text-gray-600 hover:text-green-700 font-medium transition whitespace-nowrap py-0.5">
@@ -145,6 +150,10 @@ export default function Header() {
                 <Link href="/impresion"
                   className="shrink-0 text-xs text-green-700 hover:text-green-900 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200 transition whitespace-nowrap flex items-center gap-1">
                   🖨️ Impresiones
+                </Link>
+                <Link href="/recargas"
+                  className="shrink-0 text-xs text-green-700 hover:text-green-900 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200 transition whitespace-nowrap flex items-center gap-1">
+                  📱 Recargas
                 </Link>
                 {['Escolar','Arte','Oficina','Juguetes','Libros'].map(c => (
                   <Link key={c} href={`/productos?cat=${encodeURIComponent(c)}`}

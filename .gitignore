@@ -42,3 +42,6 @@ next-env.d.ts
 
 # scratch files
 /scratch/
+
+# desktop cashier print app
+/cajero-print-app/

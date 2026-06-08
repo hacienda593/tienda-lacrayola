@@ -26,7 +26,18 @@ export default function TiendasPage() {
       .eq('activa', true)
       .order('orden')
       .then(({ data }) => {
-        setTiendas((data ?? []) as OlTienda[])
+        const list = (data ?? []) as OlTienda[]
+        const recargasTienda: OlTienda = {
+          id: 'recargas-servicios',
+          nombre: 'Recargas y Servicios Básicos',
+          descripcion: 'Recarga saldo, combos de Claro/Movistar/Tuenti y paga tus planillas de Luz, Agua e Internet.',
+          categoria: 'tecnologia',
+          logo_url: null,
+          activa: true,
+          orden: 99,
+          direccion: 'Servicio en Línea (WhatsApp)'
+        }
+        setTiendas([...list, recargasTienda])
         setCargando(false)
       })
   }, [])
@@ -77,14 +88,22 @@ export default function TiendasPage() {
                 {grupo.map(tienda => (
                   <button
                     key={tienda.id}
-                    onClick={() => router.push(`/tiendas/${tienda.id}`)}
+                    onClick={() => {
+                      if (tienda.id === 'recargas-servicios') {
+                        router.push('/recargas')
+                      } else {
+                        router.push(`/tiendas/${tienda.id}`)
+                      }
+                    }}
                     className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all text-left flex items-center gap-4 group"
                   >
                     {/* Logo o emoji */}
                     <div className={`w-14 h-14 ${cfg.bg} rounded-xl flex items-center justify-center text-3xl shrink-0 group-hover:scale-105 transition-transform`}>
                       {tienda.logo_url
                         ? <img src={tienda.logo_url} alt={tienda.nombre} className="w-10 h-10 object-contain" />
-                        : cfg.emoji
+                        : tienda.id === 'recargas-servicios'
+                          ? '📱'
+                          : cfg.emoji
                       }
                     </div>
 

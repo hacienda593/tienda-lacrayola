@@ -4,7 +4,7 @@ import { useRouter, useParams, useSearchParams, usePathname } from 'next/navigat
 import {
   X, User, Tag, Settings, HelpCircle,
   ChevronRight, Search, Heart, Package,
-  MessageCircle, Star, Trophy, Loader2, ShoppingCart, Printer
+  MessageCircle, Star, Trophy, Loader2, ShoppingCart, Printer, Smartphone
 } from 'lucide-react'
 import { getPuntos, progresoNivel } from '@/lib/puntos'
 import { getPuntosCloud, EstadoPuntosCloud } from '@/lib/puntosCloud'
@@ -294,6 +294,12 @@ export default function MenuDrawer({ open, onClose }: Props) {
                 label="Servicio de Impresión" 
                 sub="Imprimir fotos o documentos" 
                 onClick={() => navegar('/impresion')} 
+              />
+              <ItemMenu 
+                icon={<Smartphone size={18} />} 
+                label="Recargas y Servicios" 
+                sub="Saldo, combos y pago de facturas" 
+                onClick={() => navegar('/recargas')} 
               />
               <ItemMenu icon={<Star size={18} />}    label="Mis puntos"        sub={puntos ? `${puntos.disponibles} pts · ${puntos.nivel}` : 'Gana puntos comprando'} onClick={() => navegar('/cuenta')} badge={user ? undefined : 'Próx.'} />
               <ItemMenu icon={<Tag size={18} />}     label="Cupones y códigos" sub="Descuentos disponibles"   onClick={() => navegar('/cupones')} badge="Próx." />
