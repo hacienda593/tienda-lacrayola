@@ -294,8 +294,19 @@ export default function RecargasPage() {
         // Validar selección de monto/paquete
         if (recargaType === 'saldo') {
           const m = parseFloat(customMonto)
-          if (!m || m <= 0) {
+          if (isNaN(m) || m <= 0) {
             setAlerta('Ingresa un monto de recarga válido.')
+            return
+          }
+          if (!selectedOp) {
+            setAlerta('Por favor selecciona una operadora.')
+            return
+          }
+          const isClaro = selectedOp.id === 'claro'
+          const minVal = isClaro ? 1.05 : 0.25
+          const maxVal = isClaro ? 6.00 : 20.00
+          if (m < minVal || m > maxVal) {
+            setAlerta(`Para ${selectedOp.nombre}, las recargas de saldo deben ser entre $${minVal.toFixed(2)} y $${maxVal.toFixed(2)}.`)
             return
           }
         } else {
@@ -598,18 +609,24 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
                 {recargaType === 'saldo' ? (
                   <div className="space-y-3 pt-2">
                     <label className="text-xs font-black text-gray-800 uppercase tracking-wide block">¿Cuánto deseas recargar? (USD):</label>
-                    <div className="grid grid-cols-5 gap-2">
-                      {[1, 2, 3, 5, 10].map(val => (
+                    <p className="text-[11px] text-gray-500 font-bold mb-1">
+                      Rango de montos permitido: <span className="text-green-600 font-extrabold">${selectedOp.id === 'claro' ? '1.05' : '0.25'} - ${selectedOp.id === 'claro' ? '6.00' : '20.00'}</span>
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {(selectedOp.id === 'claro'
+                        ? [1.05, 2.05, 3.10, 4.10, 5.15, 6.00]
+                        : [0.25, 0.50, 1.00, 2.00, 3.00, 6.00, 10.00, 20.00]
+                      ).map(val => (
                         <button
                           key={val}
                           onClick={() => setCustomMonto(val.toString())}
-                          className={`py-2.5 rounded-xl border-2 font-black text-xs transition cursor-pointer ${
+                          className={`py-2 px-3.5 rounded-xl border-2 font-black text-xs transition cursor-pointer ${
                             customMonto === val.toString() 
                               ? 'bg-green-600 border-green-600 text-white shadow-sm' 
                               : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                           }`}
                         >
-                          ${val}.00
+                          ${val.toFixed(2)}
                         </button>
                       ))}
                     </div>
@@ -618,10 +635,11 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
                       <input
                         type="number"
                         step="0.01"
-                        min="1.00"
+                        min={selectedOp.id === 'claro' ? '1.05' : '0.25'}
+                        max={selectedOp.id === 'claro' ? '6.00' : '20.00'}
                         value={customMonto}
                         onChange={e => setCustomMonto(e.target.value)}
-                        placeholder="Ingresa otro valor (Ej: 1.50, 4.50, etc.)"
+                        placeholder={`Ingresa otro valor (Ej: ${selectedOp.id === 'claro' ? '1.50, 4.50' : '1.50, 15.00'})`}
                         className="w-full pl-8 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-extrabold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition"
                       />
                     </div>
