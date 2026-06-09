@@ -108,32 +108,6 @@ const OPERADORES: Operador[] = [
       { id: 'cn11', precio: 20.00, vigencia: '30 días', descripcion: '25 GB en total + Minutos ilim. a otras + Min. ilim. CNT + 30 min internacionales + 50 SMS + CNT Play' },
       { id: 'cn12', precio: 20.00, vigencia: 'N/A', descripcion: 'Combos de Datos: 45 GB' }
     ]
-  },
-  {
-    id: 'maxiplus',
-    nombre: 'Maxiplus',
-    emoji: '🟣',
-    color: 'text-indigo-600',
-    bg: 'bg-indigo-50 border-indigo-200',
-    gradient: 'from-indigo-500 to-purple-700',
-    paquetes: [
-      { id: 'mx1', precio: 1.00, vigencia: '1 Día', descripcion: 'Combo Ahorro: 1 GB + Redes Sociales' },
-      { id: 'mx2', precio: 3.00, vigencia: '7 Días', descripcion: 'Combo Super: 4 GB + Redes Sociales + Llamadas' },
-      { id: 'mx3', precio: 5.00, vigencia: '15 Días', descripcion: 'Combo Ultra: 8 GB + Redes Sociales + Llamadas' }
-    ]
-  },
-  {
-    id: 'akimovil',
-    nombre: 'Akí Móvil',
-    emoji: '🟡',
-    color: 'text-yellow-600',
-    bg: 'bg-yellow-50 border-yellow-200',
-    gradient: 'from-amber-400 to-orange-500',
-    paquetes: [
-      { id: 'ak1', precio: 1.00, vigencia: '1 Día', descripcion: 'Combo Akí $1: 500 MB + redes + llamadas ilimitadas a Akí' },
-      { id: 'ak2', precio: 3.00, vigencia: '5 Días', descripcion: 'Combo Akí $3: 2 GB + redes + llamadas ilimitadas a Akí + 20 MIN todos' },
-      { id: 'ak3', precio: 5.00, vigencia: '15 Días', descripcion: 'Combo Akí $5: 5 GB + redes + llamadas ilimitadas a Akí + 50 MIN todos' }
-    ]
   }
 ]
 
@@ -177,7 +151,7 @@ export default function RecargasPage() {
   
   // Estados para Recargas
   const [selectedOp, setSelectedOp] = useState<Operador | null>(null)
-  const [recargaType, setRecargaType] = useState<'saldo' | 'combo'>('saldo')
+  const [recargaType, setRecargaType] = useState<'saldo' | 'combo'>('combo')
   const [selectedPaquete, setSelectedPaquete] = useState<Paquete | null>(null)
   const [customMonto, setCustomMonto] = useState<string>('')
   const [telefono, setTelefono] = useState<string>('')
@@ -638,7 +612,37 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
                         min={selectedOp.id === 'claro' ? '1.05' : '0.25'}
                         max={selectedOp.id === 'claro' ? '6.00' : '20.00'}
                         value={customMonto}
-                        onChange={e => setCustomMonto(e.target.value)}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setCustomMonto(val);
+                          const m = parseFloat(val);
+                          if (!isNaN(m)) {
+                            const minVal = selectedOp.id === 'claro' ? 1.05 : 0.25;
+                            const maxVal = selectedOp.id === 'claro' ? 6.00 : 20.00;
+                            if (m < minVal || m > maxVal) {
+                              setAlerta(`Monto fuera de rango (${selectedOp.nombre}: $${minVal.toFixed(2)} - $${maxVal.toFixed(2)})`);
+                            } else {
+                              setAlerta(null);
+                            }
+                          } else {
+                            setAlerta(null);
+                          }
+                        }}
+                        onBlur={e => {
+                          const val = e.target.value;
+                          const m = parseFloat(val);
+                          if (!isNaN(m)) {
+                            const minVal = selectedOp.id === 'claro' ? 1.05 : 0.25;
+                            const maxVal = selectedOp.id === 'claro' ? 6.00 : 20.00;
+                            if (m < minVal) {
+                              setCustomMonto(minVal.toString());
+                              setAlerta(null);
+                            } else if (m > maxVal) {
+                              setCustomMonto(maxVal.toString());
+                              setAlerta(null);
+                            }
+                          }
+                        }}
                         placeholder={`Ingresa otro valor (Ej: ${selectedOp.id === 'claro' ? '1.50, 4.50' : '1.50, 15.00'})`}
                         className="w-full pl-8 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-extrabold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition"
                       />
