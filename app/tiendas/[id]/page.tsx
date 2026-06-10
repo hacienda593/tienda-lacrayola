@@ -124,18 +124,25 @@ function TiendaContent() {
   const { user } = useAuth()
   const [frecuentes, setFrecuentes] = useState<Producto[]>([])
 
-  function compartirTienda() {
-    navigator.clipboard.writeText(window.location.href)
-    const texto = `Te comparto la tienda ${tienda?.nombre || ''} en línea: ${window.location.href}`
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank')
-  }
-
-  function compartirFiltros() {
+  function buildSharedUrl() {
     const params = new URLSearchParams()
     if (cat) params.set('cat', cat)
     if (sub) params.set('sub', sub)
     if (marca) params.set('marca', marca)
-    const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`
+    if (q) params.set('q', q)
+    const qs = params.toString()
+    return qs ? `${window.location.origin}${window.location.pathname}?${qs}` : `${window.location.origin}${window.location.pathname}`
+  }
+
+  function compartirTienda() {
+    const url = buildSharedUrl()
+    navigator.clipboard.writeText(url)
+    const texto = `Te comparto la tienda ${tienda?.nombre || ''} en línea: ${url}`
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank')
+  }
+
+  function compartirFiltros() {
+    const url = buildSharedUrl()
     
     // Copiar al portapapeles
     navigator.clipboard.writeText(url)
@@ -157,6 +164,7 @@ function TiendaContent() {
     setCat(searchParams.get('cat') || '')
     setSub(searchParams.get('sub') || '')
     setMarca(searchParams.get('marca') || '')
+    setQ(searchParams.get('q') || '')
     setVisibles(40)
   }, [searchParams])
 
@@ -272,6 +280,7 @@ function TiendaContent() {
   }, [base, cat])
 
   function limpiarFiltros() {
+    setQ('')
     setCat('')
     setSub('')
     setMarca('')
@@ -485,7 +494,7 @@ function TiendaContent() {
         {/* ── CONTENIDO PRINCIPAL ── */}
         <div className="flex-1 min-w-0 space-y-4">
           {/* Filtros activos */}
-          {(cat || sub || marca) && (
+          {(q || cat || sub || marca) && (
             <div className="flex items-center gap-2 flex-wrap text-xs">
               {cat && (
                 <span className="flex items-center gap-1 bg-green-50 text-green-700 font-semibold px-2.5 py-1 rounded-full border border-green-200">
@@ -722,7 +731,7 @@ function TiendaContent() {
             <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-2 shrink-0">
               <button
                 onClick={limpiarFiltros}
-                disabled={!cat && !sub && !marca}
+                disabled={!q && !cat && !sub && !marca}
                 className="flex-1 py-3 border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-xs font-bold rounded-xl transition disabled:opacity-50"
               >
                 Limpiar
