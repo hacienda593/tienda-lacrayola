@@ -719,14 +719,24 @@ Por favor, ayúdenme consultando el valor pendiente de esta planilla para realiz
                   </div>
                 </div>
 
+                {/* Botón Deuna */}
+                <a
+                  href="https://pagar.deuna.app/H92p/merchant?id=828c98695b77537a52da2f2dd281b2746c019154"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3.5 bg-[#702082] hover:bg-[#5a166a] active:scale-[0.99] text-white font-extrabold text-sm rounded-2xl shadow-md transition flex items-center justify-center gap-2.5 cursor-pointer hover:shadow-lg border border-purple-800 text-center"
+                >
+                  <span className="text-base">🟣</span> Pagar con Deuna
+                </a>
+
                 {/* Instrucciones de Pago */}
                 <div className="bg-green-50/70 border border-green-100 rounded-2xl p-4 space-y-2 text-xs text-green-800">
                   <div className="font-extrabold text-green-950 flex items-center gap-1.5">
                     <ShieldCheck size={15} /> Instrucciones de Pago:
                   </div>
                   <ol className="list-decimal pl-4 space-y-1.5 leading-relaxed font-medium">
-                    <li>Realiza una transferencia bancaria a tu cuenta habitual de <b>La Crayola</b> por el total neto de <b>${getCalculos().total.toFixed(2)}</b>.</li>
-                    <li>Toma una captura de pantalla del comprobante de transferencia exitosa.</li>
+                    <li>Paga el total de <b>${getCalculos().total.toFixed(2)}</b> usando el botón de <b>Deuna</b> de arriba, o mediante transferencia bancaria habitual.</li>
+                    <li>Toma una captura de pantalla del comprobante de pago o transferencia exitosa.</li>
                     <li>Haz clic en el botón de abajo, el cual abrirá tu WhatsApp y rellenará el mensaje con tus datos confirmados de recarga.</li>
                     <li>Envía el mensaje en WhatsApp y **adjunta la captura del comprobante**. ¡Tu recarga se aplicará en minutos!</li>
                   </ol>
