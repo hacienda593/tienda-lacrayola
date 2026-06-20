@@ -24,6 +24,7 @@ const PASOS: { estado: string; label: string; icon: React.ReactNode }[] = [
 const ORDEN_ESTADO = ['pendiente','confirmado','preparando','enviado','entregado','cancelado']
 
 interface Item {
+  codigo: string
   descripcion: string
   cantidad: number
   precio_unitario: number
@@ -114,11 +115,28 @@ export default function PedidoPage() {
   const cargar = useCallback(async () => {
     const [{ data: p }, { data: its }] = await Promise.all([
       supabase.from('ol_pedidos').select('*').eq('id', id).single(),
-      supabase.from('ol_pedido_items').select('descripcion,cantidad,precio_unitario,picking_completado,picking_agotado').eq('pedido_id', id),
+      supabase.from('ol_pedido_items').select('codigo,descripcion,cantidad,precio_unitario,picking_completado,picking_agotado').eq('pedido_id', id),
     ])
     if (!p) { setError(true); return }
+
+    let itemsMapeados = (its ?? []) as Item[]
+    if (its && its.length > 0) {
+      const codigos = its.map(it => it.codigo).filter(Boolean)
+      const { data: prods } = await supabase
+        .from('ol_productos')
+        .select('codigo,descripcion')
+        .in('codigo', codigos)
+      if (prods && prods.length > 0) {
+        const prodMap = new Map(prods.map(pr => [pr.codigo, pr.descripcion]))
+        itemsMapeados = its.map(it => ({
+          ...it,
+          descripcion: prodMap.get(it.codigo) || it.descripcion
+        })) as Item[]
+      }
+    }
+
     setPedido(p as Pedido)
-    setItems((its ?? []) as Item[])
+    setItems(itemsMapeados)
     setUltima(new Date())
     actualizarEstadoPedidoLocal(id, (p as Pedido).estado)
 

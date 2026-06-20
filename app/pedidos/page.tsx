@@ -92,6 +92,25 @@ function TarjetaPedido({ pedido, onRecomprar, recomprando }: {
     </div>
   )
 }
+async function mapearDescripciones(pedidosRaw: PedidoVista[]): Promise<PedidoVista[]> {
+  const codigos = pedidosRaw.flatMap(p => p.items.map(it => it.codigo)).filter(Boolean)
+  const uniqueCodigos = Array.from(new Set(codigos))
+  if (uniqueCodigos.length === 0) return pedidosRaw
+
+  const { data: prods } = await supabase
+    .from('ol_productos')
+    .select('codigo,descripcion')
+    .in('codigo', uniqueCodigos)
+
+  const prodMap = new Map(prods?.map(pr => [pr.codigo, pr.descripcion]) ?? [])
+  return pedidosRaw.map(p => ({
+    ...p,
+    items: p.items.map(it => ({
+      ...it,
+      descripcion: prodMap.get(it.codigo) || it.descripcion
+    }))
+  }))
+}
 
 // ── Página ─────────────────────────────────────────────────────────
 export default function PedidosPage() {
@@ -143,19 +162,22 @@ export default function PedidosPage() {
             items:  items ?? [],
           } as PedidoVista
         }))
-        setPedidos(conItems)
+        const mapeados = await mapearDescripciones(conItems)
+        setPedidos(mapeados)
         setCargando(false)
       } else {
         // Invitado: localStorage
         const locales = getPedidosLocales()
-        setPedidos(locales.map(p => ({
+        const rawLocales = locales.map(p => ({
           id:     p.id,
           numero: p.numero,
           fecha:  p.fecha,
           total:  p.total,
           estado: p.estado,
           items:  p.items,
-        })))
+        }))
+        const mapeados = await mapearDescripciones(rawLocales)
+        setPedidos(mapeados)
         setCargando(false)
       }
     }
