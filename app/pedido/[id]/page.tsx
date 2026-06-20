@@ -30,6 +30,7 @@ interface Item {
   precio_unitario: number
   picking_completado?: boolean
   picking_agotado?: boolean
+  tienda_nombre?: string | null
 }
 
 interface Pedido {
@@ -42,6 +43,8 @@ interface Pedido {
   total: number
   created_at: string
   notas?: string | null
+  geo_lat?: number | null
+  geo_lng?: number | null
 }
 
 interface Repartidor {
@@ -124,13 +127,15 @@ export default function PedidoPage() {
       const codigos = its.map(it => it.codigo).filter(Boolean)
       const { data: prods } = await supabase
         .from('ol_productos')
-        .select('codigo,descripcion')
+        .select('codigo,descripcion,tienda_nombre')
         .in('codigo', codigos)
       if (prods && prods.length > 0) {
         const prodMap = new Map(prods.map(pr => [pr.codigo, pr.descripcion]))
+        const tiendaMap = new Map(prods.map(pr => [pr.codigo, pr.tienda_nombre]))
         itemsMapeados = its.map(it => ({
           ...it,
-          descripcion: prodMap.get(it.codigo) || it.descripcion
+          descripcion: prodMap.get(it.codigo) || it.descripcion,
+          tienda_nombre: tiendaMap.get(it.codigo) || null
         })) as Item[]
       }
     }
@@ -220,10 +225,18 @@ export default function PedidoPage() {
 
   const headerInfo = obtenerEncabezado(pedido.estado)
 
+const HORARIOS_TIENDAS: Record<string, string> = {
+  'Tuti': '8:00 AM - 8:00 PM',
+  'TIA': '8:30 AM - 9:00 PM',
+  'Tía': '8:30 AM - 9:00 PM',
+  'La Crayola': '8:00 AM - 7:00 PM',
+}
+
   // Progress calculations
   const totalItems = items.length
   const processedItems = items.filter(it => it.picking_completado || it.picking_agotado).length
   const progressPercent = totalItems > 0 ? Math.round((processedItems / totalItems) * 100) : 0
+  const tiendasPedido = Array.from(new Set(items.map(it => it.tienda_nombre).filter(Boolean))) as string[]
 
   return (
     <div className="max-w-lg mx-auto px-4 py-5 space-y-5">
@@ -232,6 +245,13 @@ export default function PedidoPage() {
         {headerInfo.icon}
         <h1 className="text-xl font-bold text-gray-800 mt-2">{headerInfo.titulo}</h1>
         <p className="text-gray-500 text-sm max-w-sm mx-auto">{headerInfo.subtitulo}</p>
+        {pedido.estado === 'preparado' && tiendasPedido.length > 0 && (
+          <div className="mt-2.5 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-100/50 px-3 py-1.5 rounded-xl inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+            {tiendasPedido.map(t => (
+              <span key={t}>🏪 {t}: {HORARIOS_TIENDAS[t] || '8:00 AM - 8:00 PM'}</span>
+            ))}
+          </div>
+        )}
         <div className="pt-2 border-t border-gray-50 mt-3 flex items-center justify-between text-xs text-gray-400">
           <span>Pedido <strong className="text-gray-700">#{String(pedido.numero).padStart(4,'0')}</strong></span>
           <div className="flex items-center gap-1">
@@ -326,6 +346,29 @@ export default function PedidoPage() {
             <MessageSquare size={14} />
             Escribirle
           </a>
+        </div>
+      )}
+
+      {/* Mapa de Entrega */}
+      {['preparado', 'enviado', 'entregado'].includes(pedido.estado) && (
+        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Ubicación de Entrega</div>
+          <div className="relative rounded-xl overflow-hidden bg-gray-50 border border-gray-150 h-48">
+            <iframe 
+              src={`https://maps.google.com/maps?q=${pedido.geo_lat && pedido.geo_lng ? `${pedido.geo_lat},${pedido.geo_lng}` : encodeURIComponent(`${pedido.direccion ?? ''}, ${pedido.ciudad ?? ''}`)}&z=16&output=embed`} 
+              className="w-full h-full border-0" 
+              loading="lazy" 
+              referrerPolicy="no-referrer-when-downgrade" 
+            />
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <span>📍</span>
+            <span>
+              {pedido.geo_lat && pedido.geo_lng 
+                ? 'Coordenadas GPS confirmadas por el repartidor' 
+                : 'Ubicación aproximada basada en la dirección'}
+            </span>
+          </div>
         </div>
       )}
 
