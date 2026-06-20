@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
-import { CheckCircle, Clock, Package, Truck, Star, RefreshCw } from 'lucide-react'
+import { CheckCircle, Clock, Package, Truck, Star, RefreshCw, MessageSquare } from 'lucide-react'
 import { actualizarEstadoPedidoLocal } from '@/lib/perfil'
 
 const supabase = createClient(
@@ -23,7 +23,14 @@ const PASOS: { estado: string; label: string; icon: React.ReactNode }[] = [
 
 const ORDEN_ESTADO = ['pendiente','confirmado','preparando','enviado','entregado','cancelado']
 
-interface Item { descripcion: string; cantidad: number; precio_unitario: number }
+interface Item {
+  descripcion: string
+  cantidad: number
+  precio_unitario: number
+  picking_completado?: boolean
+  picking_agotado?: boolean
+}
+
 interface Pedido {
   numero: number
   nombre_cliente: string
@@ -36,23 +43,110 @@ interface Pedido {
   notas?: string | null
 }
 
+interface Repartidor {
+  nombre: string
+  telefono: string
+}
+
+interface EncabezadoConfig {
+  titulo: string
+  subtitulo: string
+  colorClase: string
+  icon: React.ReactNode
+}
+
+function obtenerEncabezado(estado: string): EncabezadoConfig {
+  switch (estado) {
+    case 'pendiente':
+      return {
+        titulo: '¡Pedido recibido!',
+        subtitulo: 'Estamos esperando que un comprador acepte tu pedido.',
+        colorClase: 'text-yellow-500',
+        icon: <Clock size={44} className="text-yellow-500 mx-auto" />
+      }
+    case 'confirmado':
+      return {
+        titulo: '¡Pedido confirmado!',
+        subtitulo: 'Un comprador ha sido asignado y pronto empezará tus compras.',
+        colorClase: 'text-blue-500',
+        icon: <CheckCircle size={44} className="text-blue-500 mx-auto" />
+      }
+    case 'preparado':
+    case 'preparando':
+      return {
+        titulo: '🧺 Comprando tus productos',
+        subtitulo: 'Tu comprador está en el supermercado recolectando tus productos.',
+        colorClase: 'text-purple-500',
+        icon: <Package size={44} className="text-purple-500 mx-auto animate-pulse" />
+      }
+    case 'enviado':
+      return {
+        titulo: '🚚 ¡Pedido en camino!',
+        subtitulo: 'El repartidor está llevando tu pedido a tu dirección.',
+        colorClase: 'text-green-500',
+        icon: <Truck size={44} className="text-green-500 mx-auto" />
+      }
+    case 'entregado':
+      return {
+        titulo: '🎉 ¡Pedido entregado!',
+        subtitulo: '¡Gracias por comprar en Tienda La Crayola! Esperamos que disfrutes tu compra.',
+        colorClase: 'text-green-600',
+        icon: <Star size={44} className="text-green-600 mx-auto fill-green-600" />
+      }
+    default:
+      return {
+        titulo: '¡Pedido recibido!',
+        subtitulo: 'Puedes seguir el estado de tu pedido en tiempo real.',
+        colorClase: 'text-green-500',
+        icon: <CheckCircle size={44} className="text-green-500 mx-auto" />
+      }
+  }
+}
+
 export default function PedidoPage() {
   const { id } = useParams<{ id: string }>()
   const [pedido, setPedido] = useState<Pedido | null>(null)
   const [items,  setItems]  = useState<Item[]>([])
+  const [repartidor, setRepartidor] = useState<Repartidor | null>(null)
   const [error,  setError]  = useState(false)
   const [ultima, setUltima] = useState<Date>(new Date())
 
   const cargar = useCallback(async () => {
     const [{ data: p }, { data: its }] = await Promise.all([
       supabase.from('ol_pedidos').select('*').eq('id', id).single(),
-      supabase.from('ol_pedido_items').select('descripcion,cantidad,precio_unitario').eq('pedido_id', id),
+      supabase.from('ol_pedido_items').select('descripcion,cantidad,precio_unitario,picking_completado,picking_agotado').eq('pedido_id', id),
     ])
     if (!p) { setError(true); return }
     setPedido(p as Pedido)
     setItems((its ?? []) as Item[])
     setUltima(new Date())
     actualizarEstadoPedidoLocal(id, (p as Pedido).estado)
+
+    // Fetch assignment & repartidor
+    try {
+      const { data: asig } = await supabase
+        .from('rep_asignaciones')
+        .select('repartidor_id')
+        .eq('pedido_id', id)
+        .maybeSingle()
+
+      if (asig?.repartidor_id) {
+        const { data: rep } = await supabase
+          .from('rep_repartidores')
+          .select('nombre,telefono')
+          .eq('id', asig.repartidor_id)
+          .maybeSingle()
+        if (rep) {
+          setRepartidor(rep as Repartidor)
+        } else {
+          setRepartidor(null)
+        }
+      } else {
+        setRepartidor(null)
+      }
+    } catch (e) {
+      console.error("Error cargando repartidor:", e)
+    }
   }, [id])
 
   useEffect(() => {
@@ -68,7 +162,6 @@ export default function PedidoPage() {
       <Link href="/pedidos" className="text-green-600 text-sm mt-2 block">← Mis pedidos</Link>
     </div>
   )
-
   if (!pedido) return (
     <div className="max-w-lg mx-auto px-4 py-16 flex flex-col items-center gap-3">
       <RefreshCw size={28} className="text-green-500 animate-spin" />
@@ -76,8 +169,20 @@ export default function PedidoPage() {
     </div>
   )
 
-  const idxActual    = ORDEN_ESTADO.indexOf(pedido.estado)
+  const estadoNormalizado = pedido.estado === 'preparado' ? 'preparando' : pedido.estado
+  const idxActual    = ORDEN_ESTADO.indexOf(estadoNormalizado)
   const cancelado    = pedido.estado === 'cancelado'
+
+  const formatWhatsAppNumber = (phone: string) => {
+    const cleaned = phone.replace(/\D/g, '')
+    if (cleaned.startsWith('0')) {
+      return '593' + cleaned.slice(1)
+    }
+    if (cleaned.startsWith('593')) {
+      return cleaned
+    }
+    return '593' + cleaned
+  }
 
   const parseNotas = (notasStr: string | null | undefined) => {
     if (!notasStr) return { pago: null, factura: null, cleanNotas: null }
@@ -95,19 +200,27 @@ export default function PedidoPage() {
   }
   const infoNotas = parseNotas(pedido.notas)
 
+  const headerInfo = obtenerEncabezado(pedido.estado)
+
+  // Progress calculations
+  const totalItems = items.length
+  const processedItems = items.filter(it => it.picking_completado || it.picking_agotado).length
+  const progressPercent = totalItems > 0 ? Math.round((processedItems / totalItems) * 100) : 0
+
   return (
     <div className="max-w-lg mx-auto px-4 py-5 space-y-5">
       {/* Encabezado */}
-      <div className="text-center space-y-1">
-        <CheckCircle size={44} className="text-green-500 mx-auto" />
-        <h1 className="text-xl font-bold text-gray-800">¡Pedido recibido!</h1>
-        <p className="text-gray-500 text-sm">
-          Pedido <span className="font-bold text-gray-800">#{String(pedido.numero).padStart(4,'0')}</span>
-        </p>
-        <div className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
-          <RefreshCw size={11} />
-          Actualizado {ultima.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}
-          <button onClick={cargar} className="underline hover:text-green-600 transition">Refrescar</button>
+      <div className="text-center space-y-1 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+        {headerInfo.icon}
+        <h1 className="text-xl font-bold text-gray-800 mt-2">{headerInfo.titulo}</h1>
+        <p className="text-gray-500 text-sm max-w-sm mx-auto">{headerInfo.subtitulo}</p>
+        <div className="pt-2 border-t border-gray-50 mt-3 flex items-center justify-between text-xs text-gray-400">
+          <span>Pedido <strong className="text-gray-700">#{String(pedido.numero).padStart(4,'0')}</strong></span>
+          <div className="flex items-center gap-1">
+            <RefreshCw size={11} className="animate-spin-slow" />
+            <span>Actualizado {ultima.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}</span>
+            <button onClick={cargar} className="underline hover:text-green-600 transition ml-1">Refrescar</button>
+          </div>
         </div>
       </div>
 
@@ -144,6 +257,57 @@ export default function PedidoPage() {
               )
             })}
           </div>
+        </div>
+      )}
+
+      {/* Tarjeta de Progreso de Compra */}
+      {pedido.estado === 'preparado' && (
+        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100 rounded-2xl p-4 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-purple-700 uppercase tracking-wider">Progreso de la compra</span>
+            <span className="text-xs font-semibold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
+              {processedItems} de {totalItems} items
+            </span>
+          </div>
+          <div className="w-full bg-purple-200/50 h-2.5 rounded-full overflow-hidden">
+            <div 
+              className="bg-purple-600 h-2.5 rounded-full transition-all duration-500" 
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <p className="text-[11px] text-purple-700 font-medium leading-relaxed">
+            {progressPercent === 100 
+              ? '¡Tu comprador ha terminado de recolectar todos los artículos!' 
+              : 'Tu comprador está marcando los productos a medida que los agrega a su canasta.'}
+          </p>
+        </div>
+      )}
+
+      {/* Información del Repartidor / Comprador */}
+      {repartidor && (
+        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-sm shrink-0">
+              {repartidor.nombre.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                {pedido.estado === 'preparado' ? 'Tu Comprador' : 'Tu Repartidor'}
+              </div>
+              <div className="font-semibold text-gray-800 text-sm">{repartidor.nombre}</div>
+            </div>
+          </div>
+          <a
+            href={`https://wa.me/${formatWhatsAppNumber(repartidor.telefono)}?text=${encodeURIComponent(
+              `Hola ${repartidor.nombre}, soy el cliente del pedido #${String(pedido.numero).padStart(4, '0')}.`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white font-semibold px-3.5 py-2 rounded-xl transition text-xs shadow-sm"
+          >
+            <MessageSquare size={14} />
+            Escribirle
+          </a>
         </div>
       )}
 
@@ -191,15 +355,51 @@ export default function PedidoPage() {
       )}
 
       {/* Productos */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-2">
+      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
         <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Productos</div>
-        {items.map((it, i) => (
-          <div key={i} className="flex justify-between text-sm">
-            <span className="text-gray-600 flex-1 truncate">{it.descripcion} ×{it.cantidad}</span>
-            <span className="text-gray-800 font-medium ml-2 shrink-0">{fmt(it.precio_unitario * it.cantidad)}</span>
-          </div>
-        ))}
-        <div className="flex justify-between font-bold text-gray-800 border-t border-gray-100 pt-2 mt-1">
+        <div className="divide-y divide-gray-50 space-y-2">
+          {items.map((it, i) => {
+            const showStatus = ['preparado', 'enviado', 'entregado'].includes(pedido.estado)
+            const isPicked = it.picking_completado
+            const isAgotado = it.picking_agotado
+            const isPending = !isPicked && !isAgotado
+
+            return (
+              <div key={i} className="flex items-center justify-between text-sm pt-2 first:pt-0">
+                <div className="flex-1 min-w-0 pr-2">
+                  <span className={`text-gray-700 block truncate ${isAgotado ? 'line-through text-gray-400' : ''}`}>
+                    {it.descripcion} <span className="text-gray-400 font-medium text-xs">×{it.cantidad}</span>
+                  </span>
+                  
+                  {/* Badge de estado en tiempo real */}
+                  {showStatus && (
+                    <div className="mt-0.5">
+                      {isPicked && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded">
+                          🧺 En canasta
+                        </span>
+                      )}
+                      {isAgotado && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-650 bg-red-50 px-1.5 py-0.5 rounded">
+                          ❌ No disponible
+                        </span>
+                      )}
+                      {isPending && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gray-450 bg-gray-50 px-1.5 py-0.5 rounded">
+                          ⏳ Pendiente
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <span className={`text-gray-800 font-semibold shrink-0 ${isAgotado ? 'text-gray-400 line-through' : ''}`}>
+                  {fmt(it.precio_unitario * it.cantidad)}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+        <div className="flex justify-between font-bold text-gray-800 border-t border-gray-100 pt-3 mt-1">
           <span>Total</span>
           <span className="text-green-600">{fmt(pedido.total)}</span>
         </div>

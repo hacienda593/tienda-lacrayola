@@ -14,6 +14,7 @@ const ESTADOS: Record<string, { label: string; color: string; bg: string }> = {
   pendiente:  { label: 'Pendiente',  color: 'text-yellow-700', bg: 'bg-yellow-100' },
   confirmado: { label: 'Confirmado', color: 'text-blue-700',   bg: 'bg-blue-100' },
   preparando: { label: 'Preparando', color: 'text-purple-700', bg: 'bg-purple-100' },
+  preparado:  { label: 'Preparando', color: 'text-purple-700', bg: 'bg-purple-100' },
   enviado:    { label: 'Enviado',    color: 'text-green-700',  bg: 'bg-green-100' },
   entregado:  { label: 'Entregado',  color: 'text-green-800',  bg: 'bg-green-200' },
   cancelado:  { label: 'Cancelado',  color: 'text-red-700',    bg: 'bg-red-100' },
