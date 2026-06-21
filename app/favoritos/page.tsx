@@ -24,12 +24,18 @@ export default function FavoritosPage() {
   }
 
   function agregar(prod: ItemFavorito) {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15)
+    }
     agregarItem({ codigo: prod.codigo, descripcion: prod.descripcion, categoria: prod.categoria, precio_publico: prod.precio_unitario })
     setAgregados(s => new Set(s).add(prod.codigo))
     setTimeout(() => setAgregados(s => { const n = new Set(s); n.delete(prod.codigo); return n }), 1500)
   }
 
   function agregarTodos() {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(25)
+    }
     lista.forEach(p => agregarItem({ codigo: p.codigo, descripcion: p.descripcion, categoria: p.categoria, precio_publico: p.precio_unitario }))
     const todos = new Set(lista.map(p => p.codigo))
     setAgregados(todos)
@@ -98,7 +104,7 @@ export default function FavoritosPage() {
             <div className="flex flex-col gap-1.5 shrink-0">
               <button
                 onClick={() => agregar(prod)}
-                className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition ${
+                className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg active:scale-[0.96] transition-transform duration-75 transition ${
                   agregados.has(prod.codigo)
                     ? 'bg-green-100 text-green-700'
                     : 'bg-green-600 hover:bg-green-700 text-white'
@@ -126,7 +132,7 @@ export default function FavoritosPage() {
         </div>
         <button
           onClick={agregarTodos}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition"
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm active:scale-[0.96] transition-transform duration-75 transition"
         >
           <ShoppingCart size={15} />
           Agregar todos al carrito

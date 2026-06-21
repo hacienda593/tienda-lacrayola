@@ -160,6 +160,7 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
     }
     agregarItem(p)
     setOk(true)
+    window.dispatchEvent(new Event('carrito-update'))
     setTimeout(() => setOk(false), 1200)
   }
 
@@ -210,7 +211,7 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
         <div className="text-lg font-extrabold text-gray-900">{fmt(p.precio_publico)}</div>
       </div>
       <button onClick={addCart}
-        className={`mt-2 w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition
+        className={`mt-2 w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 active:scale-[0.96] transition-transform duration-75
           ${ok ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-green-600'}`}>
         <ShoppingCart size={13} />
         {ok ? '¡Agregado!' : 'Agregar al carrito'}
@@ -234,7 +235,7 @@ function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
   }
   return (
     <button onClick={add}
-      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition shrink-0 cursor-pointer
+      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 active:scale-[0.96] transition-transform duration-75 shrink-0 cursor-pointer
         ${ok ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent'}`}>
       <ShoppingCart size={11} />
       {ok ? '✓' : 'Agregar'}
@@ -252,7 +253,29 @@ export default function Home() {
   const { user } = useAuth()
   const router = useRouter()
   const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null)
+  const [activeList, setActiveList] = useState<Producto[]>([])
   const [frecuentes, setFrecuentes] = useState<Producto[]>([])
+
+  function openQuickView(p: Producto, list: Producto[]) {
+    setSelectedProduct(p)
+    setActiveList(list)
+  }
+
+  const nextProduct = () => {
+    if (!selectedProduct || activeList.length === 0) return
+    const idx = activeList.findIndex(p => p.codigo === selectedProduct.codigo)
+    if (idx !== -1 && idx < activeList.length - 1) {
+      setSelectedProduct(activeList[idx + 1])
+    }
+  }
+
+  const prevProduct = () => {
+    if (!selectedProduct || activeList.length === 0) return
+    const idx = activeList.findIndex(p => p.codigo === selectedProduct.codigo)
+    if (idx > 0) {
+      setSelectedProduct(activeList[idx - 1])
+    }
+  }
   const [cats,        setCats]        = useState<{ categoria: string; n: number }[]>([])
   const [destacados,  setDestacados]  = useState<Producto[]>([])
   const [novedades,   setNovedades]   = useState<Producto[]>([])
@@ -389,7 +412,7 @@ export default function Home() {
                 <div key={p.codigo}
                   onClick={() => {
                     if (USE_QUICK_VIEW) {
-                      setSelectedProduct(p)
+                      openQuickView(p, frecuentes)
                     } else {
                       router.push(`/producto/${encodeURIComponent(p.codigo)}`)
                     }
@@ -502,7 +525,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {destacados.map(p => <ProdCard key={p.codigo} p={p} onSelect={setSelectedProduct} />)}
+              {destacados.map(p => <ProdCard key={p.codigo} p={p} onSelect={(prod) => openQuickView(prod, destacados)} />)}
             </div>
           )}
         </section>
@@ -537,7 +560,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {novedades.map(p => <ProdCard key={p.codigo} p={p} onSelect={setSelectedProduct} />)}
+              {novedades.map(p => <ProdCard key={p.codigo} p={p} onSelect={(prod) => openQuickView(prod, novedades)} />)}
             </div>
           )}
         </section>
@@ -570,7 +593,9 @@ export default function Home() {
       <QuickViewDrawer
         producto={selectedProduct}
         isOpen={selectedProduct !== null}
-        onClose={() => setSelectedProduct(null)}
+        onClose={() => { setSelectedProduct(null); setActiveList([]); }}
+        onNext={nextProduct}
+        onPrev={prevProduct}
       />
     </div>
   )

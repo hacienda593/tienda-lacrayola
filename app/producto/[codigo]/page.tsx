@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
@@ -78,6 +78,44 @@ export default function ProductoPage() {
   const [agregado, setAgregado] = useState(false)
   const [imageError, setImageError] = useState(false)
 
+  const imageRef = useRef<HTMLImageElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  function handlePointerMove(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) {
+    const container = containerRef.current
+    const img = imageRef.current
+    if (!container || !img) return
+
+    const rect = container.getBoundingClientRect()
+    let clientX = 0
+    let clientY = 0
+
+    if ('touches' in e) {
+      if (e.touches.length === 0) return
+      clientX = e.touches[0].clientX
+      clientY = e.touches[0].clientY
+    } else {
+      clientX = e.clientX
+      clientY = e.clientY
+    }
+
+    const xPercent = ((clientX - rect.left) / rect.width) * 100
+    const yPercent = ((clientY - rect.top) / rect.height) * 100
+
+    img.style.transformOrigin = `${xPercent}% ${yPercent}%`
+    img.style.transform = 'scale(1.45)'
+    img.style.filter = 'drop-shadow(0 25px 35px rgba(0, 0, 0, 0.35))'
+  }
+
+  function resetImageTransform() {
+    const img = imageRef.current
+    if (img) {
+      img.style.transformOrigin = 'center center'
+      img.style.transform = 'scale(1)'
+      img.style.filter = 'none'
+    }
+  }
+
   useEffect(() => {
     async function cargar() {
       const { data } = await supabase
@@ -111,17 +149,25 @@ export default function ProductoPage() {
 
   function agregar() {
     if (!prod) return
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15)
+    }
     agregarItem(prod)
     setCantidad(c => c + 1)
     setAgregado(true)
+    window.dispatchEvent(new Event('carrito-update'))
     setTimeout(() => setAgregado(false), 1500)
   }
 
   function cambiar(delta: number) {
     if (!prod) return
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(10)
+    }
     const nueva = cantidad + delta
     cambiarCantidad(prod.codigo, nueva)
     setCantidad(Math.max(0, nueva))
+    window.dispatchEvent(new Event('carrito-update'))
   }
 
   function toggleFav() {
@@ -159,12 +205,25 @@ export default function ProductoPage() {
       </button>
 
       {/* Imagen */}
-      <div className={`bg-gradient-to-br ${gradient} rounded-2xl h-56 flex items-center justify-center relative overflow-hidden`}>
+      <div
+        ref={containerRef}
+        onMouseMove={handlePointerMove}
+        onMouseLeave={resetImageTransform}
+        onTouchMove={handlePointerMove}
+        onTouchEnd={resetImageTransform}
+        className={`bg-gradient-to-br ${gradient} rounded-2xl h-64 md:h-72 flex items-center justify-center relative overflow-hidden touch-pan-y select-none`}
+      >
         {prod.imagen_url && !imageError ? (
           <img
+            ref={imageRef}
             src={prod.imagen_url}
             alt={prod.descripcion}
             onError={() => setImageError(true)}
+            style={{
+              transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+              transformOrigin: 'center center',
+              transform: 'scale(1)'
+            }}
             className="w-full h-full object-contain p-4 animate-fade-in"
           />
         ) : (
@@ -236,7 +295,7 @@ export default function ProductoPage() {
         <div className="space-y-3">
           {cantidad === 0 ? (
             <button onClick={agregar}
-              className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm transition ${
+              className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm active:scale-[0.96] transition-transform duration-75 transition ${
                 agregado ? 'bg-green-500 text-white' : 'bg-green-600 hover:bg-green-700 text-white'
               }`}>
               <ShoppingCart size={18} />
@@ -245,11 +304,11 @@ export default function ProductoPage() {
           ) : (
             <div className="flex items-center gap-4">
               <div className="flex items-center bg-green-600 rounded-2xl overflow-hidden">
-                <button onClick={() => cambiar(-1)} className="px-5 py-3.5 text-white hover:bg-green-700 transition">
+                <button onClick={() => cambiar(-1)} className="px-5 py-3.5 text-white hover:bg-green-700 active:scale-[0.96] transition-transform duration-75 transition">
                   <Minus size={16} />
                 </button>
                 <span className="text-white font-bold text-lg px-3 min-w-[2.5rem] text-center">{cantidad}</span>
-                <button onClick={() => cambiar(+1)} className="px-5 py-3.5 text-white hover:bg-green-700 transition">
+                <button onClick={() => cambiar(+1)} className="px-5 py-3.5 text-white hover:bg-green-700 active:scale-[0.96] transition-transform duration-75 transition">
                   <Plus size={16} />
                 </button>
               </div>

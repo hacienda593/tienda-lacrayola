@@ -1,15 +1,17 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
-import { X, ShoppingCart, Heart, Shield, Check } from 'lucide-react'
+import Link from 'next/link'
+import { X, ShoppingCart, Heart, Shield, Check, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Producto } from '@/lib/types'
 import { agregarItem } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
-import Link from 'next/link'
 
 interface QuickViewDrawerProps {
   producto: Producto | null
   isOpen: boolean
   onClose: () => void
+  onNext?: () => void
+  onPrev?: () => void
 }
 
 const CAT_EMOJI: Record<string, string> = {
@@ -20,12 +22,18 @@ const CAT_EMOJI: Record<string, string> = {
   'Hogar y Limpieza': '🧹', 'Mascotas': '🐶', 'Huevos Lácteos y Leches': '🥛'
 }
 
-export default function QuickViewDrawer({ producto, isOpen, onClose }: QuickViewDrawerProps) {
+export default function QuickViewDrawer({ producto, isOpen, onClose, onNext, onPrev }: QuickViewDrawerProps) {
   const [fav, setFav] = useState(false)
   const [agregado, setAgregado] = useState(false)
   const [imageError, setImageError] = useState(false)
+  
   const imageRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  
+  // Swipe state
+  const [touchStart, setTouchStart] = useState<number | null>(null)
+  const [touchEnd, setTouchEnd] = useState<number | null>(null)
+  const minSwipeDistance = 60
 
   // Sync state when product changes
   useEffect(() => {
@@ -59,7 +67,7 @@ export default function QuickViewDrawer({ producto, isOpen, onClose }: QuickView
     }, 1200)
   }
 
-  // --- TACTILE 3D BOTTLE SPIN LOGIC ---
+  // --- TACTILE PAN-ZOOM LOGIC (Lupa de inspección táctil) ---
   function handlePointerMove(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) {
     const container = containerRef.current
     const img = imageRef.current
@@ -79,23 +87,21 @@ export default function QuickViewDrawer({ producto, isOpen, onClose }: QuickView
       clientY = e.clientY
     }
 
-    // Coordinates relative to center of the image box
-    const x = clientX - rect.left - (rect.width / 2)
-    const y = clientY - rect.top - (rect.height / 2)
+    // Percentage coordinates inside container
+    const xPercent = ((clientX - rect.left) / rect.width) * 100
+    const yPercent = ((clientY - rect.top) / rect.height) * 100
 
-    // Calculate rotation angles (Max 22 degrees tilt for realistic feel)
-    const rotateY = (x / (rect.width / 2)) * 22
-    const rotateX = -(y / (rect.height / 2)) * 22
-
-    // Apply scale and 3D transform (Perspective keeps it sharp)
-    img.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.15)`
-    img.style.filter = `drop-shadow(${-rotateY * 0.6}px ${20 + rotateX * 0.6}px 25px rgba(0, 0, 0, 0.45))`
+    // Pan zoom centered at pointer position
+    img.style.transformOrigin = `${xPercent}% ${yPercent}%`
+    img.style.transform = 'scale(1.45)'
+    img.style.filter = 'drop-shadow(0 25px 35px rgba(0, 0, 0, 0.35))'
   }
 
   function resetImageTransform() {
     const img = imageRef.current
     if (img) {
-      img.style.transform = 'perspective(600px) rotateX(0deg) rotateY(0deg) scale(1)'
+      img.style.transformOrigin = 'center center'
+      img.style.transform = 'scale(1)'
       img.style.filter = 'drop-shadow(0 15px 20px rgba(0, 0, 0, 0.25))'
     }
   }
@@ -111,6 +117,32 @@ export default function QuickViewDrawer({ producto, isOpen, onClose }: QuickView
     setFav(isFav)
   }
 
+  // --- TOUCH SWIPE CAROUSEL LOGIC ---
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+    
+    if (isLeftSwipe && onNext) {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(8)
+      onNext()
+    }
+    if (isRightSwipe && onPrev) {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(8)
+      onPrev()
+    }
+  }
+
   return (
     <>
       {/* Backdrop */}
@@ -121,8 +153,31 @@ export default function QuickViewDrawer({ producto, isOpen, onClose }: QuickView
         }`}
       />
 
+      {/* Chevron left desktop button */}
+      {onPrev && (
+        <button
+          onClick={onPrev}
+          className="fixed left-4 top-1/2 -translate-y-1/2 z-[102] hidden md:flex w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 items-center justify-center text-white transition-all hover:scale-105 active:scale-95 shadow-lg backdrop-blur-md"
+        >
+          <ChevronLeft size={24} />
+        </button>
+      )}
+
+      {/* Chevron right desktop button */}
+      {onNext && (
+        <button
+          onClick={onNext}
+          className="fixed right-4 top-1/2 -translate-y-1/2 z-[102] hidden md:flex w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 items-center justify-center text-white transition-all hover:scale-105 active:scale-95 shadow-lg backdrop-blur-md"
+        >
+          <ChevronRight size={24} />
+        </button>
+      )}
+
       {/* Drawer Container (Desktop Modal / Mobile Bottom Sheet) */}
       <div
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         className={`fixed z-[101] bg-white transition-all duration-300 ease-out
           /* Mobile layout */
           bottom-0 left-0 w-full rounded-t-3xl border-t border-gray-100 p-5 shadow-2xl flex flex-col gap-4 max-h-[95vh] overflow-y-auto
@@ -142,14 +197,14 @@ export default function QuickViewDrawer({ producto, isOpen, onClose }: QuickView
           </button>
         </div>
 
-        {/* 1. King-Size Interactive Image Container (Holding Sensation) */}
+        {/* 1. King-Size Interactive Image Container (Pan-Zoom magnifying effect) */}
         <div
           ref={containerRef}
           onMouseMove={handlePointerMove}
           onMouseLeave={resetImageTransform}
           onTouchMove={handlePointerMove}
           onTouchEnd={resetImageTransform}
-          className="relative bg-gradient-to-br from-gray-50/70 to-gray-100 rounded-2xl h-60 md:h-72 flex items-center justify-center text-8xl overflow-hidden border border-gray-100/50 cursor-grab active:cursor-grabbing touch-none select-none"
+          className="relative bg-gradient-to-br from-gray-50/70 to-gray-100 rounded-2xl h-60 md:h-72 flex items-center justify-center text-8xl overflow-hidden border border-gray-100/50 touch-pan-y select-none"
         >
           {producto.imagen_url && !imageError ? (
             <img
@@ -158,9 +213,9 @@ export default function QuickViewDrawer({ producto, isOpen, onClose }: QuickView
               alt={producto.descripcion}
               onError={() => setImageError(true)}
               style={{
-                transition: 'transform 0.1s ease-out, filter 0.1s ease-out',
-                transformStyle: 'preserve-3d',
-                transform: 'perspective(600px) rotateX(0deg) rotateY(0deg) scale(1)',
+                transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+                transformOrigin: 'center center',
+                transform: 'scale(1)',
                 filter: 'drop-shadow(0 15px 20px rgba(0, 0, 0, 0.25))'
               }}
               className="w-full h-full object-contain p-6"
@@ -246,7 +301,7 @@ export default function QuickViewDrawer({ producto, isOpen, onClose }: QuickView
             <button
               disabled={agotado}
               onClick={handleAddToCart}
-              className={`w-full py-3.5 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 transition select-none ${
+              className={`w-full py-3.5 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 select-none active:scale-[0.96] transition-transform duration-75 ${
                 agotado
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
                   : agregado

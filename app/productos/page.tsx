@@ -87,7 +87,7 @@ function BtnAgregar({ prod }: { prod: Producto }) {
   if (cantidad === 0) {
     return (
       <button onClick={agregar}
-        className="w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent">
+        className="w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 active:scale-[0.96] transition-transform duration-75 bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent">
         <ShoppingCart size={12} /> Agregar
       </button>
     )
@@ -95,11 +95,11 @@ function BtnAgregar({ prod }: { prod: Producto }) {
 
   return (
     <div className="flex items-center justify-between bg-green-600 rounded-lg overflow-hidden">
-      <button onClick={e => cambiar(e, -1)} className="px-3 py-2 text-white hover:bg-green-700 transition font-bold">
+      <button onClick={e => cambiar(e, -1)} className="px-3 py-2 text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75">
         <Minus size={12} />
       </button>
       <span className="text-white text-xs font-bold">{cantidad}</span>
-      <button onClick={e => cambiar(e, +1)} className="px-3 py-2 text-white hover:bg-green-700 transition font-bold">
+      <button onClick={e => cambiar(e, +1)} className="px-3 py-2 text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75">
         <Plus size={12} />
       </button>
     </div>
@@ -220,6 +220,28 @@ function ProductosContent() {
   const [stockFiltro, setStockFiltro] = useState<'todos'|'disponible'>('disponible')
   const [orden, setOrden]           = useState<Orden>('relevancia')
   const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null)
+  const [activeList, setActiveList] = useState<Producto[]>([])
+
+  function openQuickView(p: Producto, list: Producto[]) {
+    setSelectedProduct(p)
+    setActiveList(list)
+  }
+
+  const nextProduct = () => {
+    if (!selectedProduct || activeList.length === 0) return
+    const idx = activeList.findIndex(p => p.codigo === selectedProduct.codigo)
+    if (idx !== -1 && idx < activeList.length - 1) {
+      setSelectedProduct(activeList[idx + 1])
+    }
+  }
+
+  const prevProduct = () => {
+    if (!selectedProduct || activeList.length === 0) return
+    const idx = activeList.findIndex(p => p.codigo === selectedProduct.codigo)
+    if (idx > 0) {
+      setSelectedProduct(activeList[idx - 1])
+    }
+  }
   const [visibles, setVisibles]     = useState(40)
   const [showOrden, setShowOrden]   = useState(false)
   const [crayolaId, setCrayolaId]   = useState('')
@@ -606,7 +628,7 @@ function ProductosContent() {
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {filtrados.slice(0, visibles).map((p, idx) => (
-                  <ProductCard key={p.codigo} p={p} badge={badgePara(p, idx)} onSelect={setSelectedProduct} />
+                  <ProductCard key={p.codigo} p={p} badge={badgePara(p, idx)} onSelect={(prod) => openQuickView(prod, filtrados.slice(0, visibles))} />
                 ))}
               </div>
               {visibles < filtrados.length && (
@@ -624,7 +646,9 @@ function ProductosContent() {
       <QuickViewDrawer
         producto={selectedProduct}
         isOpen={selectedProduct !== null}
-        onClose={() => setSelectedProduct(null)}
+        onClose={() => { setSelectedProduct(null); setActiveList([]); }}
+        onNext={nextProduct}
+        onPrev={prevProduct}
       />
     </div>
   )

@@ -259,6 +259,9 @@ function CategoriasPanelInner({ open, onClose }: Props) {
 
   // Lógica de agregado rápido del carrito en minitarjetas
   function handleAddExpress(p: Producto) {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15)
+    }
     agregarItem({
       codigo: p.codigo,
       descripcion: p.descripcion,
@@ -270,6 +273,9 @@ function CategoriasPanelInner({ open, onClose }: Props) {
   }
 
   function handleStepper(codigo: string, cantActual: number, delta: number) {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(10)
+    }
     cambiarCantidad(codigo, cantActual + delta)
   }
 
@@ -532,7 +538,7 @@ function CategoriasPanelInner({ open, onClose }: Props) {
                                 {qty === 0 ? (
                                   <button
                                     onClick={() => handleAddExpress(p)}
-                                    className="w-8 h-8 rounded-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center transition shadow-sm active:scale-95 duration-100"
+                                    className="w-8 h-8 rounded-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center transition shadow-sm active:scale-[0.96] transition-transform duration-75"
                                     aria-label="Agregar"
                                   >
                                     <Plus size={16} />
@@ -541,7 +547,7 @@ function CategoriasPanelInner({ open, onClose }: Props) {
                                   <div className="flex items-center bg-green-50 border border-green-200 text-green-700 h-8 rounded-full overflow-hidden shrink-0">
                                     <button 
                                       onClick={() => handleStepper(p.codigo, qty, -1)} 
-                                      className="w-7 h-full flex items-center justify-center hover:bg-green-100 transition"
+                                      className="w-7 h-full flex items-center justify-center hover:bg-green-100 transition active:scale-[0.96] transition-transform duration-75"
                                       aria-label="Disminuir"
                                     >
                                       <Minus size={10} />
@@ -549,7 +555,7 @@ function CategoriasPanelInner({ open, onClose }: Props) {
                                     <span className="px-1.5 text-[11px] font-bold text-green-800 min-w-[14px] text-center">{qty}</span>
                                     <button 
                                       onClick={() => handleStepper(p.codigo, qty, 1)} 
-                                      className="w-7 h-full flex items-center justify-center hover:bg-green-100 transition"
+                                      className="w-7 h-full flex items-center justify-center hover:bg-green-100 transition active:scale-[0.96] transition-transform duration-75"
                                       aria-label="Aumentar"
                                     >
                                       <Plus size={10} />

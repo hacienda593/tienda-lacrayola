@@ -36,6 +36,9 @@ function BtnAgregar({ prod, tiendaId, tiendaNombre }: { prod: Producto; tiendaId
 
   function agregar(e: React.MouseEvent) {
     e.stopPropagation(); e.preventDefault()
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15)
+    }
     agregarItem({ ...prod, precio_publico: prod.precio_publico }, 1)
     // Guardar tienda_id en localStorage del item
     const items = getCarrito()
@@ -51,6 +54,9 @@ function BtnAgregar({ prod, tiendaId, tiendaNombre }: { prod: Producto; tiendaId
 
   function cambiar(e: React.MouseEvent, delta: number) {
     e.stopPropagation(); e.preventDefault()
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(10)
+    }
     const nueva = cantidad + delta
     cambiarCantidad(prod.codigo, nueva)
     setCantidad(Math.max(0, nueva))
@@ -58,16 +64,16 @@ function BtnAgregar({ prod, tiendaId, tiendaNombre }: { prod: Producto; tiendaId
 
   if (cantidad === 0) return (
     <button onClick={agregar}
-      className="w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent transition">
+      className="w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent active:scale-[0.96] transition-transform duration-75">
       <ShoppingCart size={12} /> Agregar
     </button>
   )
 
   return (
     <div className="flex items-center justify-between bg-green-600 rounded-lg overflow-hidden">
-      <button onClick={e => cambiar(e, -1)} className="px-3 py-2 text-white hover:bg-green-700 transition font-bold"><Minus size={12} /></button>
+      <button onClick={e => cambiar(e, -1)} className="px-3 py-2 text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75"><Minus size={12} /></button>
       <span className="text-white text-xs font-bold">{cantidad}</span>
-      <button onClick={e => cambiar(e, +1)} className="px-3 py-2 text-white hover:bg-green-700 transition font-bold"><Plus size={12} /></button>
+      <button onClick={e => cambiar(e, +1)} className="px-3 py-2 text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75"><Plus size={12} /></button>
     </div>
   )
 }
@@ -128,6 +134,28 @@ function TiendaContent() {
   const { user } = useAuth()
   const [frecuentes, setFrecuentes] = useState<Producto[]>([])
   const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null)
+  const [activeList, setActiveList] = useState<Producto[]>([])
+
+  function openQuickView(p: Producto, list: Producto[]) {
+    setSelectedProduct(p)
+    setActiveList(list)
+  }
+
+  const nextProduct = () => {
+    if (!selectedProduct || activeList.length === 0) return
+    const idx = activeList.findIndex(p => p.codigo === selectedProduct.codigo)
+    if (idx !== -1 && idx < activeList.length - 1) {
+      setSelectedProduct(activeList[idx + 1])
+    }
+  }
+
+  const prevProduct = () => {
+    if (!selectedProduct || activeList.length === 0) return
+    const idx = activeList.findIndex(p => p.codigo === selectedProduct.codigo)
+    if (idx > 0) {
+      setSelectedProduct(activeList[idx - 1])
+    }
+  }
 
   function buildSharedUrl() {
     const params = new URLSearchParams()
@@ -549,7 +577,7 @@ function TiendaContent() {
                   <div key={p.codigo}
                     onClick={() => {
                       if (USE_QUICK_VIEW) {
-                        setSelectedProduct(p)
+                        openQuickView(p, frecuentes)
                       } else {
                         router.push(`/producto/${encodeURIComponent(p.codigo)}`)
                       }
@@ -591,7 +619,7 @@ function TiendaContent() {
                   <div key={p.codigo}
                     onClick={() => {
                       if (USE_QUICK_VIEW) {
-                        setSelectedProduct(p)
+                        openQuickView(p, filtrados)
                       } else {
                         router.push(`/producto/${encodeURIComponent(p.codigo)}`)
                       }
@@ -786,7 +814,9 @@ function TiendaContent() {
       <QuickViewDrawer
         producto={selectedProduct}
         isOpen={selectedProduct !== null}
-        onClose={() => setSelectedProduct(null)}
+        onClose={() => { setSelectedProduct(null); setActiveList([]); }}
+        onNext={nextProduct}
+        onPrev={prevProduct}
       />
     </div>
   )
