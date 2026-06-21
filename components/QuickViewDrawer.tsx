@@ -199,106 +199,90 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
           </button>
         </div>
 
-        {/* 1. King-Size Interactive Image Container (Carousel Peeking + Pan-Zoom) */}
-        <div className="bg-gradient-to-br from-gray-50/70 to-gray-100 rounded-2xl h-60 md:h-72 flex items-center justify-between border border-gray-100/50 select-none px-3 relative overflow-hidden">
-          
-          {/* Left Peeking Card */}
-          {prevProducto ? (
-            <button
-              onClick={(e) => { e.stopPropagation(); onPrev?.(); }}
-              className="w-[12%] h-[70%] flex items-center justify-center bg-white/40 hover:bg-white/70 rounded-xl transition-all duration-200 border border-gray-200/30 backdrop-blur-xs scale-90 opacity-45 hover:opacity-90 hover:scale-95 shrink-0 overflow-hidden shadow-xs cursor-pointer"
-            >
-              {prevProducto.imagen_url ? (
-                <img
-                  src={prevProducto.imagen_url}
-                  alt={prevProducto.descripcion}
-                  className="w-full h-full object-contain p-1 blur-[0.5px]"
-                  loading="lazy"
-                />
-              ) : (
-                <span className="text-2xl select-none">{CAT_EMOJI[prevProducto.categoria] || '📦'}</span>
-              )}
-            </button>
+        {/* 1. King-Size Interactive Image Container (Floating Thumbnails + 100% Pan-Zoom) */}
+        <div
+          ref={containerRef}
+          onMouseMove={handlePointerMove}
+          onMouseLeave={resetImageTransform}
+          onTouchMove={handlePointerMove}
+          onTouchEnd={resetImageTransform}
+          className="relative bg-gradient-to-br from-gray-50/70 to-gray-100 rounded-2xl h-60 md:h-72 flex items-center justify-center text-8xl overflow-hidden border border-gray-100/50 touch-pan-y select-none"
+        >
+          {producto.imagen_url && !imageError ? (
+            <img
+              ref={imageRef}
+              src={producto.imagen_url}
+              alt={producto.descripcion}
+              onError={() => setImageError(true)}
+              style={{
+                transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
+                transformOrigin: 'center center',
+                transform: 'scale(1)',
+                filter: 'drop-shadow(0 15px 20px rgba(0, 0, 0, 0.25))'
+              }}
+              className="w-full h-full object-contain p-6"
+              loading="lazy"
+            />
           ) : (
-            <div className="w-[12%] shrink-0" />
+            CAT_EMOJI[producto.categoria] || '📦'
           )}
 
-          {/* Center Main Product Area (Lupa interactiva) */}
-          <div
-            ref={containerRef}
-            onMouseMove={handlePointerMove}
-            onMouseLeave={resetImageTransform}
-            onTouchMove={handlePointerMove}
-            onTouchEnd={resetImageTransform}
-            className="w-[70%] h-full flex items-center justify-center relative overflow-hidden touch-pan-y"
+          {/* Floating Category Badge inside image */}
+          <span className="absolute bottom-3 left-3 text-[10px] font-extrabold text-green-700 bg-white/90 border border-green-100/50 px-2.5 py-1 rounded-lg backdrop-blur shadow-sm select-none">
+            {producto.categoria}
+          </span>
+          
+          {/* Favorite badge inside image */}
+          <button
+            onClick={handleToggleFav}
+            className={`absolute bottom-3 right-3 w-8.5 h-8.5 rounded-full flex items-center justify-center shadow-md transition ${
+              fav ? 'bg-red-500 text-white' : 'bg-white/95 text-gray-300 hover:text-red-400'
+            }`}
           >
-            {producto.imagen_url && !imageError ? (
-              <img
-                ref={imageRef}
-                src={producto.imagen_url}
-                alt={producto.descripcion}
-                onError={() => setImageError(true)}
-                style={{
-                  transition: 'transform 0.15s ease-out, filter 0.15s ease-out',
-                  transformOrigin: 'center center',
-                  transform: 'scale(1)',
-                  filter: 'drop-shadow(0 15px 20px rgba(0, 0, 0, 0.25))'
-                }}
-                className="w-full h-full object-contain p-4"
-                loading="lazy"
-              />
-            ) : (
-              <span className="text-7xl select-none">{CAT_EMOJI[producto.categoria] || '📦'}</span>
-            )}
+            <Heart size={14} className={fav ? 'fill-white' : ''} />
+          </button>
 
-            {/* Floating Category Badge inside center image area */}
-            <span className="absolute bottom-3 left-2 text-[9px] font-extrabold text-green-700 bg-white/90 border border-green-100/50 px-2 py-0.5 rounded shadow-sm select-none">
-              {producto.categoria}
-            </span>
-            
-            {/* Favorite badge inside center image area */}
-            <button
-              onClick={handleToggleFav}
-              className={`absolute bottom-3 right-2 w-7.5 h-7.5 rounded-full flex items-center justify-center shadow-md transition ${
-                fav ? 'bg-red-500 text-white' : 'bg-white/95 text-gray-300 hover:text-red-400'
-              }`}
-            >
-              <Heart size={13} className={fav ? 'fill-white' : ''} />
-            </button>
-
-            {/* Agotado / Pocas unidades Badge */}
-            {agotado ? (
-              <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex items-center justify-center">
-                <span className="text-[10px] font-black text-red-600 bg-red-50/90 px-2.5 py-1 rounded-full border border-red-200 shadow-sm">
-                  PRODUCTO AGOTADO
-                </span>
-              </div>
-            ) : pocasUnidades ? (
-              <span className="absolute top-3 left-2 text-[9px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded shadow-sm">
-                ⚡ Últimas {producto.stock} unidades
+          {/* Agotado / Pocas unidades Badge */}
+          {agotado ? (
+            <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex items-center justify-center">
+              <span className="text-xs font-black text-red-600 bg-red-50/90 px-3.5 py-1.5 rounded-full border border-red-200 shadow-sm">
+                PRODUCTO AGOTADO
               </span>
-            ) : null}
-          </div>
+            </div>
+          ) : pocasUnidades ? (
+            <span className="absolute top-3 left-3 text-[10px] font-bold bg-orange-500 text-white px-2.5 py-1 rounded-lg shadow-sm">
+              ⚡ Últimas {producto.stock} unidades
+            </span>
+          ) : null}
 
-          {/* Right Peeking Card */}
-          {nextProducto ? (
+          {/* Floating Circle Thumbnail Left (Prev Producto) */}
+          {prevProducto && (
             <button
-              onClick={(e) => { e.stopPropagation(); onNext?.(); }}
-              className="w-[12%] h-[70%] flex items-center justify-center bg-white/40 hover:bg-white/70 rounded-xl transition-all duration-200 border border-gray-200/30 backdrop-blur-xs scale-90 opacity-45 hover:opacity-90 hover:scale-95 shrink-0 overflow-hidden shadow-xs cursor-pointer"
+              onClick={(e) => { e.stopPropagation(); onPrev?.(); }}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/95 border border-gray-200/50 shadow-md hover:shadow-lg flex items-center justify-center overflow-hidden active:scale-90 transition-all z-50 cursor-pointer"
+              title={prevProducto.descripcion}
             >
-              {nextProducto.imagen_url ? (
-                <img
-                  src={nextProducto.imagen_url}
-                  alt={nextProducto.descripcion}
-                  className="w-full h-full object-contain p-1 blur-[0.5px]"
-                  loading="lazy"
-                />
+              {prevProducto.imagen_url ? (
+                <img src={prevProducto.imagen_url} alt="Anterior" className="w-full h-full object-contain p-1 blur-[0.3px]" />
               ) : (
-                <span className="text-2xl select-none">{CAT_EMOJI[nextProducto.categoria] || '📦'}</span>
+                <span className="text-xl">{CAT_EMOJI[prevProducto.categoria] || '📦'}</span>
               )}
             </button>
-          ) : (
-            <div className="w-[12%] shrink-0" />
+          )}
+
+          {/* Floating Circle Thumbnail Right (Next Producto) */}
+          {nextProducto && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onNext?.(); }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/95 border border-gray-200/50 shadow-md hover:shadow-lg flex items-center justify-center overflow-hidden active:scale-90 transition-all z-50 cursor-pointer"
+              title={nextProducto.descripcion}
+            >
+              {nextProducto.imagen_url ? (
+                <img src={nextProducto.imagen_url} alt="Siguiente" className="w-full h-full object-contain p-1 blur-[0.3px]" />
+              ) : (
+                <span className="text-xl">{CAT_EMOJI[nextProducto.categoria] || '📦'}</span>
+              )}
+            </button>
           )}
         </div>
 
