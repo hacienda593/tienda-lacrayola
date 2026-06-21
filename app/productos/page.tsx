@@ -63,6 +63,15 @@ function BtnAgregar({ prod }: { prod: Producto }) {
     return items.find((i: { codigo: string }) => i.codigo === prod.codigo)?.cantidad ?? 0
   })
 
+  useEffect(() => {
+    const sync = () => {
+      const items = getCarrito()
+      setCantidad(items.find((i: { codigo: string }) => i.codigo === prod.codigo)?.cantidad ?? 0)
+    }
+    window.addEventListener('carrito-update', sync)
+    return () => window.removeEventListener('carrito-update', sync)
+  }, [prod.codigo])
+
   function agregar(e: React.MouseEvent) {
     e.stopPropagation()
     e.preventDefault()

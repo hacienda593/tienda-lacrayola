@@ -34,6 +34,14 @@ function BtnAgregar({ prod, tiendaId, tiendaNombre }: { prod: Producto; tiendaId
     return getCarrito().find(i => i.codigo === prod.codigo)?.cantidad ?? 0
   })
 
+  useEffect(() => {
+    const sync = () => {
+      setCantidad(getCarrito().find(i => i.codigo === prod.codigo)?.cantidad ?? 0)
+    }
+    window.addEventListener('carrito-update', sync)
+    return () => window.removeEventListener('carrito-update', sync)
+  }, [prod.codigo])
+
   function agregar(e: React.MouseEvent) {
     e.stopPropagation(); e.preventDefault()
     if (typeof navigator !== 'undefined' && navigator.vibrate) {

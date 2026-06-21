@@ -1,9 +1,9 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
-import { X, ShoppingCart, Heart, Shield, Check, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, ShoppingCart, Heart, Shield, Check, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react'
 import { Producto } from '@/lib/types'
-import { agregarItem } from '@/lib/carrito'
+import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 
 interface QuickViewDrawerProps {
@@ -28,6 +28,7 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
   const [fav, setFav] = useState(false)
   const [agregado, setAgregado] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const [cantidadEnCarrito, setCantidadEnCarrito] = useState(0)
   
   const imageRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -39,12 +40,22 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
 
   // Sync state when product changes
   useEffect(() => {
-    if (producto) {
-      setFav(esFavorito(producto.codigo))
-      setAgregado(false)
-      setImageError(false)
-      resetImageTransform()
+    if (!producto) return
+
+    const sync = () => {
+      const items = getCarrito()
+      const found = items.find(i => i.codigo === producto.codigo)
+      setCantidadEnCarrito(found?.cantidad ?? 0)
     }
+
+    setFav(esFavorito(producto.codigo))
+    setAgregado(false)
+    setImageError(false)
+    resetImageTransform()
+    sync()
+
+    window.addEventListener('carrito-update', sync)
+    return () => window.removeEventListener('carrito-update', sync)
   }, [producto, isOpen])
 
   if (!producto) return null
@@ -59,14 +70,18 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
     }
     agregarItem(producto)
     setAgregado(true)
-    
-    // Sync cart counts in header
-    window.dispatchEvent(new Event('carrito-update'))
-    
     setTimeout(() => {
       setAgregado(false)
-      onClose()
     }, 1200)
+  }
+
+  function handleUpdateQty(delta: number) {
+    if (!producto) return
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(10)
+    }
+    const nueva = cantidadEnCarrito + delta
+    cambiarCantidad(producto.codigo, nueva)
   }
 
   // --- TACTILE PAN-ZOOM LOGIC (Lupa de inspección táctil) ---
@@ -330,20 +345,43 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
 
           {/* 3. Action Buttons */}
           <div className="space-y-2 pt-1.5">
-            <button
-              disabled={agotado}
-              onClick={handleAddToCart}
-              className={`w-full py-3.5 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 select-none active:scale-[0.96] transition-transform duration-75 ${
-                agotado
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                  : agregado
-                  ? 'bg-green-600 text-white shadow-lg shadow-green-600/25'
-                  : 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/20'
-              }`}
-            >
-              {agregado ? <Check size={16} /> : <ShoppingCart size={16} />}
-              {agotado ? 'Agotado' : agregado ? '¡Agregado!' : 'Agregar al carrito'}
-            </button>
+            {cantidadEnCarrito === 0 ? (
+              <button
+                disabled={agotado}
+                onClick={handleAddToCart}
+                className={`w-full py-3.5 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 select-none active:scale-[0.96] transition-transform duration-75 ${
+                  agotado
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                    : agregado
+                    ? 'bg-green-600 text-white shadow-lg shadow-green-600/25'
+                    : 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/20'
+                }`}
+              >
+                {agregado ? <Check size={16} /> : <ShoppingCart size={16} />}
+                {agotado ? 'Agotado' : agregado ? '¡Agregado!' : 'Agregar al carrito'}
+              </button>
+            ) : (
+              <div className="flex items-center justify-between bg-green-600 text-white rounded-xl overflow-hidden h-[48px] px-1 border border-green-700 shadow-md">
+                <button
+                  onClick={() => handleUpdateQty(-1)}
+                  className="w-12 h-full flex items-center justify-center hover:bg-green-700 active:scale-[0.96] transition-transform duration-75 shrink-0"
+                  aria-label="Disminuir cantidad"
+                >
+                  <Minus size={16} />
+                </button>
+                <div className="flex flex-col items-center justify-center leading-none select-none">
+                  <span className="text-base font-black">{cantidadEnCarrito}</span>
+                  <span className="text-[8px] font-bold text-green-200 uppercase tracking-wider mt-0.5">en tu carrito</span>
+                </div>
+                <button
+                  onClick={() => handleUpdateQty(1)}
+                  className="w-12 h-full flex items-center justify-center hover:bg-green-700 active:scale-[0.96] transition-transform duration-75 shrink-0"
+                  aria-label="Aumentar cantidad"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            )}
 
             <Link
               href={`/producto/${encodeURIComponent(producto.codigo)}`}

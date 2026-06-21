@@ -3,8 +3,8 @@ import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ChevronRight, ShoppingCart, Truck, Shield, Clock, Heart, ChevronLeft } from 'lucide-react'
-import { agregarItem } from '@/lib/carrito'
+import { ChevronRight, ShoppingCart, Truck, Shield, Clock, Heart, ChevronLeft, Minus, Plus } from 'lucide-react'
+import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto } from '@/lib/types'
 import LocalGrid from '@/components/LocalGrid'
@@ -151,6 +151,17 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
   const [fav, setFav] = useState(() => esFavorito(p.codigo))
   const [ok, setOk]   = useState(false)
   const [imageError, setImageError] = useState(false)
+  const [cantidad, setCantidad] = useState(() => {
+    return getCarrito().find(i => i.codigo === p.codigo)?.cantidad ?? 0
+  })
+
+  useEffect(() => {
+    const sync = () => {
+      setCantidad(getCarrito().find(i => i.codigo === p.codigo)?.cantidad ?? 0)
+    }
+    window.addEventListener('carrito-update', sync)
+    return () => window.removeEventListener('carrito-update', sync)
+  }, [p.codigo])
 
   function addCart(e: React.MouseEvent) {
     e.stopPropagation()
@@ -160,7 +171,6 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
     }
     agregarItem(p)
     setOk(true)
-    window.dispatchEvent(new Event('carrito-update'))
     setTimeout(() => setOk(false), 1200)
   }
 
@@ -210,18 +220,47 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
       <div className="flex items-center justify-between mt-2">
         <div className="text-lg font-extrabold text-gray-900">{fmt(p.precio_publico)}</div>
       </div>
-      <button onClick={addCart}
-        className={`mt-2 w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 active:scale-[0.96] transition-transform duration-75
-          ${ok ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-green-600'}`}>
-        <ShoppingCart size={13} />
-        {ok ? '¡Agregado!' : 'Agregar al carrito'}
-      </button>
+      {cantidad === 0 ? (
+        <button onClick={addCart}
+          className={`mt-2 w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 active:scale-[0.96] transition-transform duration-75
+            ${ok ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-green-600'}`}>
+          <ShoppingCart size={13} />
+          {ok ? '¡Agregado!' : 'Agregar al carrito'}
+        </button>
+      ) : (
+        <div className="mt-2 flex items-center justify-between bg-green-600 rounded-lg overflow-hidden h-[34px] w-full shrink-0">
+          <button 
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad - 1); }}
+            className="px-3.5 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center"
+          >
+            <Minus size={11} />
+          </button>
+          <span className="text-white text-xs font-black select-none">{cantidad} en carrito</span>
+          <button 
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad + 1); }}
+            className="px-3.5 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center"
+          >
+            <Plus size={11} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
 function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
-  const [ok, setOk] = useState(false)
+  const [cantidad, setCantidad] = useState(() => {
+    return getCarrito().find(i => i.codigo === prod.codigo)?.cantidad ?? 0
+  })
+
+  useEffect(() => {
+    const sync = () => {
+      setCantidad(getCarrito().find(i => i.codigo === prod.codigo)?.cantidad ?? 0)
+    }
+    window.addEventListener('carrito-update', sync)
+    return () => window.removeEventListener('carrito-update', sync)
+  }, [prod.codigo])
+
   function add(e: React.MouseEvent) {
     e.stopPropagation()
     e.preventDefault()
@@ -229,17 +268,34 @@ function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
       navigator.vibrate(15)
     }
     agregarItem(prod)
-    setOk(true)
-    setTimeout(() => setOk(false), 1200)
-    window.dispatchEvent(new Event('carrito-update'))
   }
+
+  if (cantidad === 0) {
+    return (
+      <button onClick={add}
+        className="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 active:scale-[0.96] transition-transform duration-75 shrink-0 cursor-pointer bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent">
+        <ShoppingCart size={11} />
+        Agregar
+      </button>
+    )
+  }
+
   return (
-    <button onClick={add}
-      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 active:scale-[0.96] transition-transform duration-75 shrink-0 cursor-pointer
-        ${ok ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent'}`}>
-      <ShoppingCart size={11} />
-      {ok ? '✓' : 'Agregar'}
-    </button>
+    <div className="flex items-center bg-green-600 text-white rounded-lg overflow-hidden h-[28px] shrink-0 border border-green-700">
+      <button 
+        onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(prod.codigo, cantidad - 1); }}
+        className="px-2 h-full flex items-center justify-center hover:bg-green-700 active:scale-[0.96] transition-transform duration-75"
+      >
+        <Minus size={9} />
+      </button>
+      <span className="px-1 text-[11px] font-extrabold select-none min-w-[14px] text-center">{cantidad}</span>
+      <button 
+        onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(prod.codigo, cantidad + 1); }}
+        className="px-2 h-full flex items-center justify-center hover:bg-green-700 active:scale-[0.96] transition-transform duration-75"
+      >
+        <Plus size={9} />
+      </button>
+    </div>
   )
 }
 
