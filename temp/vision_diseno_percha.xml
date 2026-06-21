@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<percha-catalogo>
+  <vision-diseno>
+    <concepto>Percha Asimétrica Física Online</concepto>
+    <descripcion>
+      Simulación digital de una repisa de supermercado real. En lugar de una cuadrícula uniforme
+      o carruseles internos que esconden variaciones, cada producto y variante se dispone con
+      diferentes pesos visuales (asimetría), recreando la psicología de la compra física.
+    </descripcion>
+    <pilares-psicologicos>
+      <pilar id="fitts-law" nombre="Facilidad de Selección (Fitts's Law)">
+        Las tarjetas con mayor demanda o promociones ocupan más espacio en la cuadrícula,
+        reduciendo el tiempo que le toma al ojo humano localizarlas y hacer clic.
+      </pilar>
+      <pilar id="no-fatigue" nombre="Eliminación de la Parálisis por Elección">
+        Las variantes (sabores/tamaños) se muestran como productos individuales adyacentes.
+        Esto elimina el "carrusel dentro de producto" que estresa al cliente y reduce la fricción de compra.
+      </pilar>
+      <pilar id="dopamine-microinteractions" nombre="Micro-interacciones Dopaminérgicas">
+        Cada acción (selección, adición) proporciona una retroalimentación visual táctil,
+        recreando el placer físico de colocar un producto en una canasta de mimbre real.
+      </pilar>
+      <pilar id="internal-barcode" nombre="Código de Barras Interno Autónomo">
+        Uso de prefijos y sufijos lógicos (ej. ALM-CHO-72G) impresos internamente para control
+        de stock físico y sincronización inmediata sin depender de códigos de fábrica ausentes.
+      </pilar>
+    </pilares-psicologicos>
+  </vision-diseno>
+
+  <productos>
+    <!-- Almendras Cubiertas (Destacado Grande) -->
+    <producto id="ALM-CHO-72G">
+      <nombre>Almendras Cubiertas con Chocolate 72g</nombre>
+      <categoria>Chocolatería</categoria>
+      <precio id-moneda="USD">1.85</precio>
+      <unidad>72g</unidad>
+      <variante-sufijo>CHO-72G</variante-sufijo>
+      <codigo-barras-interno>7869999001234</codigo-barras-interno>
+      <imagen>file:///D:/PROGRAMAS/TUTI/TUTI/almendras-cubiertas-con-chocolate-72g.webp</imagen>
+      <layout>
+        <aspecto>destacado-grande</aspecto>
+        <color-tarjeta>hsl(263, 40%, 12%)</color-tarjeta>
+        <badge-fomo>Exclusivo de Temporada</badge-fomo>
+      </layout>
+      <stock>24</stock>
+      <descripcion>Almendras cuidadosamente seleccionadas y tostadas, bañadas en una gruesa capa de chocolate de leche premium.</descripcion>
+    </producto>
+
+    <!-- Aceite de Girasol (Destacado Alto) -->
+    <producto id="ACE-GIR-1L">
+      <nombre>Aceite de Girasol Tuti 1L</nombre>
+      <categoria>Despensa</categoria>
+      <precio id-moneda="USD">1.99</precio>
+      <unidad>1L</unidad>
+      <variante-sufijo>GIR-1L</variante-sufijo>
+      <codigo-barras-interno>7869999004567</codigo-barras-interno>
+      <imagen>file:///D:/PROGRAMAS/TUTI/TUTI/aceite-de-girasol-1l.webp</imagen>
+      <layout>
+        <aspecto>destacado-alto</aspecto>
+        <color-tarjeta>hsl(45, 40%, 10%)</color-tarjeta>
+        <badge-fomo>Más Vendido</badge-fomo>
+      </layout>
+      <stock>50</stock>
+      <descripcion>Aceite de girasol 100% puro y refinado. Ideal para una cocina saludable diaria con bajo contenido de grasa saturada.</descripcion>
+    </producto>
+
+    <!-- Yogurt Mix Durazno (Estándar 1) -->
+    <producto id="YOG-MIX-DUR">
+      <nombre>Yogurt Mix con Cereal Durazno 230g</nombre>
+      <categoria>Lácteos</categoria>
+      <precio id-moneda="USD">0.85</precio>
+      <unidad>230g</unidad>
+      <variante-sufijo>DUR-230G</variante-sufijo>
+      <codigo-barras-interno>7869999008912</codigo-barras-interno>
+      <imagen>file:///D:/PROGRAMAS/TUTI/TUTI/yogurt-mix-con-cereal-durazno-230g.webp</imagen>
+      <layout>
+        <aspecto>estandar</aspecto>
+        <color-tarjeta>hsl(20, 30%, 12%)</color-tarjeta>
+        <badge-fomo>Desayuno Ideal</badge-fomo>
+      </layout>
+      <stock>18</stock>
+      <descripcion>Yogurt cremoso sabor a durazno natural con tapa especial que contiene cereal de maíz crujiente para mezclar al instante.</descripcion>
+    </producto>
+
+    <!-- Yogurt Mix Fresa (Estándar 2 - Variante vecina) -->
+    <producto id="YOG-MIX-FRE">
+      <nombre>Yogurt Mix con Cereal Fresa 230g</nombre>
+      <categoria>Lácteos</categoria>
+      <precio id-moneda="USD">0.85</precio>
+      <unidad>230g</unidad>
+      <variante-sufijo>FRE-230G</variante-sufijo>
+      <codigo-barras-interno>7869999008913</codigo-barras-interno>
+      <imagen>file:///D:/PROGRAMAS/TUTI/TUTI/yogurt-mix-con-cereal-fresa-230g.webp</imagen>
+      <layout>
+        <aspecto>estandar</aspecto>
+        <color-tarjeta>hsl(340, 30%, 12%)</color-tarjeta>
+        <badge-fomo>Nueva Variante</badge-fomo>
+      </layout>
+      <stock>15</stock>
+      <descripcion>Yogurt cremoso sabor a frutilla natural con cereal crujiente listo para mezclar. Disposición física visible paralela a la variante Durazno.</descripcion>
+    </producto>
+
+    <!-- Jamón Serrano (Destacado Ancho) -->
+    <producto id="JAM-SER-100G">
+      <nombre>Jamón Serrano Selecto Curado 100g</nombre>
+      <categoria>Charcutería</categoria>
+      <precio id-moneda="USD">2.90</precio>
+      <unidad>100g</unidad>
+      <variante-sufijo>SER-100G</variante-sufijo>
+      <codigo-barras-interno>7869999003344</codigo-barras-interno>
+      <imagen>file:///D:/PROGRAMAS/TUTI/TUTI/jamon-serrano-100g.webp</imagen>
+      <layout>
+        <aspecto>destacado-ancho</aspecto>
+        <color-tarjeta>hsl(350, 40%, 12%)</color-tarjeta>
+        <badge-fomo>Premium Importado</badge-fomo>
+      </layout>
+      <stock>12</stock>
+      <descripcion>Auténtico jamón serrano curado lentamente en bodegas tradicionales. Cortado en finas lajas listo para degustar en aperitivos.</descripcion>
+    </producto>
+
+    <!-- Cerveza Platino (Estándar 3) -->
+    <producto id="CER-PLA-473M">
+      <nombre>Cerveza Platino Premium 473ml</nombre>
+      <categoria>Bebidas</categoria>
+      <precio id-moneda="USD">1.25</precio>
+      <unidad>473ml</unidad>
+      <variante-sufijo>PLA-473M</variante-sufijo>
+      <codigo-barras-interno>7869999005522</codigo-barras-interno>
+      <imagen>file:///D:/PROGRAMAS/TUTI/TUTI/cerveza-platino-473ml.webp</imagen>
+      <layout>
+        <aspecto>estandar</aspecto>
+        <color-tarjeta>hsl(180, 20%, 10%)</color-tarjeta>
+        <badge-fomo>Refrescante</badge-fomo>
+      </layout>
+      <stock>36</stock>
+      <descripcion>Cerveza tipo Pilsener premium, elaborada con ingredientes seleccionados y filtrada en frío para un sabor suave y cristalino.</descripcion>
+    </producto>
+  </productos>
+</percha-catalogo>

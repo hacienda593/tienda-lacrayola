@@ -1,0 +1,1103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="es" lang="es">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>La Constelación Gravitacional - Visión Libre AI</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="crossorigin" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&amp;family=Plus+Jakarta+Sans:wght@300;400;600;800&amp;display=swap" rel="stylesheet" />
+
+  <style type="text/css">
+    /* <![CDATA[ */
+    :root {
+      --void-bg: #010206;
+      --laser-cyan: #06b6d4;
+      --laser-purple: #8b5cf6;
+      --laser-pink: #ec4899;
+      --laser-gold: #f59e0b;
+      --laser-emerald: #10b981;
+      
+      --font-hud: 'Space Grotesk', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--void-bg);
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    /* Cosmic Background Atmosphere */
+    .space-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      background-image: 
+        radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 60%),
+        radial-gradient(circle at 10% 20%, rgba(6, 182, 212, 0.06) 0%, transparent 45%),
+        radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    /* Ambient Nebulae Particle dots */
+    .nebula-particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+      background-size: 100px 100px;
+      opacity: 0.35;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Main Orbital Canvas */
+    .constellation-viewport {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      z-index: 1;
+      perspective: 1500px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      touch-action: none; /* Prevents default panning/zooming on mobile */
+    }
+
+    .constellation-viewport:active {
+      cursor: grabbing;
+    }
+
+    /* The rotating core galaxy container */
+    .galaxy-orbital {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.1s ease-out;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Floating Spherical Product Nodes */
+    .quantum-sphere {
+      position: absolute;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.8) 100%);
+      border: 1px solid rgba(255,255,255,0.06);
+      transform-style: preserve-3d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      cursor: pointer;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      transition: 
+        border-color 0.4s, 
+        box-shadow 0.4s, 
+        width 0.4s, 
+        height 0.4s,
+        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Dynamic Outer Energy Rings */
+    .quantum-sphere::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+      border-radius: 50%;
+      border: 1px dashed var(--theme-color, rgba(139, 92, 246, 0.3));
+      opacity: 0.4;
+      animation: rotateRing 12s linear infinite;
+      pointer-events: none;
+      transition: all 0.4s;
+    }
+
+    @keyframes rotateRing {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Product Image inside sphere (pushed forward in 3D) */
+    .product-core-img {
+      max-width: 90%;
+      max-height: 90%;
+      object-fit: contain;
+      z-index: 2;
+      filter: drop-shadow(0 15px 15px rgba(0, 0, 0, 0.5));
+      transform: translateZ(25px);
+      transition: transform 0.4s;
+    }
+
+    /* Sphere Hover state (Only applicable for mouse pointers) */
+    @media (hover: hover) {
+      .quantum-sphere:hover {
+        border-color: var(--theme-color);
+        box-shadow: 
+          0 0 50px var(--theme-glow),
+          inset 0 0 20px var(--theme-glow);
+      }
+
+      .quantum-sphere:hover .product-core-img {
+        transform: translateZ(50px) scale(1.15);
+      }
+
+      .quantum-sphere:hover::before {
+        opacity: 1;
+        border-style: solid;
+        transform: scale(1.1) rotate(45deg);
+      }
+    }
+
+    /* Active Highlight class (For touch/click) */
+    .quantum-sphere.focused-node {
+      border-color: var(--theme-color) !important;
+      box-shadow: 
+        0 0 50px var(--theme-glow),
+        inset 0 0 20px var(--theme-glow) !important;
+    }
+    .quantum-sphere.focused-node .product-core-img {
+      transform: translateZ(45px) scale(1.12) !important;
+    }
+
+    /* Holographic Floating HUD Panel */
+    .holo-hud-panel {
+      position: absolute;
+      width: 280px;
+      background: rgba(4, 6, 15, 0.85);
+      border: 1px solid var(--theme-color, rgba(139, 92, 246, 0.4));
+      border-radius: 20px;
+      padding: 1.25rem;
+      backdrop-filter: blur(25px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px var(--theme-glow);
+      pointer-events: none;
+      opacity: 0;
+      transform: scale(0.9) translateY(20px);
+      transition: 
+        opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+        border-color 0.4s;
+      z-index: 100;
+      font-family: var(--font-hud);
+    }
+
+    .holo-hud-panel.active {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: auto;
+    }
+
+    .hud-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding-bottom: 0.4rem;
+    }
+
+    .hud-desc {
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      color: #94a3b8;
+      line-height: 1.4;
+      margin-bottom: 0.75rem;
+    }
+
+    .hud-meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748b;
+      margin-bottom: 0.75rem;
+    }
+
+    .hud-meta-grid span.val {
+      color: #cbd5e1;
+      font-family: monospace;
+      font-size: 0.7rem;
+    }
+
+    .hud-action-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .hud-price {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--theme-color);
+    }
+
+    .hud-price span.cur {
+      font-size: 0.8rem;
+      color: #475569;
+    }
+
+    .hud-add-btn {
+      background: linear-gradient(135deg, var(--theme-color), #090b16);
+      border: 1px solid var(--theme-color);
+      color: white;
+      font-family: var(--font-hud);
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 0.5rem 1rem;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px var(--theme-glow);
+      transition: all 0.3s;
+    }
+
+    .hud-add-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 6px 15px var(--theme-glow);
+    }
+
+    /* Central Wormhole / Singularity Basket */
+    .gravitational-wormhole {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: black;
+      border: 2px solid rgba(6, 182, 212, 0.4);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 
+        0 0 40px rgba(6, 182, 212, 0.3),
+        inset 0 0 30px rgba(139, 92, 246, 0.4);
+      transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s;
+    }
+
+    .wormhole-core {
+      position: absolute;
+      width: 80%;
+      height: 80%;
+      border-radius: 50%;
+      border: 1px dotted rgba(255,255,255,0.15);
+      animation: rotateRing 6s linear infinite;
+    }
+
+    .wormhole-nebula {
+      position: absolute;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle, var(--laser-cyan) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: pulseCore 3s ease-in-out infinite alternate;
+      z-index: 1;
+    }
+
+    @keyframes pulseCore {
+      0% { transform: scale(0.8); opacity: 0.5; }
+      100% { transform: scale(1.2); opacity: 0.9; }
+    }
+
+    .gravitational-wormhole span.basket-symbol {
+      font-size: 2rem;
+      color: white;
+      z-index: 5;
+      text-shadow: 0 0 15px rgba(6, 182, 212, 0.8);
+      pointer-events: none;
+    }
+
+    /* Mini hud tracking stats */
+    .top-stats-overlay {
+      position: absolute;
+      top: 120px;
+      left: 2.5rem;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .hud-badge-stat {
+      background: rgba(3, 4, 10, 0.7);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 0.6rem 1.2rem;
+      backdrop-filter: blur(15px);
+      font-family: var(--font-hud);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hud-badge-stat span.label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #64748b;
+    }
+
+    .hud-badge-stat span.value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--laser-cyan);
+    }
+
+    /* Floating control help */
+    .help-hint {
+      position: absolute;
+      top: 120px;
+      right: 2.5rem;
+      background: rgba(3, 4, 10, 0.7);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 0.6rem 1.2rem;
+      backdrop-filter: blur(15px);
+      font-family: var(--font-hud);
+      font-size: 0.75rem;
+      color: #94a3b8;
+      z-index: 10;
+    }
+
+    /* XML DB Console Drawer */
+    .quantum-console {
+      display: none;
+      position: absolute;
+      top: 110px;
+      left: 2.5rem;
+      width: calc(100% - 5rem);
+      height: calc(100vh - 110px - 4rem - 120px);
+      background: rgba(1, 2, 4, 0.95);
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      border-radius: 30px;
+      z-index: 200;
+      padding: 2rem;
+      backdrop-filter: blur(35px);
+      grid-template-columns: 1.2fr 1fr;
+      gap: 2rem;
+      animation: consoleOpen 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes consoleOpen {
+      from { opacity: 0; transform: scale(0.97) translateY(15px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .console-xml-block {
+      background: #000;
+      border: 1px solid rgba(255,255,255,0.02);
+      border-radius: 20px;
+      padding: 1.5rem;
+      font-family: monospace;
+      font-size: 0.82rem;
+      color: #06b6d4;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+
+    .console-xml-block span.tag { color: #f43f5e; }
+    .console-xml-block span.attr { color: #fb923c; }
+    .console-xml-block span.val { color: #f8fafc; }
+    .console-xml-block span.cmt { color: #475569; }
+
+    .console-info-block {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      justify-content: center;
+    }
+
+    .info-card-quantum {
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      border-radius: 18px;
+      padding: 1.25rem;
+    }
+
+    .info-card-quantum h4 {
+      font-family: var(--font-hud);
+      color: var(--laser-cyan);
+      font-size: 0.95rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .info-card-quantum p {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    /* Sensory Droplet animation */
+    .collapsing-droplet {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 999;
+      animation: gravityPull 0.8s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards;
+    }
+
+    @keyframes gravityPull {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+      }
+      80% {
+        opacity: 0.8;
+      }
+      100% {
+        transform: translate(var(--dx), var(--dy)) scale(0.1) rotate(180deg);
+        opacity: 0;
+      }
+    }
+
+    /* ----------------------------------------------------
+       RESPONSIVE DESIGN (MOBILE LAYOUT: THE GRAVITY SHEET)
+       ---------------------------------------------------- */
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+      }
+
+      header {
+        padding: 0 1.25rem;
+        height: 70px;
+        border-radius: 20px;
+      }
+
+      .logo-area h1 {
+        font-size: 1.2rem;
+      }
+
+      .logo-area h1 span.core-tag {
+        display: none; /* Hide on small screen for layout safety */
+      }
+
+      .toggle-db-btn {
+        font-size: 0.7rem;
+        padding: 0.5rem 1rem;
+      }
+
+      .mood-selector {
+        display: none; /* Remove to clear header spacing */
+      }
+
+      /* Adjust floating overlay stats position */
+      .top-stats-overlay {
+        top: 95px;
+        left: 1.5rem;
+        flex-direction: row;
+        gap: 0.5rem;
+        width: calc(100% - 3rem);
+      }
+
+      .hud-badge-stat {
+        flex: 1;
+        padding: 0.4rem 0.8rem;
+        border-radius: 10px;
+      }
+
+      .hud-badge-stat span.value {
+        font-size: 1rem;
+      }
+
+      .help-hint {
+        display: none; /* No mouse on mobile */
+      }
+
+      /* Rescale the product nodes so they fit smaller screen bounds */
+      .quantum-sphere {
+        width: 110px !important;
+        height: 110px !important;
+        padding: 0.75rem !important;
+      }
+
+      /* THE GRAVITY BOTTOM SHEET */
+      .holo-hud-panel {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        top: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 25px 25px 0 0 !important;
+        border-width: 1px 0 0 0 !important; /* Top border only */
+        border-color: var(--theme-color, rgba(139, 92, 246, 0.4)) !important;
+        background: rgba(3, 4, 11, 0.94) !important;
+        padding: 1.5rem !important;
+        transform: translateY(100%) !important;
+        opacity: 0 !important;
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s !important;
+        box-shadow: 0 -15px 40px rgba(0, 0, 0, 0.9), 0 -2px 25px var(--theme-glow) !important;
+        z-index: 1000 !important;
+        pointer-events: auto !important;
+      }
+
+      .holo-hud-panel.active {
+        transform: translateY(0) !important;
+        opacity: 1 !important;
+      }
+
+      .hud-title {
+        font-size: 1.15rem !important;
+      }
+
+      .hud-desc {
+        font-size: 0.8rem !important;
+        margin-bottom: 0.85rem !important;
+      }
+
+      .hud-meta-grid {
+        margin-bottom: 0.85rem !important;
+      }
+
+      /* Move Singularity Wormhole above bottom sheet so dropping is visible */
+      .gravitational-wormhole {
+        bottom: calc(230px + 1.25rem) !important; /* Floats above sheet */
+        width: 76px !important;
+        height: 76px !important;
+        transform: translateX(-50%) !important;
+      }
+
+      /* Responsive console drawer */
+      .quantum-console {
+        grid-template-columns: 1fr;
+        top: 90px;
+        left: 1rem;
+        width: calc(100% - 2rem);
+        height: calc(100vh - 110px - 2rem);
+        overflow-y: auto;
+        padding: 1.25rem;
+      }
+
+      .console-xml-block {
+        max-height: 250px;
+      }
+    }
+    /* ]]> */
+  </style>
+</head>
+<body>
+
+  <!-- Cosmic Background elements -->
+  <div class="space-background"></div>
+  <div class="nebula-particles"></div>
+
+  <div class="app-container">
+    
+    <!-- Holographic Header -->
+    <header>
+      <div class="logo-area">
+        <h1>Constelación Gravitacional <span class="core-tag">Cero Cuadrícula AI</span></h1>
+      </div>
+
+      <!-- Atmospheres Selector -->
+      <div class="mood-selector">
+        <button class="mood-btn active" onclick="changeAtmosphere('cyan', this)">Hélice Cyan</button>
+        <button class="mood-btn" onclick="changeAtmosphere('purple', this)">Nebulosa Violeta</button>
+        <button class="mood-btn" onclick="changeAtmosphere('emerald', this)">Frecuencia EAN</button>
+      </div>
+
+      <button class="toggle-db-btn" onclick="toggleConsole()" id="btn-console">Ver Datos XML</button>
+    </header>
+
+    <!-- Top Info Stats HUD overlays -->
+    <div class="top-stats-overlay">
+      <div class="hud-badge-stat">
+        <span class="label">Puntos Singulares (Items)</span>
+        <span class="value" id="hud-count">00</span>
+      </div>
+      <div class="hud-badge-stat">
+        <span class="label">Masa Gravitacional (Total)</span>
+        <span class="value" id="hud-total" style="color: var(--laser-emerald);">$0.00</span>
+      </div>
+    </div>
+
+    <!-- Help Hints -->
+    <div class="help-hint">
+      🖱️ Arrastra para Orbitar &bull; Hover para HUD &bull; Scroll para Zoom
+    </div>
+
+    <!-- Main Viewport -->
+    <div class="constellation-viewport" id="viewport" onmousedown="startDrag(event)" onmousemove="drag(event)" onmouseup="endDrag()" onmousewheel="handleZoom(event)" ontouchstart="startTouchDrag(event)" ontouchmove="touchDrag(event)" ontouchend="endTouchDrag()">
+      
+      <!-- The dynamic floating galaxy space -->
+      <div class="galaxy-orbital" id="galaxy">
+        
+        <!-- Product 1: Almendras -->
+        <div class="quantum-sphere" id="node-almendras"
+             style="--theme-color: var(--laser-purple); --theme-glow: rgba(139, 92, 246, 0.4);"
+             onmouseenter="showHUD('Almendras Cubiertas Chocolate 72g', 'Almendras cuidadosamente seleccionadas y tostadas, bañadas en una gruesa capa de chocolate de leche premium de origen nacional. Diseñado para activar picos de serotonina instantáneos.', 'CHO-72G', '7869999001234', '24', '1.85', 'var(--laser-purple)', this)"
+             onmouseleave="hideHUD()"
+             onclick="handleNodeTap(event, 'Almendras Cubiertas Chocolate 72g', 'Almendras cuidadosamente seleccionadas y tostadas, bañadas en una gruesa capa de chocolate de leche premium de origen nacional. Diseñado para activar picos de serotonina instantáneos.', 'CHO-72G', '7869999001234', '24', '1.85', 'var(--laser-purple)', this)">
+          <img class="product-core-img" src="file:///D:/PROGRAMAS/TUTI/TUTI/almendras-cubiertas-con-chocolate-72g.webp" alt="Almendras con Chocolate" />
+        </div>
+
+        <!-- Product 2: Aceite de Girasol -->
+        <div class="quantum-sphere" id="node-aceite"
+             style="--theme-color: var(--laser-gold); --theme-glow: rgba(245, 158, 11, 0.4);"
+             onmouseenter="showHUD('Aceite de Girasol Tuti 1L', 'Aceite de girasol 100% puro y refinado. Excelente resistencia térmica, ideal para aderezos, frituras y cocina saludable diaria.', 'GIR-1L', '7869999004567', '50', '1.99', 'var(--laser-gold)', this)"
+             onmouseleave="hideHUD()"
+             onclick="handleNodeTap(event, 'Aceite de Girasol Tuti 1L', 'Aceite de girasol 100% puro y refinado. Excelente resistencia térmica, ideal para aderezos, frituras y cocina saludable diaria.', 'GIR-1L', '7869999004567', '50', '1.99', 'var(--laser-gold)', this)">
+          <img class="product-core-img" src="file:///D:/PROGRAMAS/TUTI/TUTI/aceite-de-girasol-1l.webp" alt="Aceite de Girasol" />
+        </div>
+
+        <!-- Product 3: Yogurt Mix Durazno -->
+        <div class="quantum-sphere" id="node-yogurt-dur"
+             style="--theme-color: var(--laser-cyan); --theme-glow: rgba(6, 182, 212, 0.4);"
+             onmouseenter="showHUD('Yogurt Mix Cereal Durazno 230g', 'Yogurt cremoso sabor a durazno natural acompañado con cereal de maíz crujiente en cúpula superior listo para verter.', 'DUR-230G', '7869999008912', '18', '0.85', 'var(--laser-cyan)', this)"
+             onmouseleave="hideHUD()"
+             onclick="handleNodeTap(event, 'Yogurt Mix Cereal Durazno 230g', 'Yogurt cremoso sabor a durazno natural acompañado con cereal de maíz crujiente en cúpula superior listo para verter.', 'DUR-230G', '7869999008912', '18', '0.85', 'var(--laser-cyan)', this)">
+          <img class="product-core-img" src="file:///D:/PROGRAMAS/TUTI/TUTI/yogurt-mix-con-cereal-durazno-230g.webp" alt="Yogurt Mix Durazno" />
+        </div>
+
+        <!-- Product 4: Yogurt Mix Fresa -->
+        <div class="quantum-sphere" id="node-yogurt-fre"
+             style="--theme-color: var(--laser-pink); --theme-glow: rgba(236, 72, 153, 0.4);"
+             onmouseenter="showHUD('Yogurt Mix Cereal Fresa 230g', 'Yogurt cremoso sabor a fresa natural con crujientes hojuelas de maíz. Variante de sabor expuesta físicamente paralela.', 'FRE-230G', '7869999008913', '15', '0.85', 'var(--laser-pink)', this)"
+             onmouseleave="hideHUD()"
+             onclick="handleNodeTap(event, 'Yogurt Mix Cereal Fresa 230g', 'Yogurt cremoso sabor a fresa natural con crujientes hojuelas de maíz. Variante de sabor expuesta físicamente paralela.', 'FRE-230G', '7869999008913', '15', '0.85', 'var(--laser-pink)', this)">
+          <img class="product-core-img" src="file:///D:/PROGRAMAS/TUTI/TUTI/yogurt-mix-con-cereal-fresa-230g.webp" alt="Yogurt Mix Fresa" />
+        </div>
+
+        <!-- Product 5: Jamón Serrano -->
+        <div class="quantum-sphere" id="node-jamon"
+             style="--theme-color: var(--laser-purple); --theme-glow: rgba(139, 92, 246, 0.4);"
+             onmouseenter="showHUD('Jamón Serrano Selecto Curado 100g', 'Auténtico jamón serrano curado lentamente en bodegas tradicionales. Cortado en finas lajas listo para degustar en aperitivos.', 'SER-100G', '7869999003344', '12', '2.90', 'var(--laser-purple)', this)"
+             onmouseleave="hideHUD()"
+             onclick="handleNodeTap(event, 'Jamón Serrano Selecto Curado 100g', 'Auténtico jamón serrano curado lentamente en bodegas tradicionales. Cortado en finas lajas listo para degustar en aperitivos.', 'SER-100G', '7869999003344', '12', '2.90', 'var(--laser-purple)', this)">
+          <img class="product-core-img" src="file:///D:/PROGRAMAS/TUTI/TUTI/jamon-serrano-100g.webp" alt="Jamón Serrano" />
+        </div>
+
+        <!-- Product 6: Cerveza Platino -->
+        <div class="quantum-sphere" id="node-cerveza"
+             style="--theme-color: var(--laser-cyan); --theme-glow: rgba(6, 182, 212, 0.4);"
+             onmouseenter="showHUD('Cerveza Platino Premium 473ml', 'Cerveza tipo Pilsener premium, elaborada con ingredientes seleccionados y filtrada en frío para un sabor suave y cristalino.', 'PLA-473M', '7869999005522', '36', '1.25', 'var(--laser-cyan)', this)"
+             onmouseleave="hideHUD()"
+             onclick="handleNodeTap(event, 'Cerveza Platino Premium 473ml', 'Cerveza tipo Pilsener premium, elaborada con ingredientes seleccionados y filtrada en frío para un sabor suave y cristalino.', 'PLA-473M', '7869999005522', '36', '1.25', 'var(--laser-cyan)', this)">
+          <img class="product-core-img" src="file:///D:/PROGRAMAS/TUTI/TUTI/cerveza-platino-473ml.webp" alt="Cerveza Platino" />
+        </div>
+
+      </div>
+
+      <!-- Holographic HUD Detail Panel (Follows mouse / Anchors bottom on mobile) -->
+      <div class="holo-hud-panel" id="hud-panel">
+        <h3 class="hud-title" id="hud-title">Cargando...</h3>
+        <p class="hud-desc" id="hud-desc">Detalle...</p>
+        
+        <div class="hud-meta-grid">
+          <div>Variante: <span class="val" id="hud-meta-variant">-</span></div>
+          <div>EAN-13: <span class="val" id="hud-meta-ean">-</span></div>
+          <div>Stock: <span class="val" id="hud-meta-stock">-</span></div>
+          <div>Formato: <span class="val" id="hud-meta-format">Unico</span></div>
+        </div>
+
+        <div class="hud-action-row">
+          <span class="hud-price" id="hud-price"><span class="cur">$</span>0.00</span>
+          <button class="hud-add-btn" id="hud-action-btn" onclick="directAddFromHUD()">Capturar</button>
+        </div>
+      </div>
+
+      <!-- Gravitational Wormhole (Basket Singularity) -->
+      <div class="gravitational-wormhole" id="wormhole">
+        <div class="wormhole-core"></div>
+        <div class="wormhole-nebula"></div>
+        <span class="basket-symbol">🌀</span>
+      </div>
+
+    </div>
+
+    <!-- Quantum Data Console XML drawer -->
+    <div class="quantum-console" id="console-drawer">
+      <div class="console-xml-block">
+        <span class="cmt">&lt;!-- Base de Datos Gravitacional XML --&gt;</span><br />
+        &lt;<span class="tag">percha-constelacion</span>&gt;<br />
+        &nbsp;&nbsp;&lt;<span class="tag">items</span>&gt;<br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="tag">nodo</span> <span class="attr">id</span>=<span class="val">"ALM-CHO-72G"</span>&gt;<br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="tag">nombre</span>&gt;<span class="val">Almendras Chocolate 72g</span>&lt;/<span class="tag">nombre</span>&gt;<br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="tag">precio</span>&gt;<span class="val">1.85</span>&lt;/<span class="tag">precio</span>&gt;<br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="tag">ean-13</span>&gt;<span class="val">7869999001234</span>&lt;/<span class="tag">ean-13</span>&gt;<br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="tag">posicion-orbital</span>&gt;<br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="tag">angulo</span>&gt;<span class="val">0</span>&lt;/<span class="tag">angulo</span>&gt;<br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="tag">altura</span>&gt;<span class="val">-150</span>&lt;/<span class="tag">altura</span>&gt;<br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;/<span class="tag">posicion-orbital</span>&gt;<br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&lt;/<span class="tag">nodo</span>&gt;<br /><br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="tag">nodo</span> <span class="attr">id</span>=<span class="val">"YOG-MIX-DUR"</span>&gt;<br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="tag">nombre</span>&gt;<span class="val">Yogurt Mix Durazno</span>&lt;/<span class="tag">nombre</span>&gt;<br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="tag">precio</span>&gt;<span class="val">0.85</span>&lt;/<span class="tag">precio</span>&gt;<br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="tag">ean-13</span>&gt;<span class="val">7869999008912</span>&lt;/<span class="tag">ean-13</span>&gt;<br />
+        &nbsp;&nbsp;&nbsp;&nbsp;&lt;/<span class="tag">nodo</span>&gt;<br />
+        &nbsp;&nbsp;&lt;/<span class="tag">items</span>&gt;<br />
+        &lt;/<span class="tag">percha-constelacion</span>&gt;
+      </div>
+      
+      <div class="console-info-block">
+        <div class="info-card-quantum">
+          <h4>Visualización de Libre Albedrío AI</h4>
+          <p>
+            Al remover los límites de las tablas planas de diseño humano, organizamos los productos en coordenadas polares tridimensionales. Cada artículo tiene su propia "masa" en la pantalla.
+          </p>
+        </div>
+
+        <div class="info-card-quantum">
+          <h4>Coexistencia de Variantes Físicas</h4>
+          <p>
+            Los yogures de Fresa y Durazno están posicionados adyacentes en la hélice pero con órbitas separadas. Ambos se asimilan visualmente al mismo tiempo, evitando esconder variantes detrás de un menú desplegable de texto.
+          </p>
+        </div>
+
+        <div class="info-card-quantum">
+          <h4>Código Interno como Estructura de Datos</h4>
+          <p>
+            Asignamos prefijos EAN de rango privado. Al momento del escaneo físico por el shopper, este código valida al instante la variante correcta en lugar de usar un identificador maestro plano.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Orbital positioning and drag logic -->
+  <script type="text/javascript">
+    // <![CDATA[
+    
+    // Orbital coordinates (angle, Y position, Z depth radius)
+    const productData = [
+      { id: 'node-almendras', angle: 0, y: -160, z: 280 },
+      { id: 'node-aceite', angle: 60, y: -80, z: 240 },
+      { id: 'node-yogurt-dur', angle: 120, y: 0, z: 280 },
+      { id: 'node-yogurt-fre', angle: 180, y: 0, z: 200 }, // Sibling variant close by
+      { id: 'node-jamon', angle: 240, y: 80, z: 260 },
+      { id: 'node-cerveza', angle: 300, y: 160, z: 240 }
+    ];
+
+    let currentRotationY = 0;
+    let currentRotationX = -10;
+    let zoomLevel = 1.0;
+    
+    let isDragging = false;
+    let previousMouseX = 0;
+    let previousMouseY = 0;
+
+    let itemsPurchased = 0;
+    let totalSumPurchased = 0.0;
+
+    // Track active product properties for HUD action
+    let activeProductHUD = { name: '', price: 0.0, color: 'var(--laser-cyan)', element: null };
+
+    // Set initial nodes positions in cylindrical coordinates
+    function positionNodes() {
+      const isMobile = window.innerWidth <= 768;
+      const radiusMultiplier = isMobile ? 0.6 : 1.0; // scale radii for mobile bounds
+      
+      productData.forEach(p => {
+        const el = document.getElementById(p.id);
+        if (!el) return;
+
+        // Convert cylindrical coords to X, Y, Z based on rotation
+        const rad = (p.angle + currentRotationY) * (Math.PI / 180);
+        const x = Math.sin(rad) * p.z * zoomLevel * radiusMultiplier;
+        const z = Math.cos(rad) * p.z * zoomLevel;
+        const y = p.y * zoomLevel * (isMobile ? 0.75 : 1.0);
+
+        // Apply scale based on depth to mock autofocus
+        const scale = (z + 400) / 600 * (isMobile ? 0.85 : 1.0); // Front is larger, back is smaller
+        const opacity = (z + 300) / 580; // Front is sharp, back is transparent
+
+        el.style.transform = `translate3d(${x}px, ${y}px, ${z}px) scale(${scale})`;
+        el.style.opacity = opacity;
+        
+        // Disable click-through on back items
+        if (z < -80) {
+          el.style.pointerEvents = 'none';
+        } else {
+          el.style.pointerEvents = 'auto';
+        }
+      });
+    }
+
+    // Initialize positioning
+    positionNodes();
+
+    // Resize handler to adjust positions dynamically
+    window.addEventListener('resize', positionNodes);
+
+    // Orbital Drag Interactions (Desktop Mouse)
+    function startDrag(e) {
+      if (e.target.closest('.holo-hud-panel') || e.target.closest('header') || e.target.closest('.quantum-console')) return;
+      
+      // If clicked on empty space of viewport, hide HUD and unfocus nodes
+      if (e.target.id === 'viewport' || e.target.id === 'canvas-3d' || e.target.className === 'constellation-viewport') {
+        hideHUD();
+      }
+
+      isDragging = true;
+      previousMouseX = e.clientX;
+      previousMouseY = e.clientY;
+    }
+
+    function drag(e) {
+      if (!isDragging) return;
+      
+      const deltaX = e.clientX - previousMouseX;
+      const deltaY = e.clientY - previousMouseY;
+
+      currentRotationY += deltaX * 0.4;
+      currentRotationX = Math.max(-45, Math.min(45, currentRotationX - deltaY * 0.4));
+
+      previousMouseX = e.clientX;
+      previousMouseY = e.clientY;
+
+      // Apply rotation on parent galaxy container
+      const galaxy = document.getElementById('galaxy');
+      galaxy.style.transform = `rotateX(${currentRotationX}deg)`;
+      
+      positionNodes();
+      hideHUD(); // Hide HUD while spinning
+    }
+
+    function endDrag() {
+      isDragging = false;
+    }
+
+    // Orbital Touch Interactions (Mobile / Tablet)
+    function startTouchDrag(e) {
+      if (e.target.closest('.holo-hud-panel') || e.target.closest('header') || e.target.closest('.quantum-console')) return;
+      
+      if (e.target.id === 'viewport' || e.target.className === 'constellation-viewport') {
+        hideHUD();
+      }
+
+      isDragging = true;
+      previousMouseX = e.touches[0].clientX;
+      previousMouseY = e.touches[0].clientY;
+    }
+
+    function touchDrag(e) {
+      if (!isDragging) return;
+      
+      const deltaX = e.touches[0].clientX - previousMouseX;
+      const deltaY = e.touches[0].clientY - previousMouseY;
+
+      currentRotationY += deltaX * 0.5;
+      currentRotationX = Math.max(-45, Math.min(45, currentRotationX - deltaY * 0.5));
+
+      previousMouseX = e.touches[0].clientX;
+      previousMouseY = e.touches[0].clientY;
+
+      const galaxy = document.getElementById('galaxy');
+      galaxy.style.transform = `rotateX(${currentRotationX}deg)`;
+      
+      positionNodes();
+    }
+
+    function endTouchDrag() {
+      isDragging = false;
+    }
+
+    // Zoom on mouse wheel scroll
+    function handleZoom(e) {
+      e.preventDefault();
+      const delta = e.wheelDelta ? e.wheelDelta : -e.detail;
+      if (delta > 0) {
+        zoomLevel = Math.min(1.4, zoomLevel + 0.05);
+      } else {
+        zoomLevel = Math.max(0.7, zoomLevel - 0.05);
+      }
+      positionNodes();
+    }
+
+    // HUD Positioning and data filling
+    function showHUD(title, desc, variant, ean, stock, price, themeColor, element) {
+      if (isDragging) return;
+
+      const hud = document.getElementById('hud-panel');
+      document.getElementById('hud-title').innerText = title;
+      document.getElementById('hud-desc').innerText = desc;
+      document.getElementById('hud-meta-variant').innerText = variant;
+      document.getElementById('hud-meta-ean').innerText = ean;
+      document.getElementById('hud-meta-stock').innerText = stock;
+      document.getElementById('hud-price').innerHTML = `<span class="cur">$</span>${price}`;
+
+      // Update HUD color theme
+      hud.style.setProperty('--theme-color', themeColor);
+      hud.style.setProperty('--theme-glow', themeColor.replace(')', ', 0.3)'));
+
+      // Responsive Check
+      if (window.innerWidth <= 768) {
+        // Let CSS fixed bottom-sheet layout take care of it
+        hud.style.left = '0px';
+        hud.style.top = 'auto';
+      } else {
+        // Position HUD right next to the hovered sphere element on desktop
+        const rect = element.getBoundingClientRect();
+        const viewportRect = document.getElementById('viewport').getBoundingClientRect();
+        
+        const leftX = rect.left - viewportRect.left + rect.width + 15;
+        const topY = rect.top - viewportRect.top - 20;
+
+        hud.style.left = `${leftX}px`;
+        hud.style.top = `${topY}px`;
+      }
+
+      hud.classList.add('active');
+
+      // Highlight the focused sphere
+      document.querySelectorAll('.quantum-sphere').forEach(s => s.classList.remove('focused-node'));
+      element.classList.add('focused-node');
+
+      // Keep reference for click action
+      activeProductHUD = {
+        name: title.split(' ')[0],
+        price: parseFloat(price),
+        color: themeColor,
+        element: element
+      };
+    }
+
+    function hideHUD() {
+      const hud = document.getElementById('hud-panel');
+      hud.classList.remove('active');
+      document.querySelectorAll('.quantum-sphere').forEach(s => s.classList.remove('focused-node'));
+    }
+
+    // Desktop/Mobile Touch interaction node handler
+    function handleNodeTap(event, title, desc, variant, ean, stock, price, themeColor, element) {
+      event.stopPropagation();
+      
+      const hud = document.getElementById('hud-panel');
+      const isAlreadyActive = hud.classList.contains('active') && (document.getElementById('hud-title').innerText === title);
+      
+      if (isAlreadyActive) {
+        hideHUD();
+      } else {
+        showHUD(title, desc, variant, ean, stock, price, themeColor, element);
+      }
+    }
+
+    // Dynamic gravity implosion particle effect when adding items
+    function directAddFromHUD() {
+      if (!activeProductHUD.element) return;
+      
+      itemsPurchased += 1;
+      totalSumPurchased += activeProductHUD.price;
+
+      document.getElementById('hud-count').innerText = itemsPurchased < 10 ? '0' + itemsPurchased : itemsPurchased;
+      document.getElementById('hud-total').innerText = `$${totalSumPurchased.toFixed(2)}`;
+
+      // Spawn gravitational pull animation
+      createGravityDroplet(activeProductHUD.element, activeProductHUD.color);
+      hideHUD();
+    }
+
+    // Animates sphere falling and shrinking directly into the singularity
+    function createGravityDroplet(sphere, color) {
+      const rect = sphere.getBoundingClientRect();
+      const wormhole = document.getElementById('wormhole');
+      const whRect = wormhole.getBoundingClientRect();
+
+      const droplet = document.createElement('div');
+      droplet.className = 'collapsing-droplet';
+      droplet.style.backgroundColor = color || 'var(--laser-cyan)';
+      droplet.style.boxShadow = `0 0 15px ${color || 'var(--laser-cyan)'}`;
+      
+      // Starting position (center of node)
+      droplet.style.left = (rect.left + window.scrollX + rect.width / 2) + 'px';
+      droplet.style.top = (rect.top + window.scrollY + rect.height / 2) + 'px';
+
+      // Destination position (center of wormhole)
+      const dx = (whRect.left + whRect.width / 2) - (rect.left + rect.width / 2);
+      const dy = (whRect.top + whRect.height / 2) - (rect.top + whRect.height / 2);
+
+      droplet.style.setProperty('--dx', `${dx}px`);
+      droplet.style.setProperty('--dy', `${dy}px`);
+
+      document.body.appendChild(droplet);
+
+      // Collapsing reward feedback
+      setTimeout(() => {
+        droplet.remove();
+        // Shake wormhole slightly
+        wormhole.style.transform = 'translateX(-50%) scale(1.2)';
+        setTimeout(() => { wormhole.style.transform = 'translateX(-50%) scale(1)'; }, 200);
+      }, 800);
+    }
+
+    // Change atmosphere theme colors
+    function changeAtmosphere(theme, btn) {
+      const btns = document.querySelectorAll('.mood-selector .mood-btn');
+      btns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const bg = document.querySelector('.space-background');
+      if (theme === 'cyan') {
+        bg.style.backgroundImage = `
+          radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 60%),
+          radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 45%)
+        `;
+      } else if (theme === 'purple') {
+        bg.style.backgroundImage = `
+          radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.12) 0%, transparent 60%),
+          radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.08) 0%, transparent 50%)
+        `;
+      } else if (theme === 'emerald') {
+        bg.style.backgroundImage = `
+          radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.15) 0%, transparent 70%)
+        `;
+      }
+    }
+
+    // Toggle Console drawers
+    let consoleActive = false;
+    function toggleConsole() {
+      const consoleEl = document.getElementById('console-drawer');
+      const btn = document.getElementById('btn-console');
+      
+      if (!consoleActive) {
+        consoleEl.style.display = 'grid';
+        btn.innerText = 'Ver Constelación';
+        consoleActive = true;
+      } else {
+        consoleEl.style.display = 'none';
+        btn.innerText = 'Ver Datos XML';
+        consoleActive = false;
+      }
+    }
+
+    // ]]>
+  </script>
+</body>
+</html>
