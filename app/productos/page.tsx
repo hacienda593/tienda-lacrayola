@@ -643,13 +643,22 @@ function ProductosContent() {
       </div>
 
       {/* Drawer flotante reversible */}
-      <QuickViewDrawer
-        producto={selectedProduct}
-        isOpen={selectedProduct !== null}
-        onClose={() => { setSelectedProduct(null); setActiveList([]); }}
-        onNext={nextProduct}
-        onPrev={prevProduct}
-      />
+      {(() => {
+        const idx = activeList.findIndex(p => p.codigo === selectedProduct?.codigo)
+        const prevProd = idx > 0 ? activeList[idx - 1] : null
+        const nextProd = (idx !== -1 && idx < activeList.length - 1) ? activeList[idx + 1] : null
+        return (
+          <QuickViewDrawer
+            producto={selectedProduct}
+            prevProducto={prevProd}
+            nextProducto={nextProd}
+            isOpen={selectedProduct !== null}
+            onClose={() => { setSelectedProduct(null); setActiveList([]); }}
+            onNext={nextProduct}
+            onPrev={prevProduct}
+          />
+        )
+      })()}
     </div>
   )
 }
