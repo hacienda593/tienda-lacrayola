@@ -64,6 +64,11 @@ function NavBarMobileInner() {
     return parts[0]
   }
 
+  function openCart(e: React.MouseEvent) {
+    e.preventDefault()
+    window.dispatchEvent(new Event('open-cart-global'))
+  }
+
   // 5. Definir la botonera líquida según el contexto
   if (esTienda) {
     // ── Contexto Tienda Aliada (o búsqueda dentro de tienda): Enfoque en recolección rápida, favoritos y pasillos dinámicos ──
@@ -104,7 +109,7 @@ function NavBarMobileInner() {
           </Link>
 
           {/* Botón 5: Carrito */}
-          <Link href="/carrito" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100 relative">
+          <button onClick={openCart} className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100 relative cursor-pointer">
             <div className="relative">
               <ShoppingCart size={20} className="stroke-[1.8]" />
               {n > 0 && (
@@ -114,7 +119,7 @@ function NavBarMobileInner() {
               )}
             </div>
             <span className="text-[9px] font-bold">Carrito</span>
-          </Link>
+          </button>
 
         </div>
       </nav>
@@ -157,7 +162,7 @@ function NavBarMobileInner() {
           </Link>
 
           {/* Botón 5: Carrito */}
-          <Link href="/carrito" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100 relative">
+          <button onClick={openCart} className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100 relative cursor-pointer">
             <div className="relative">
               <ShoppingCart size={20} className="stroke-[1.8]" />
               {n > 0 && (
@@ -167,7 +172,7 @@ function NavBarMobileInner() {
               )}
             </div>
             <span className="text-[9px] font-bold">Carrito</span>
-          </Link>
+          </button>
 
         </div>
       </nav>
@@ -220,9 +225,9 @@ function NavBarMobileInner() {
         </Link>
 
         {/* Botón 5: Carrito */}
-        <Link 
-          href="/carrito" 
-          className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 relative
+        <button 
+          onClick={openCart}
+          className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 relative cursor-pointer
             ${pathname === '/carrito' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
         >
           <div className="relative">
@@ -234,7 +239,7 @@ function NavBarMobileInner() {
             )}
           </div>
           <span className="text-[9px] font-bold">Carrito</span>
-        </Link>
+        </button>
 
       </div>
     </nav>

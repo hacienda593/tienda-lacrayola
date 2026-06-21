@@ -6,6 +6,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { getCarrito } from '@/lib/carrito'
 import MenuDrawer from '@/components/MenuDrawer'
 import CategoriasPanel from '@/components/CategoriasPanel'
+import CartDrawer from '@/components/CartDrawer'
 
 export default function Header() {
   const router = useRouter()
@@ -13,6 +14,7 @@ export default function Header() {
   const [q, setQ]                   = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [catOpen,    setCatOpen]    = useState(false)
+  const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
 
   useEffect(() => {
     const update = () => setN(getCarrito().reduce((s, i) => s + i.cantidad, 0))
@@ -24,11 +26,14 @@ export default function Header() {
   useEffect(() => {
     const abrirCats = () => setCatOpen(true)
     const abrirMenu = () => setDrawerOpen(true)
+    const abrirCart = () => setCartDrawerOpen(true)
     window.addEventListener('open-categorias-global', abrirCats)
     window.addEventListener('open-menu-global', abrirMenu)
+    window.addEventListener('open-cart-global', abrirCart)
     return () => {
       window.removeEventListener('open-categorias-global', abrirCats)
       window.removeEventListener('open-menu-global', abrirMenu)
+      window.removeEventListener('open-cart-global', abrirCart)
     }
   }, [])
 
@@ -43,6 +48,7 @@ export default function Header() {
         <MenuDrawer    open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       </Suspense>
       <CategoriasPanel open={catOpen}  onClose={() => setCatOpen(false)} />
+      <CartDrawer isOpen={cartDrawerOpen} onClose={() => setCartDrawerOpen(false)} />
 
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         {/* Top bar */}
@@ -86,7 +92,10 @@ export default function Header() {
           </form>
 
           {/* Carrito */}
-          <Link href="/carrito" className="relative flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3.5 py-2.5 rounded-xl transition shrink-0">
+          <button
+            onClick={() => setCartDrawerOpen(true)}
+            className="relative flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3.5 py-2.5 rounded-xl transition shrink-0 active:scale-[0.96] cursor-pointer"
+          >
             <ShoppingCart size={18} />
             <span className="text-sm font-semibold hidden sm:block">Carrito</span>
             {n > 0 && (
@@ -94,7 +103,7 @@ export default function Header() {
                 {n > 99 ? '99+' : n}
               </span>
             )}
-          </Link>
+          </button>
         </div>
 
         {/* Barra inferior del header */}
