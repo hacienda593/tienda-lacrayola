@@ -155,6 +155,9 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
   function addCart(e: React.MouseEvent) {
     e.stopPropagation()
     e.preventDefault()
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15)
+    }
     agregarItem(p)
     setOk(true)
     setTimeout(() => setOk(false), 1200)
@@ -221,6 +224,9 @@ function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
   function add(e: React.MouseEvent) {
     e.stopPropagation()
     e.preventDefault()
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15)
+    }
     agregarItem(prod)
     setOk(true)
     setTimeout(() => setOk(false), 1200)

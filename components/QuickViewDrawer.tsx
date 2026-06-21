@@ -44,6 +44,9 @@ export default function QuickViewDrawer({ producto, isOpen, onClose }: QuickView
 
   function handleAddToCart() {
     if (!producto || agotado) return
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15)
+    }
     agregarItem(producto)
     setAgregado(true)
     
