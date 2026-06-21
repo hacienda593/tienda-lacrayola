@@ -47,17 +47,12 @@ function BtnAgregar({ prod, tiendaId, tiendaNombre }: { prod: Producto; tiendaId
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(15)
     }
-    agregarItem({ ...prod, precio_publico: prod.precio_publico }, 1)
-    // Guardar tienda_id en localStorage del item
-    const items = getCarrito()
-    const idx = items.findIndex(i => i.codigo === prod.codigo)
-    if (idx >= 0) {
-      items[idx].tienda_id    = tiendaId
-      items[idx].tienda_nombre = tiendaNombre
-      localStorage.setItem('lc_carrito', JSON.stringify(items))
-      window.dispatchEvent(new Event('carrito-update'))
-    }
-    setCantidad(c => c + 1)
+    agregarItem({
+      ...prod,
+      precio_publico: prod.precio_publico,
+      tienda_id: tiendaId,
+      tienda_nombre: tiendaNombre
+    }, 1)
   }
 
   function cambiar(e: React.MouseEvent, delta: number) {
@@ -67,7 +62,6 @@ function BtnAgregar({ prod, tiendaId, tiendaNombre }: { prod: Producto; tiendaId
     }
     const nueva = cantidad + delta
     cambiarCantidad(prod.codigo, nueva)
-    setCantidad(Math.max(0, nueva))
   }
 
   if (cantidad === 0) return (

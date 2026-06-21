@@ -79,7 +79,6 @@ function BtnAgregar({ prod }: { prod: Producto }) {
       navigator.vibrate(15)
     }
     agregarItem(prod)
-    setCantidad((c: number) => c + 1)
   }
 
   function cambiar(e: React.MouseEvent, delta: number) {
@@ -90,7 +89,6 @@ function BtnAgregar({ prod }: { prod: Producto }) {
     }
     const nueva = cantidad + delta
     cambiarCantidad(prod.codigo, nueva)
-    setCantidad(Math.max(0, nueva))
   }
 
   if (cantidad === 0) {

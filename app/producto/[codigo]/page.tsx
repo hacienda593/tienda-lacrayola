@@ -129,7 +129,7 @@ export default function ProductoPage() {
       setFav(esFavorito(p.codigo))
       // Cantidad en carrito
       const enCarrito = getCarrito().find(i => i.codigo === p.codigo)
-      if (enCarrito) setCantidad(enCarrito.cantidad)
+      setCantidad(enCarrito ? enCarrito.cantidad : 0)
       // Relacionados
       const { data: rel } = await supabase
         .from('ol_productos')
@@ -147,15 +147,23 @@ export default function ProductoPage() {
     cargar()
   }, [codigo])
 
+  useEffect(() => {
+    if (!prod) return
+    const sync = () => {
+      const enCarrito = getCarrito().find(i => i.codigo === prod.codigo)
+      setCantidad(enCarrito ? enCarrito.cantidad : 0)
+    }
+    window.addEventListener('carrito-update', sync)
+    return () => window.removeEventListener('carrito-update', sync)
+  }, [prod])
+
   function agregar() {
     if (!prod) return
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(15)
     }
     agregarItem(prod)
-    setCantidad(c => c + 1)
     setAgregado(true)
-    window.dispatchEvent(new Event('carrito-update'))
     setTimeout(() => setAgregado(false), 1500)
   }
 
@@ -166,8 +174,6 @@ export default function ProductoPage() {
     }
     const nueva = cantidad + delta
     cambiarCantidad(prod.codigo, nueva)
-    setCantidad(Math.max(0, nueva))
-    window.dispatchEvent(new Event('carrito-update'))
   }
 
   function toggleFav() {
