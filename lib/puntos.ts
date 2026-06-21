@@ -45,6 +45,20 @@ export function sumarPuntos(totalCompra: number) {
   return ganados
 }
 
+export function agregarPuntosFijos(cantidad: number): number {
+  const actual = getPuntos()
+  const nuevo: EstadoPuntos = {
+    total:       actual.total + cantidad,
+    disponibles: actual.disponibles + cantidad,
+    canjeados:   actual.canjeados,
+    nivel:       calcularNivel(actual.total + cantidad),
+  }
+  localStorage.setItem(KEY, JSON.stringify(nuevo))
+  window.dispatchEvent(new Event('puntos-update'))
+  return cantidad
+}
+
+
 // Próximo nivel y cuántos puntos faltan
 export function progresoNivel(total: number): { siguiente: string; faltan: number; porcentaje: number } {
   if (total < 300)  return { siguiente: 'Plata',   faltan: 300  - total, porcentaje: (total / 300)  * 100 }

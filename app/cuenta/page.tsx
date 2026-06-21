@@ -1,18 +1,199 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { getPuntosCloud, progresoNivel, BADGE_NIVEL, EstadoPuntosCloud, sincronizarPuntosLocales } from '@/lib/puntosCloud'
+import { getPuntosCloud, progresoNivel, BADGE_NIVEL, EstadoPuntosCloud, sincronizarPuntosLocales, agregarPuntosFijosCloud } from '@/lib/puntosCloud'
 import { getFavoritosCloud, sincronizarFavoritosLocales } from '@/lib/favoritosCloud'
 import { getFavoritos } from '@/lib/favoritos'
-import { getPuntos } from '@/lib/puntos'
+import { getPuntos, agregarPuntosFijos } from '@/lib/puntos'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import {
   LogOut, User, Trophy, Heart,
   Package, Phone, ChevronRight, Loader2, CheckCircle, Shield,
   MapPin, Trash2, Edit, Plus, X,
+  Calendar, Gift, Sparkles,
 } from 'lucide-react'
 import Link from 'next/link'
+
+
+function DailyCheckinSection({ userId, onUpdate }: { userId: string, onUpdate: () => void }) {
+  const [streak, setStreak] = useState(0)
+  const [reclamado, setReclamado] = useState(false)
+  const [puntosGanados, setPuntosGanados] = useState<number | null>(null)
+  const [animando, setAnimando] = useState(false)
+
+  function getTodayString() {
+    const d = new Date()
+    const offset = d.getTimezoneOffset()
+    const local = new Date(d.getTime() - (offset * 60 * 1000))
+    return local.toISOString().split('T')[0]
+  }
+
+  function getYesterdayString() {
+    const d = new Date()
+    d.setDate(d.getDate() - 1)
+    const offset = d.getTimezoneOffset()
+    const local = new Date(d.getTime() - (offset * 60 * 1000))
+    return local.toISOString().split('T')[0]
+  }
+
+  const key = `lc_checkin_${userId}`
+
+  const cargarEstado = () => {
+    if (typeof window === 'undefined') return
+    const today = getTodayString()
+    const yesterday = getYesterdayString()
+    let history = { lastDate: '', streak: 0 }
+    try {
+      const raw = localStorage.getItem(key)
+      if (raw) history = JSON.parse(raw)
+    } catch {}
+
+    const yaReclamado = history.lastDate === today
+    setReclamado(yaReclamado)
+
+    let rachaVisual = history.streak
+    if (history.lastDate !== today && history.lastDate !== yesterday) {
+      rachaVisual = 0
+    }
+    setStreak(rachaVisual)
+  }
+
+  useEffect(() => {
+    cargarEstado()
+    window.addEventListener('puntos-update', cargarEstado)
+    return () => window.removeEventListener('puntos-update', cargarEstado)
+  }, [userId])
+
+  async function handleCheckin() {
+    if (reclamado || animando) return
+    setAnimando(true)
+
+    const today = getTodayString()
+    const nuevaRacha = streak >= 7 ? 1 : streak + 1
+    const pts = nuevaRacha === 7 ? 20 : 5 // 20 puntos de bono el día 7, 5 puntos normales
+
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([40, 30, 40])
+    }
+
+    try {
+      if (userId === 'invitado') {
+        agregarPuntosFijos(pts)
+      } else {
+        await agregarPuntosFijosCloud(userId, pts)
+      }
+
+      const nuevoHistorial = { lastDate: today, streak: nuevaRacha }
+      localStorage.setItem(key, JSON.stringify(nuevoHistorial))
+      
+      setPuntosGanados(pts)
+      setStreak(nuevaRacha)
+      setReclamado(true)
+      
+      onUpdate()
+      window.dispatchEvent(new Event('puntos-update'))
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setTimeout(() => {
+        setPuntosGanados(null)
+        setAnimando(false)
+      }, 3500)
+    }
+  }
+
+  const dias = Array.from({ length: 7 }, (_, i) => i + 1)
+
+  return (
+    <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-5 shadow-sm relative overflow-hidden text-left">
+      <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none" />
+      <div className="absolute -left-6 -top-6 w-20 h-20 bg-white/10 rounded-full blur-lg pointer-events-none" />
+
+      <div className="flex items-center justify-between mb-3.5 relative z-10">
+        <div className="flex items-center gap-2">
+          <Calendar size={17} className="text-yellow-200" />
+          <h3 className="font-bold text-sm tracking-wide">Autocuidado & Puntos Diarios</h3>
+        </div>
+        <div className="text-[10px] bg-white/20 px-2.5 py-0.5 rounded-full font-bold">
+          Racha: {streak} {streak === 1 ? 'día' : 'días'}
+        </div>
+      </div>
+
+      <p className="text-xs text-orange-155 mb-4 leading-normal relative z-10">
+        Entra a la app diariamente para reclamar puntos de fidelidad. Completa la racha de 7 días y obtén un bono especial.
+      </p>
+
+      <div className="grid grid-cols-7 gap-1.5 mb-4 relative z-10">
+        {dias.map(d => {
+          const esPasado = reclamado ? d <= streak : d < streak + 1
+          const esHoy = reclamado ? false : d === streak + 1
+          const esBono = d === 7
+
+          return (
+            <div 
+              key={d} 
+              className={`flex flex-col items-center p-1.5 rounded-xl transition text-center relative ${
+                esHoy 
+                  ? 'bg-yellow-400 text-orange-950 font-black shadow-lg scale-105 animate-pulse border border-yellow-300' 
+                  : esPasado 
+                    ? 'bg-white/20 text-orange-100' 
+                    : 'bg-white/10 text-orange-200/55'
+              }`}
+            >
+              <span className="text-[8px] font-bold uppercase tracking-wider block opacity-85">Día {d}</span>
+              
+              <div className="my-1 text-sm">
+                {esPasado ? (
+                  <span className="text-yellow-300 text-xs font-bold">✓</span>
+                ) : esBono ? (
+                  <span>🎁</span>
+                ) : (
+                  <span>⭐</span>
+                )}
+              </div>
+
+              <span className="text-[9px] font-extrabold leading-none">
+                {esBono ? '+20' : '+5'}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="relative z-10">
+        {reclamado ? (
+          <button 
+            disabled 
+            className="w-full bg-white/25 text-orange-100 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-not-allowed border border-white/10"
+          >
+            <CheckCircle size={14} className="text-yellow-305" /> ¡Puntos de hoy reclamados!
+          </button>
+        ) : (
+          <button
+            onClick={handleCheckin}
+            disabled={animando}
+            className="w-full bg-yellow-400 hover:bg-yellow-300 active:scale-[0.98] text-orange-950 font-extrabold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-lg shadow-orange-700/20 cursor-pointer"
+          >
+            <Gift size={14} /> {animando ? 'Reclamando...' : '📅 Reclamar +5 puntos gratis'}
+          </button>
+        )}
+      </div>
+
+      {puntosGanados !== null && (
+        <div className="absolute inset-0 bg-orange-950/95 flex flex-col items-center justify-center text-center animate-fade-in p-4 z-20">
+          <div className="text-4xl animate-bounce mb-1">🎉</div>
+          <div className="text-lg font-black text-yellow-300">¡Check-in Exitoso!</div>
+          <div className="text-xs text-orange-100 mt-1">Has ganado</div>
+          <div className="text-3xl font-black text-white mt-1.5">+{puntosGanados} Puntos</div>
+          <div className="text-[9px] text-yellow-400 mt-2 font-bold uppercase tracking-wider animate-pulse flex items-center gap-1">
+            <Sparkles size={10} /> {puntosGanados === 20 ? '¡Bono de racha completada!' : '¡Sigue así mañana!'}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function fmt(n: number) { return '$' + n.toFixed(2) }
 
@@ -28,7 +209,11 @@ function PanelInvitado() {
 
   return (
     <div className="space-y-5">
+      {/* Check-in Diario */}
+      <DailyCheckinSection userId="invitado" onUpdate={() => setLocalPuntos(getPuntos())} />
+
       {/* Tarjeta de puntos acumulados para invitados */}
+
       {localPuntos && localPuntos.total > 0 && (
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
@@ -513,6 +698,11 @@ function PanelRegistrado() {
             <p className="text-center text-xs text-yellow-600 font-semibold">🏆 ¡Nivel máximo alcanzado!</p>
           )}
         </div>
+      )}
+
+      {/* Check-in Diario */}
+      {user && (
+        <DailyCheckinSection userId={user.id} onUpdate={() => getPuntosCloud(user.id).then(setPuntos)} />
       )}
 
       {/* Accesos */}

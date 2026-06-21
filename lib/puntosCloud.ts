@@ -53,6 +53,19 @@ export async function sincronizarPuntosLocales(userId: string, totalPuntosLocale
   })
 }
 
+export async function agregarPuntosFijosCloud(userId: string, cantidad: number): Promise<number> {
+  const actual = await getPuntosCloud(userId)
+  await supabase.from('ol_puntos').upsert({
+    user_id:     userId,
+    total:       actual.total + cantidad,
+    disponibles: actual.disponibles + cantidad,
+    canjeados:   actual.canjeados,
+    updated_at:  new Date().toISOString(),
+  })
+  return cantidad
+}
+
+
 
 export function progresoNivel(total: number) {
   if (total < 300)  return { siguiente: 'Plata',   faltan: 300  - total, porcentaje: (total / 300)  * 100 }
