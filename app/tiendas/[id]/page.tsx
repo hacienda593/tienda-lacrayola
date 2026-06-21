@@ -12,6 +12,10 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { getPerfil } from '@/lib/perfil'
+import QuickViewDrawer from '@/components/QuickViewDrawer'
+
+// --- CONFIGURACIÓN DE VISUALIZACIÓN REVERSIBLE ---
+const USE_QUICK_VIEW = true; // Cambiar a 'false' para deshabilitar el Bottom Sheet/Popup y volver al comportamiento original
 
 function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
 
@@ -123,6 +127,7 @@ function TiendaContent() {
   
   const { user } = useAuth()
   const [frecuentes, setFrecuentes] = useState<Producto[]>([])
+  const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null)
 
   function buildSharedUrl() {
     const params = new URLSearchParams()
@@ -542,7 +547,13 @@ function TiendaContent() {
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                 {frecuentes.map(p => (
                   <div key={p.codigo}
-                    onClick={() => router.push(`/producto/${encodeURIComponent(p.codigo)}`)}
+                    onClick={() => {
+                      if (USE_QUICK_VIEW) {
+                        setSelectedProduct(p)
+                      } else {
+                        router.push(`/producto/${encodeURIComponent(p.codigo)}`)
+                      }
+                    }}
                     className="bg-white rounded-xl border border-gray-100 p-2.5 shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/freq">
                     <div className="relative bg-gray-50 rounded-lg h-20 flex items-center justify-center mb-2 text-2xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors">
                       <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
@@ -578,7 +589,13 @@ function TiendaContent() {
               <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filtrados.slice(0, visibles).map(p => (
                   <div key={p.codigo}
-                    onClick={() => router.push(`/producto/${encodeURIComponent(p.codigo)}`)}
+                    onClick={() => {
+                      if (USE_QUICK_VIEW) {
+                        setSelectedProduct(p)
+                      } else {
+                        router.push(`/producto/${encodeURIComponent(p.codigo)}`)
+                      }
+                    }}
                     className="bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group">
                     <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-28 flex items-center justify-center mb-3 text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors">
                       <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
@@ -764,6 +781,13 @@ function TiendaContent() {
           animation: slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
       `}</style>
+
+      {/* Drawer flotante reversible */}
+      <QuickViewDrawer
+        producto={selectedProduct}
+        isOpen={selectedProduct !== null}
+        onClose={() => setSelectedProduct(null)}
+      />
     </div>
   )
 }
