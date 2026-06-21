@@ -188,62 +188,64 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
         router.push(`/producto/${encodeURIComponent(p.codigo)}`)
       }
     }}
-      className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group">
-      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-32 flex items-center justify-center mb-3 text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors">
+      className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group">
+      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-32 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
         {p.imagen_url && !imageError ? (
           <img
             src={p.imagen_url}
             alt={p.descripcion}
             onError={() => setImageError(true)}
-            className="w-full h-full object-contain p-1.5"
+            className="w-full h-full object-contain p-1"
             loading="lazy"
           />
         ) : (
           CAT_CONFIG[p.categoria]?.emoji || '📦'
         )}
         <button onClick={toggleFav}
-          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition
+          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm z-10 transition
             ${fav ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-300 hover:text-red-400'}`}>
           <Heart size={13} className={fav ? 'fill-white' : ''} />
         </button>
         {p.stock > 0 && p.stock < 5 && (
-          <span className="absolute top-2 left-2 text-[9px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded-full">
+          <span className="absolute top-2 left-2 text-[9px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded-full z-10">
             ⚡ Últimas
           </span>
         )}
       </div>
-      <div className="flex-1">
-        <div className="text-[10px] font-semibold text-green-600 uppercase tracking-wide mb-0.5">{p.categoria}</div>
-        <div className="text-sm font-semibold text-gray-800 leading-snug line-clamp-2">{p.descripcion}</div>
-        {p.marca && <div className="text-[10px] text-gray-400 mt-0.5">{p.marca}</div>}
-      </div>
-      <div className="flex items-center justify-between mt-2">
-        <div className="text-lg font-extrabold text-gray-900">{fmt(p.precio_publico)}</div>
-      </div>
-      {cantidad === 0 ? (
-        <button onClick={addCart}
-          className={`mt-2 w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 active:scale-[0.96] transition-transform duration-75
-            ${ok ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-green-600'}`}>
-          <ShoppingCart size={13} />
-          {ok ? '¡Agregado!' : 'Agregar al carrito'}
-        </button>
-      ) : (
-        <div className="mt-2 flex items-center justify-between bg-green-600 rounded-lg overflow-hidden h-[34px] w-full shrink-0">
-          <button 
-            onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad - 1); }}
-            className="px-3.5 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center"
-          >
-            <Minus size={11} />
-          </button>
-          <span className="text-white text-xs font-black select-none">{cantidad} en carrito</span>
-          <button 
-            onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad + 1); }}
-            className="px-3.5 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center"
-          >
-            <Plus size={11} />
-          </button>
+      <div className="p-3 flex-1 flex flex-col justify-between">
+        <div className="flex-1">
+          <div className="text-[10px] font-semibold text-green-600 uppercase tracking-wide mb-0.5">{p.categoria}</div>
+          <div className="text-sm font-semibold text-gray-800 leading-snug line-clamp-2">{p.descripcion}</div>
+          {p.marca && <div className="text-[10px] text-gray-400 mt-0.5">{p.marca}</div>}
         </div>
-      )}
+        <div className="flex items-center justify-between mt-2.5">
+          <div className="text-lg font-extrabold text-gray-900">{fmt(p.precio_publico)}</div>
+        </div>
+        {cantidad === 0 ? (
+          <button onClick={addCart}
+            className={`mt-2 w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 active:scale-[0.96] transition-transform duration-75 cursor-pointer
+              ${ok ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-green-600'}`}>
+            <ShoppingCart size={13} />
+            {ok ? '¡Agregado!' : 'Agregar'}
+          </button>
+        ) : (
+          <div className="mt-2 flex items-center justify-between bg-green-600 rounded-lg overflow-hidden h-[34px] w-full shrink-0">
+            <button 
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad - 1); }}
+              className="px-3.5 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center"
+            >
+              <Minus size={11} />
+            </button>
+            <span className="text-white text-xs font-black select-none">{cantidad} en carrito</span>
+            <button 
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad + 1); }}
+              className="px-3.5 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center"
+            >
+              <Plus size={11} />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

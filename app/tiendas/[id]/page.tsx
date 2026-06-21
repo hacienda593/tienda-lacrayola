@@ -117,7 +117,7 @@ function ImagenProducto({ src, categoria, alt }: { src?: string | null; categori
       src={src}
       alt={alt}
       onError={() => setError(true)}
-      className="w-full h-full object-contain p-1.5"
+      className="w-full h-full object-contain p-1"
       loading="lazy"
     />
   )
@@ -590,18 +590,20 @@ function TiendaContent() {
                         router.push(`/producto/${encodeURIComponent(p.codigo)}`)
                       }
                     }}
-                    className="bg-white rounded-xl border border-gray-100 p-2.5 shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/freq">
-                    <div className="relative bg-gray-50 rounded-lg h-20 flex items-center justify-center mb-2 text-2xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors">
+                    className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/freq">
+                    <div className="relative bg-gray-50 h-20 flex items-center justify-center text-2xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors w-full">
                       <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[9px] font-semibold text-green-600 uppercase truncate mb-0.5">{p.categoria}</div>
-                      <div className="text-[11px] font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-1">{p.descripcion}</div>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between gap-1">
-                      <div className="text-xs font-black text-gray-900">{fmt(p.precio_publico)}</div>
-                      <div className="scale-75 origin-right shrink-0">
-                        <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
+                    <div className="p-2 flex-1 min-w-0 flex flex-col justify-between">
+                      <div>
+                        <div className="text-[9px] font-semibold text-green-600 uppercase truncate mb-0.5">{p.categoria}</div>
+                        <div className="text-[11px] font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-1">{p.descripcion}</div>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-1">
+                        <div className="text-xs font-black text-gray-900">{fmt(p.precio_publico)}</div>
+                        <div className="scale-75 origin-right shrink-0">
+                          <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -632,24 +634,26 @@ function TiendaContent() {
                         router.push(`/producto/${encodeURIComponent(p.codigo)}`)
                       }
                     }}
-                    className="bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group">
-                    <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-28 flex items-center justify-center mb-3 text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors">
+                    className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group">
+                    <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-28 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
                       <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
                       <BtnFavorito prod={p} />
                       {p.stock > 0 && p.stock < 5 && (
-                        <span className="absolute top-2 left-2 text-[9px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded-full">
+                        <span className="absolute top-2 left-2 text-[9px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded-full z-10">
                           ⚡ Últimas
                         </span>
                       )}
                     </div>
-                    <div className="flex-1">
-                      <div className="text-[10px] font-semibold text-green-600 uppercase tracking-wide mb-0.5">{p.categoria}</div>
-                      <div className="text-xs font-semibold text-gray-800 leading-snug line-clamp-2 mb-1">{p.descripcion}</div>
-                      {p.marca && <div className="text-[10px] text-gray-400">{p.marca}</div>}
-                    </div>
-                    <div className="mt-2.5">
-                      <div className="text-lg font-extrabold text-gray-900 mb-1.5">{fmt(p.precio_publico)}</div>
-                      <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
+                    <div className="p-3 flex-1 flex flex-col justify-between">
+                      <div className="flex-1">
+                        <div className="text-[10px] font-semibold text-green-600 uppercase tracking-wide mb-0.5">{p.categoria}</div>
+                        <div className="text-xs font-semibold text-gray-800 leading-snug line-clamp-2 mb-1">{p.descripcion}</div>
+                        {p.marca && <div className="text-[10px] text-gray-400">{p.marca}</div>}
+                      </div>
+                      <div className="mt-2.5">
+                        <div className="text-lg font-extrabold text-gray-900 mb-1.5">{fmt(p.precio_publico)}</div>
+                        <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
+                      </div>
                     </div>
                   </div>
                 ))}
