@@ -9,8 +9,12 @@ import { Producto } from '@/lib/types'
 import { Search, X, ShoppingCart, Plus, Minus, Heart, ArrowUpDown, Share2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { getPerfil } from '@/lib/perfil'
+import QuickViewDrawer from '@/components/QuickViewDrawer'
 
 function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
+
+// --- CONFIGURACIÓN DE VISUALIZACIÓN REVERSIBLE ---
+const USE_QUICK_VIEW = true; // Cambiar a 'false' para deshabilitar el Bottom Sheet/Popup y volver al comportamiento original
 
 const CAT_EMOJI: Record<string, string> = {
   'Escolar':'📚','Arte':'🎨','Oficina':'🖊️','Tecnologia':'💻','Juguetes':'🧸',
@@ -123,7 +127,7 @@ function BtnFavorito({ prod }: { prod: Producto }) {
 }
 
 // ── Card de producto ───────────────────────────────────────────────
-function ProductCard({ p, badge }: { p: Producto; badge?: 'nuevo' | 'oferta' | 'popular' | 'ultimas' }) {
+function ProductCard({ p, badge, onSelect }: { p: Producto; badge?: 'nuevo' | 'oferta' | 'popular' | 'ultimas'; onSelect?: (p: Producto) => void }) {
   const router = useRouter()
   const [imageError, setImageError] = useState(false)
   const agotado = p.stock <= 0
@@ -131,7 +135,13 @@ function ProductCard({ p, badge }: { p: Producto; badge?: 'nuevo' | 'oferta' | '
 
   return (
     <div
-      onClick={() => router.push(`/producto/${encodeURIComponent(p.codigo)}`)}
+      onClick={() => {
+        if (USE_QUICK_VIEW && onSelect) {
+          onSelect(p)
+        } else {
+          router.push(`/producto/${encodeURIComponent(p.codigo)}`)
+        }
+      }}
       className="bg-white rounded-2xl border border-gray-100 p-3.5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col group cursor-pointer"
     >
       <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl h-28 flex items-center justify-center mb-3 text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors">
@@ -203,6 +213,7 @@ function ProductosContent() {
   const [marca, setMarca]           = useState('')
   const [stockFiltro, setStockFiltro] = useState<'todos'|'disponible'>('disponible')
   const [orden, setOrden]           = useState<Orden>('relevancia')
+  const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null)
   const [visibles, setVisibles]     = useState(40)
   const [showOrden, setShowOrden]   = useState(false)
   const [crayolaId, setCrayolaId]   = useState('')
@@ -589,7 +600,7 @@ function ProductosContent() {
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {filtrados.slice(0, visibles).map((p, idx) => (
-                  <ProductCard key={p.codigo} p={p} badge={badgePara(p, idx)} />
+                  <ProductCard key={p.codigo} p={p} badge={badgePara(p, idx)} onSelect={setSelectedProduct} />
                 ))}
               </div>
               {visibles < filtrados.length && (
@@ -602,6 +613,13 @@ function ProductosContent() {
           )}
         </div>
       </div>
+
+      {/* Drawer flotante reversible */}
+      <QuickViewDrawer
+        producto={selectedProduct}
+        isOpen={selectedProduct !== null}
+        onClose={() => setSelectedProduct(null)}
+      />
     </div>
   )
 }
