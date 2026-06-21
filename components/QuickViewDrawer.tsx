@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { X, ShoppingCart, Heart, Shield, Check } from 'lucide-react'
 import { Producto } from '@/lib/types'
 import { agregarItem } from '@/lib/carrito'
@@ -24,13 +24,16 @@ export default function QuickViewDrawer({ producto, isOpen, onClose }: QuickView
   const [fav, setFav] = useState(false)
   const [agregado, setAgregado] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const imageRef = useRef<HTMLImageElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
-  // Sync favorite state when product changes or drawer opens
+  // Sync state when product changes
   useEffect(() => {
     if (producto) {
       setFav(esFavorito(producto.codigo))
       setAgregado(false)
       setImageError(false)
+      resetImageTransform()
     }
   }, [producto, isOpen])
 
@@ -44,13 +47,54 @@ export default function QuickViewDrawer({ producto, isOpen, onClose }: QuickView
     agregarItem(producto)
     setAgregado(true)
     
-    // Dispatch cart update event for NavBar/Header sync
+    // Sync cart counts in header
     window.dispatchEvent(new Event('carrito-update'))
     
     setTimeout(() => {
       setAgregado(false)
       onClose()
-    }, 1000)
+    }, 1200)
+  }
+
+  // --- TACTILE 3D BOTTLE SPIN LOGIC ---
+  function handlePointerMove(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) {
+    const container = containerRef.current
+    const img = imageRef.current
+    if (!container || !img) return
+
+    const rect = container.getBoundingClientRect()
+    let clientX = 0
+    let clientY = 0
+
+    // Capture touch or mouse coordinates
+    if ('touches' in e) {
+      if (e.touches.length === 0) return
+      clientX = e.touches[0].clientX
+      clientY = e.touches[0].clientY
+    } else {
+      clientX = e.clientX
+      clientY = e.clientY
+    }
+
+    // Coordinates relative to center of the image box
+    const x = clientX - rect.left - (rect.width / 2)
+    const y = clientY - rect.top - (rect.height / 2)
+
+    // Calculate rotation angles (Max 22 degrees tilt for realistic feel)
+    const rotateY = (x / (rect.width / 2)) * 22
+    const rotateX = -(y / (rect.height / 2)) * 22
+
+    // Apply scale and 3D transform (Perspective keeps it sharp)
+    img.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.15)`
+    img.style.filter = `drop-shadow(${-rotateY * 0.6}px ${20 + rotateX * 0.6}px 25px rgba(0, 0, 0, 0.45))`
+  }
+
+  function resetImageTransform() {
+    const img = imageRef.current
+    if (img) {
+      img.style.transform = 'perspective(600px) rotateX(0deg) rotateY(0deg) scale(1)'
+      img.style.filter = 'drop-shadow(0 15px 20px rgba(0, 0, 0, 0.25))'
+    }
   }
 
   function handleToggleFav() {
@@ -66,7 +110,7 @@ export default function QuickViewDrawer({ producto, isOpen, onClose }: QuickView
 
   return (
     <>
-      {/* Backdrop (Back blur overlay) */}
+      {/* Backdrop */}
       <div
         onClick={onClose}
         className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] transition-opacity duration-300 ${
@@ -77,138 +121,148 @@ export default function QuickViewDrawer({ producto, isOpen, onClose }: QuickView
       {/* Drawer Container (Desktop Modal / Mobile Bottom Sheet) */}
       <div
         className={`fixed z-[101] bg-white transition-all duration-300 ease-out
-          /* Mobile layout (Bottom Sheet) */
-          bottom-0 left-0 w-full rounded-t-3xl border-t border-gray-100 p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto
+          /* Mobile layout */
+          bottom-0 left-0 w-full rounded-t-3xl border-t border-gray-100 p-5 shadow-2xl flex flex-col gap-4 max-h-[95vh] overflow-y-auto
           ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}
-          /* Desktop layout (Centered Modal) */
-          md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-lg md:rounded-2xl md:border md:w-full md:bottom-auto md:p-8 md:max-h-[85vh]
+          /* Desktop layout */
+          md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-md md:rounded-2xl md:border md:w-full md:bottom-auto md:p-7 md:max-h-[90vh]
           ${isOpen ? 'md:scale-100 md:opacity-100' : 'md:scale-95 md:opacity-0 md:pointer-events-none'}
         `}
       >
-        {/* Header: Title and Close button */}
-        <div className="flex justify-between items-start gap-4">
-          <div className="flex-1">
-            <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider bg-green-50 border border-green-100 px-2 py-0.5 rounded-md">
-              {producto.categoria}
-            </span>
-            <h3 className="text-lg font-bold text-gray-900 leading-snug mt-2">
-              {producto.descripcion}
-            </h3>
-            {producto.marca && (
-              <span className="text-xs text-gray-400 block mt-0.5">
-                Marca: <strong className="text-gray-600 font-medium">{producto.marca}</strong>
-              </span>
-            )}
-          </div>
-          
+        {/* Floating Close button in header */}
+        <div className="flex justify-end items-center absolute top-4 right-4 z-50">
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition shrink-0"
+            className="w-8 h-8 rounded-full bg-white/80 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition shadow-sm"
           >
-            <X size={16} />
+            <X size={15} />
           </button>
         </div>
 
-        {/* Body content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 py-2">
+        {/* 1. King-Size Interactive Image Container (Holding Sensation) */}
+        <div
+          ref={containerRef}
+          onMouseMove={handlePointerMove}
+          onMouseLeave={resetImageTransform}
+          onTouchMove={handlePointerMove}
+          onTouchEnd={resetImageTransform}
+          className="relative bg-gradient-to-br from-gray-50/70 to-gray-100 rounded-2xl h-60 md:h-72 flex items-center justify-center text-8xl overflow-hidden border border-gray-100/50 cursor-grab active:cursor-grabbing touch-none select-none"
+        >
+          {producto.imagen_url && !imageError ? (
+            <img
+              ref={imageRef}
+              src={producto.imagen_url}
+              alt={producto.descripcion}
+              onError={() => setImageError(true)}
+              style={{
+                transition: 'transform 0.1s ease-out, filter 0.1s ease-out',
+                transformStyle: 'preserve-3d',
+                transform: 'perspective(600px) rotateX(0deg) rotateY(0deg) scale(1)',
+                filter: 'drop-shadow(0 15px 20px rgba(0, 0, 0, 0.25))'
+              }}
+              className="w-full h-full object-contain p-6"
+              loading="lazy"
+            />
+          ) : (
+            CAT_EMOJI[producto.categoria] || '📦'
+          )}
+
+          {/* Floating Category Badge inside image */}
+          <span className="absolute bottom-3 left-3 text-[10px] font-extrabold text-green-700 bg-white/90 border border-green-100/50 px-2.5 py-1 rounded-lg backdrop-blur shadow-sm select-none">
+            {producto.categoria}
+          </span>
           
-          {/* Left: Product Image Box */}
-          <div className="relative bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl h-44 flex items-center justify-center text-6xl overflow-hidden border border-gray-50">
-            {producto.imagen_url && !imageError ? (
-              <img
-                src={producto.imagen_url}
-                alt={producto.descripcion}
-                onError={() => setImageError(true)}
-                className="w-full h-full object-contain p-4"
-                loading="lazy"
-              />
-            ) : (
-              CAT_EMOJI[producto.categoria] || '📦'
+          {/* Favorite badge inside image */}
+          <button
+            onClick={handleToggleFav}
+            className={`absolute bottom-3 right-3 w-8.5 h-8.5 rounded-full flex items-center justify-center shadow-md transition ${
+              fav ? 'bg-red-500 text-white' : 'bg-white/95 text-gray-300 hover:text-red-400'
+            }`}
+          >
+            <Heart size={14} className={fav ? 'fill-white' : ''} />
+          </button>
+
+          {/* Agotado / Pocas unidades Badge */}
+          {agotado ? (
+            <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex items-center justify-center">
+              <span className="text-xs font-black text-red-600 bg-red-50/90 px-3.5 py-1.5 rounded-full border border-red-200 shadow-sm">
+                PRODUCTO AGOTADO
+              </span>
+            </div>
+          ) : pocasUnidades ? (
+            <span className="absolute top-3 left-3 text-[10px] font-bold bg-orange-500 text-white px-2.5 py-1 rounded-lg shadow-sm">
+              ⚡ Últimas {producto.stock} unidades
+            </span>
+          ) : null}
+        </div>
+
+        {/* 2. Structured Product Details below image */}
+        <div className="space-y-3.5 mt-1">
+          <div>
+            <h3 className="text-lg font-extrabold text-gray-900 leading-tight">
+              {producto.descripcion}
+            </h3>
+            {producto.marca && (
+              <span className="text-xs text-gray-400 mt-1 block">
+                Marca: <strong className="text-gray-600 font-bold">{producto.marca}</strong>
+              </span>
             )}
-            
-            {/* Favorite toggle badge */}
+          </div>
+
+          <div className="flex items-center gap-3 bg-gray-50/50 p-2.5 rounded-xl border border-gray-100/30">
+            <span className="text-2xl font-black text-gray-900 leading-none">
+              ${producto.precio_publico.toFixed(2)}
+            </span>
+            <span className="text-[10px] text-gray-400 font-bold bg-white border border-gray-100 px-1.5 py-0.5 rounded shadow-2xs">
+              PVP SUGERIDO
+            </span>
+          </div>
+
+          {/* Mini Metadata list */}
+          <div className="space-y-1.5 text-xs text-gray-500 border-t border-gray-100/60 pt-3">
+            <div className="flex justify-between">
+              <span>Código interno de percha:</span>
+              <span className="font-mono text-gray-800 font-bold">{producto.codigo}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Estado en tienda física:</span>
+              <span className={`font-bold ${agotado ? 'text-red-500' : 'text-green-600'}`}>
+                {agotado ? 'Sin inventario' : `${producto.stock} unidades listas`}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>Garantía de frescura:</span>
+              <span className="text-gray-700 font-semibold flex items-center gap-0.5">
+                <Shield size={12} className="text-green-600 shrink-0" /> Control verificado
+              </span>
+            </div>
+          </div>
+
+          {/* 3. Action Buttons */}
+          <div className="space-y-2 pt-1.5">
             <button
-              onClick={handleToggleFav}
-              className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition ${
-                fav ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-300 hover:text-red-400'
+              disabled={agotado}
+              onClick={handleAddToCart}
+              className={`w-full py-3.5 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 transition select-none ${
+                agotado
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                  : agregado
+                  ? 'bg-green-600 text-white shadow-lg shadow-green-600/25'
+                  : 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/20'
               }`}
             >
-              <Heart size={14} className={fav ? 'fill-white' : ''} />
+              {agregado ? <Check size={16} /> : <ShoppingCart size={16} />}
+              {agotado ? 'Agotado' : agregado ? '¡Agregado!' : 'Agregar al carrito'}
             </button>
 
-            {/* Agotado / Pocas unidades Badge */}
-            {agotado ? (
-              <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-                <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded-full border border-red-200">
-                  AGOTADO
-                </span>
-              </div>
-            ) : pocasUnidades ? (
-              <span className="absolute top-3 left-3 text-[10px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded-full">
-                ⚡ ¡Últimas {producto.stock} unidades!
-              </span>
-            ) : null}
+            <Link
+              href={`/producto/${encodeURIComponent(producto.codigo)}`}
+              onClick={onClose}
+              className="w-full py-2.5 rounded-xl font-bold text-xs text-gray-400 hover:text-green-700 bg-gray-50 hover:bg-green-50/50 border border-gray-100 hover:border-green-100 transition text-center block"
+            >
+              Ver ficha técnica completa →
+            </Link>
           </div>
-
-          {/* Right: Technical specifications and pricing */}
-          <div className="flex flex-col justify-between gap-4">
-            <div className="space-y-2.5">
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-gray-900">
-                  ${producto.precio_publico.toFixed(2)}
-                </span>
-                <span className="text-[10px] text-gray-400 font-semibold bg-gray-50 px-1.5 py-0.5 rounded">
-                  PVP sugerido
-                </span>
-              </div>
-
-              <div className="space-y-1.5 text-xs text-gray-500">
-                <div className="flex justify-between border-b border-gray-50 pb-1">
-                  <span>Código de producto:</span>
-                  <span className="font-mono text-gray-800 font-medium">{producto.codigo}</span>
-                </div>
-                <div className="flex justify-between border-b border-gray-50 pb-1">
-                  <span>Estado de stock:</span>
-                  <span className={`font-bold ${agotado ? 'text-red-500' : 'text-green-600'}`}>
-                    {agotado ? 'Sin inventario' : `${producto.stock} disponibles`}
-                  </span>
-                </div>
-                <div className="flex justify-between border-b border-gray-50 pb-1">
-                  <span>Garantía de entrega:</span>
-                  <span className="text-gray-800 flex items-center gap-0.5">
-                    <Shield size={12} className="text-green-600" /> Compra segura
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="space-y-2 mt-2">
-              <button
-                disabled={agotado}
-                onClick={handleAddToCart}
-                className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition select-none ${
-                  agotado
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                    : agregado
-                    ? 'bg-green-600 text-white shadow-lg shadow-green-600/25'
-                    : 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/20'
-                }`}
-              >
-                {agregado ? <Check size={16} /> : <ShoppingCart size={16} />}
-                {agotado ? 'Agotado' : agregado ? '¡Agregado!' : 'Agregar al carrito'}
-              </button>
-
-              <Link
-                href={`/producto/${encodeURIComponent(producto.codigo)}`}
-                onClick={onClose}
-                className="w-full py-2.5 rounded-xl font-semibold text-xs text-gray-500 hover:text-green-700 bg-gray-50 border border-gray-100 hover:bg-green-50/50 hover:border-green-100 transition text-center block"
-              >
-                Ver ficha técnica completa →
-              </Link>
-            </div>
-          </div>
-
         </div>
       </div>
     </>
