@@ -55,6 +55,9 @@ function HeaderSearch() {
 
   function buscar(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (typeof document !== 'undefined') {
+      (document.activeElement as HTMLElement)?.blur()
+    }
     if (esTienda) {
       const params = new URLSearchParams(searchParams.toString())
       if (q.trim()) params.set('q', q.trim())

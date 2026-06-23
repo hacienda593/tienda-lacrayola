@@ -554,6 +554,7 @@ function ProductosContent() {
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input value={query}
               onChange={e => { setQuery(e.target.value); setCat(''); setMarca(''); setVisibles(40) }}
+              onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLElement).blur() }}
               placeholder="Buscar por nombre, código, marca..."
               className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-10 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 shadow-sm" />
             {hayFiltros && (
