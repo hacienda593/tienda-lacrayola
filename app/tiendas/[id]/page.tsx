@@ -132,6 +132,48 @@ function TiendaContent() {
   const [visibles, setVisibles] = useState(40)
   const [infoOpen, setInfoOpen] = useState(false)
   const fuseRef = useRef<Fuse<Producto> | null>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  function updateFiltersUrl(newFilters: { cat?: string; sub?: string; marca?: string; q?: string }, replace = false) {
+    const params = new URLSearchParams(searchParams.toString())
+    
+    if (newFilters.cat !== undefined) {
+      if (newFilters.cat) params.set('cat', newFilters.cat)
+      else params.delete('cat')
+    }
+    if (newFilters.sub !== undefined) {
+      if (newFilters.sub) params.set('sub', newFilters.sub)
+      else params.delete('sub')
+    }
+    if (newFilters.marca !== undefined) {
+      if (newFilters.marca) params.set('marca', newFilters.marca)
+      else params.delete('marca')
+    }
+    if (newFilters.q !== undefined) {
+      if (newFilters.q) params.set('q', newFilters.q)
+      else params.delete('q')
+    }
+
+    const qs = params.toString()
+    const path = typeof window !== 'undefined' ? window.location.pathname : `/tiendas/${id}`
+    const targetUrl = qs ? `${path}?${qs}` : path
+    if (replace) {
+      router.replace(targetUrl)
+    } else {
+      router.push(targetUrl)
+    }
+  }
+
+  // Debounce para sincronizar q con la URL
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentUrlQ = searchParams.get('q') || ''
+      if (q !== currentUrlQ) {
+        updateFiltersUrl({ q }, true)
+      }
+    }, 450)
+    return () => clearTimeout(timer)
+  }, [q, searchParams])
   
   const { user } = useAuth()
   const [frecuentes, setFrecuentes] = useState<Producto[]>([])
@@ -173,7 +215,9 @@ function TiendaContent() {
     if (marca) params.set('marca', marca)
     if (q) params.set('q', q)
     const qs = params.toString()
-    return qs ? `${window.location.origin}${window.location.pathname}?${qs}` : `${window.location.origin}${window.location.pathname}`
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const path = typeof window !== 'undefined' ? window.location.pathname : `/tiendas/${id}`
+    return qs ? `${origin}${path}?${qs}` : `${origin}${path}`
   }
 
   function compartirTienda() {
@@ -206,7 +250,11 @@ function TiendaContent() {
     setCat(searchParams.get('cat') || '')
     setSub(searchParams.get('sub') || '')
     setMarca(searchParams.get('marca') || '')
-    setQ(searchParams.get('q') || '')
+    
+    // Solo sincronizar q si el input no está siendo activamente enfocado/modificado
+    if (typeof document !== 'undefined' && document.activeElement !== searchInputRef.current) {
+      setQ(searchParams.get('q') || '')
+    }
     setVisibles(40)
   }, [searchParams])
 
@@ -322,11 +370,7 @@ function TiendaContent() {
   }, [base, cat])
 
   function limpiarFiltros() {
-    setQ('')
-    setCat('')
-    setSub('')
-    setMarca('')
-    setVisibles(40)
+    updateFiltersUrl({ cat: '', sub: '', marca: '', q: '' })
   }
 
   if (cargando) return (
@@ -429,11 +473,11 @@ function TiendaContent() {
       {/* Buscador */}
       <div className="relative">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input value={q} onChange={e => { setQ(e.target.value); setCat(''); setVisibles(40) }}
+        <input ref={searchInputRef} value={q} onChange={e => { setQ(e.target.value); if (cat || sub || marca) updateFiltersUrl({ cat: '', sub: '', marca: '' }, true); setVisibles(40) }}
           placeholder={`Buscar en ${tienda.nombre}...`}
           className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-10 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 shadow-sm" />
         {q && (
-          <button onClick={() => setQ('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+          <button onClick={() => { setQ(''); updateFiltersUrl({ q: '' }, true); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
             <X size={15} />
           </button>
         )}
@@ -449,7 +493,7 @@ function TiendaContent() {
               {cats.map(([c, count]) => (
                 <button
                   key={c}
-                  onClick={() => { setCat(c); setSub(''); setMarca(''); setVisibles(40) }}
+                  onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
                   className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-green-700 transition flex items-center justify-between border border-transparent hover:border-green-100"
                 >
                   <span className="flex items-center gap-2">
@@ -465,7 +509,7 @@ function TiendaContent() {
             <div className="space-y-5">
               {/* Botón Volver */}
               <button
-                onClick={() => { setCat(''); setSub(''); setMarca(''); setVisibles(40) }}
+                onClick={() => updateFiltersUrl({ cat: '', sub: '', marca: '' })}
                 className="w-full py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5"
               >
                 ← Todos los pasillos
@@ -490,7 +534,7 @@ function TiendaContent() {
                       return (
                         <button
                           key={s}
-                          onClick={() => { setSub(esActiva ? '' : s); setVisibles(40) }}
+                          onClick={() => updateFiltersUrl({ sub: esActiva ? '' : s })}
                           className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-between border
                             ${esActiva 
                               ? 'bg-teal-50 border-teal-200 text-teal-700' 
@@ -515,7 +559,7 @@ function TiendaContent() {
                       return (
                         <button
                           key={m}
-                          onClick={() => { setMarca(esActiva ? '' : m); setVisibles(40) }}
+                          onClick={() => updateFiltersUrl({ marca: esActiva ? '' : m })}
                           className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-between border
                             ${esActiva 
                               ? 'bg-purple-50 border-purple-200 text-purple-700' 
@@ -541,19 +585,19 @@ function TiendaContent() {
               {cat && (
                 <span className="flex items-center gap-1 bg-green-50 text-green-700 font-semibold px-2.5 py-1 rounded-full border border-green-200">
                   {CAT_EMOJI[cat] || ''} {cat}
-                  <button onClick={() => { setCat(''); setSub(''); setMarca(''); setVisibles(40) }} className="hover:text-green-950 font-bold"><X size={12} /></button>
+                  <button onClick={() => updateFiltersUrl({ cat: '', sub: '', marca: '' })} className="hover:text-green-950 font-bold"><X size={12} /></button>
                 </span>
               )}
               {sub && (
                 <span className="flex items-center gap-1 bg-teal-50 text-teal-700 font-semibold px-2.5 py-1 rounded-full border border-teal-200">
                   🛍️ {sub}
-                  <button onClick={() => { setSub(''); setVisibles(40) }} className="hover:text-teal-950 font-bold"><X size={12} /></button>
+                  <button onClick={() => updateFiltersUrl({ sub: '' })} className="hover:text-teal-950 font-bold"><X size={12} /></button>
                 </span>
               )}
               {marca && (
                 <span className="flex items-center gap-1 bg-purple-50 text-purple-700 font-semibold px-2.5 py-1 rounded-full border border-purple-200">
                   🏷️ {marca}
-                  <button onClick={() => { setMarca(''); setVisibles(40) }} className="hover:text-purple-950 font-bold"><X size={12} /></button>
+                  <button onClick={() => updateFiltersUrl({ marca: '' })} className="hover:text-purple-950 font-bold"><X size={12} /></button>
                 </span>
               )}
               <button onClick={limpiarFiltros} className="text-[10px] text-gray-400 hover:text-gray-600 underline">
@@ -620,7 +664,7 @@ function TiendaContent() {
             <div className="w-full overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-hide">
               <div className="flex gap-4 border-b border-gray-100 whitespace-nowrap text-xs font-bold">
                 <button
-                  onClick={() => { setSub(''); setVisibles(40) }}
+                  onClick={() => updateFiltersUrl({ sub: '' })}
                   className={`pb-2.5 transition-all relative ${!sub ? 'text-green-700 border-b-2 border-green-700 font-extrabold' : 'text-gray-500'}`}
                 >
                   Todos los productos
@@ -630,7 +674,7 @@ function TiendaContent() {
                   return (
                     <button
                       key={s}
-                      onClick={() => { setSub(s); setVisibles(40) }}
+                      onClick={() => updateFiltersUrl({ sub: s })}
                       className={`pb-2.5 transition-all relative ${esActiva ? 'text-green-700 border-b-2 border-green-700 font-extrabold' : 'text-gray-500'}`}
                     >
                       {s} ({count})
@@ -662,7 +706,7 @@ function TiendaContent() {
                     <div className="flex items-center justify-between">
                       <h3 className="font-extrabold text-gray-900 text-sm">{s}</h3>
                       <button
-                        onClick={() => { setSub(s); setVisibles(40) }}
+                        onClick={() => updateFiltersUrl({ sub: s })}
                         className="text-xs text-green-700 font-bold flex items-center gap-0.5 hover:underline"
                       >
                         Ver más <ChevronRight size={12} />
@@ -761,7 +805,7 @@ function TiendaContent() {
                         <span>{c}</span>
                       </h3>
                       <button
-                        onClick={() => { setCat(c); setSub(''); setMarca(''); setVisibles(40) }}
+                        onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
                         className="text-xs text-green-700 font-bold flex items-center gap-0.5 hover:underline"
                       >
                         Ver pasillo <ChevronRight size={12} />
@@ -883,7 +927,7 @@ function TiendaContent() {
                   {cats.map(([c, count]) => (
                     <button
                       key={c}
-                      onClick={() => { setCat(c); setSub(''); setMarca(''); setVisibles(40) }}
+                      onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
                       className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-green-700 transition flex items-center justify-between border border-transparent hover:border-green-100"
                     >
                       <span className="flex items-center gap-2">
@@ -900,7 +944,7 @@ function TiendaContent() {
                   
                   {/* Botón Volver */}
                   <button
-                    onClick={() => { setCat(''); setSub(''); setMarca(''); setVisibles(40) }}
+                    onClick={() => updateFiltersUrl({ cat: '', sub: '', marca: '' })}
                     className="w-full py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5"
                   >
                     ← Todos los pasillos
@@ -925,7 +969,7 @@ function TiendaContent() {
                           return (
                             <button
                               key={s}
-                              onClick={() => { setSub(esActiva ? '' : s); setVisibles(40) }}
+                              onClick={() => updateFiltersUrl({ sub: esActiva ? '' : s })}
                               className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-between border
                                 ${esActiva 
                                   ? 'bg-teal-50 border-teal-200 text-teal-700' 
@@ -950,7 +994,7 @@ function TiendaContent() {
                           return (
                             <button
                               key={m}
-                              onClick={() => { setMarca(esActiva ? '' : m); setVisibles(40) }}
+                              onClick={() => updateFiltersUrl({ marca: esActiva ? '' : m })}
                               className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-between border
                                 ${esActiva 
                                   ? 'bg-purple-50 border-purple-200 text-purple-700' 

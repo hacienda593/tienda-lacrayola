@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
-import { usePathname, useSearchParams } from 'next/navigation'
-import { Home, Store, ShoppingCart, Heart, Menu, LayoutGrid, Sparkles } from 'lucide-react'
+import { usePathname, useSearchParams, useRouter } from 'next/navigation'
+import { Home, Store, ShoppingCart, Heart, Menu, LayoutGrid, Sparkles, ArrowLeft } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { getCarrito } from '@/lib/carrito'
 import { supabase } from '@/lib/supabase'
@@ -9,9 +9,31 @@ import { supabase } from '@/lib/supabase'
 function NavBarMobileInner() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [n, setN] = useState(0)
   const [crayolaId, setCrayolaId] = useState('')
   const [tiendaNombre, setTiendaNombre] = useState('')
+
+  const activeCat = searchParams.get('cat') || ''
+  const activeSub = searchParams.get('sub') || ''
+  const activeMarca = searchParams.get('marca') || ''
+  const activeQ = searchParams.get('q') || ''
+  const hasActiveFilter = !!(activeCat || activeSub || activeMarca || activeQ)
+
+  function handleVolver() {
+    const params = new URLSearchParams(searchParams.toString())
+    if (activeSub) {
+      params.delete('sub')
+    } else if (activeMarca) {
+      params.delete('marca')
+    } else if (activeCat) {
+      params.delete('cat')
+    } else if (activeQ) {
+      params.delete('q')
+    }
+    const qs = params.toString()
+    router.push(qs ? `${pathname}?${qs}` : pathname)
+  }
 
   // 1. Obtener la ID de la tienda activa si está en la URL o ruta (defecto La Crayola)
   const activeTId = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
@@ -77,11 +99,21 @@ function NavBarMobileInner() {
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/85 backdrop-blur-xl border-t border-gray-200/50 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl will-change-transform">
         <div className="flex h-16 items-center px-2">
           
-          {/* Botón 1: Inicio */}
-          <Link href="/" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100">
-            <Home size={20} className="stroke-[1.8]" />
-            <span className="text-[9px] font-bold">Inicio</span>
-          </Link>
+          {/* Botón 1: Inicio o Atrás dinámico */}
+          {hasActiveFilter ? (
+            <button
+              onClick={handleVolver}
+              className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-600 active:scale-95 transition-transform duration-100 cursor-pointer"
+            >
+              <ArrowLeft size={20} className="stroke-[2.2] text-green-600" />
+              <span className="text-[9px] font-extrabold text-green-600">Atrás</span>
+            </button>
+          ) : (
+            <Link href="/" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100">
+              <Home size={20} className="stroke-[1.8]" />
+              <span className="text-[9px] font-bold">Inicio</span>
+            </Link>
+          )}
 
           {/* Botón 2: Favoritos */}
           <Link href="/favoritos" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100">
