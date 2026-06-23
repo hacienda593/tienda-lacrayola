@@ -121,7 +121,7 @@ function NavBarMobileInner() {
             <span className="text-[9px] font-bold">Favoritos</span>
           </Link>
 
-          {/* Botón 3: CATEGORÍAS (CENTRAL HERO FLOTANTE CON NOMBRE DE TIENDA) */}
+          {/* Botón 3: PASILLOS (CENTRAL HERO FLOTANTE CON NOMBRE DE TIENDA) */}
           <div className="flex-1 flex flex-col items-center justify-center relative h-full">
             <button
               onClick={() => window.dispatchEvent(new Event('open-store-filters'))}
@@ -134,7 +134,7 @@ function NavBarMobileInner() {
             </span>
           </div>
 
-          {/* Botón 4: Tiendas */}
+          {/* Botón 4: Comercios */}
           <Link href="/tiendas" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100">
             <Store size={20} className="stroke-[1.8]" />
             <span className="text-[9px] font-bold">Comercios</span>
@@ -158,95 +158,22 @@ function NavBarMobileInner() {
     )
   }
 
-  if (esProductos) {
-    // ── Contexto Catálogo / Búsqueda General: Enfoque en filtración y refinamiento ──
-    return (
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/85 backdrop-blur-xl border-t border-gray-200/50 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl will-change-transform">
-        <div className="flex h-16 items-center px-2">
-
-          {/* Botón 1: Inicio */}
-          <Link href="/" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100">
-            <Home size={20} className="stroke-[1.8]" />
-            <span className="text-[9px] font-bold">Inicio</span>
-          </Link>
-
-          {/* Botón 2: Tiendas */}
-          <Link href="/tiendas" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100">
-            <Store size={20} className="stroke-[1.8]" />
-            <span className="text-[9px] font-bold">Tiendas</span>
-          </Link>
-
-          {/* Botón 3: FILTRAR CATEGORÍAS (CENTRAL HERO FLOTANTE) */}
-          <div className="flex-1 flex flex-col items-center justify-center relative h-full">
-            <button
-              onClick={() => window.dispatchEvent(new Event('open-categorias-global'))}
-              className="w-14 h-14 bg-gradient-to-br from-indigo-600 to-blue-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 border-4 border-white absolute -top-5 active:scale-90 transition-transform duration-150"
-            >
-              <LayoutGrid size={22} className="stroke-[2.5]" />
-            </button>
-            <span className="text-[9px] font-extrabold text-indigo-600 mt-7 uppercase tracking-wider">Filtrar</span>
-          </div>
-
-          {/* Botón 4: Favoritos */}
-          <Link href="/favoritos" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100">
-            <Heart size={20} className="stroke-[1.8]" />
-            <span className="text-[9px] font-bold">Favoritos</span>
-          </Link>
-
-          {/* Botón 5: Carrito */}
-          <button onClick={openCart} className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100 relative cursor-pointer">
-            <div className="relative">
-              <ShoppingCart size={20} className="stroke-[1.8]" />
-              {n > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[8px] font-black rounded-full min-w-[15px] h-3.5 flex items-center justify-center px-0.5">
-                  {n > 99 ? '99+' : n}
-                </span>
-              )}
-            </div>
-            <span className="text-[9px] font-bold">Carrito</span>
-          </button>
-
-        </div>
-      </nav>
-    )
-  }
-
-  // ── Contexto General (Home, Tiendas list, Favoritos, Carrito): Centro de mando ──
+  // ── Contexto General (Home, Tiendas list, Favoritos, Catálogo, Carrito): Centro de mando unificado ──
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/85 backdrop-blur-xl border-t border-gray-200/50 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl will-change-transform">
       <div className="flex h-16 items-center px-2">
 
-        {/* Botón 1: Menú Lateral */}
-        <button 
-          onClick={() => window.dispatchEvent(new Event('open-menu-global'))}
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100"
-        >
-          <Menu size={20} className="stroke-[1.8]" />
-          <span className="text-[9px] font-bold">Menú</span>
-        </button>
-
-        {/* Botón 2: Tiendas Aliadas */}
+        {/* Botón 1: Inicio */}
         <Link 
-          href="/tiendas" 
+          href="/" 
           className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100
-            ${pathname === '/tiendas' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
+            ${pathname === '/' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
         >
-          <Store size={20} className={pathname === '/tiendas' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
-          <span className="text-[9px] font-bold">Tiendas</span>
+          <Home size={20} className={pathname === '/' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
+          <span className="text-[9px] font-bold">Inicio</span>
         </Link>
 
-        {/* Botón 3: SHORTCUT LA CRAYOLA (CENTRAL HERO FLOTANTE) */}
-        <div className="flex-1 flex flex-col items-center justify-center relative h-full">
-          <Link
-            href={crayolaId ? `/tiendas/${crayolaId}` : '/productos'}
-            className="w-14 h-14 bg-gradient-to-br from-green-600 to-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-green-500/30 border-4 border-white absolute -top-5 active:scale-90 transition-transform duration-150"
-          >
-            <Sparkles size={22} className="stroke-[2.5]" />
-          </Link>
-          <span className="text-[9px] font-extrabold text-green-600 mt-7 uppercase tracking-wider">Crayola</span>
-        </div>
-
-        {/* Botón 4: Favoritos */}
+        {/* Botón 2: Favoritos */}
         <Link 
           href="/favoritos" 
           className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100
@@ -255,6 +182,26 @@ function NavBarMobileInner() {
           <Heart size={20} className={pathname === '/favoritos' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
           <span className="text-[9px] font-bold">Favoritos</span>
         </Link>
+
+        {/* Botón 3: TIENDAS (CENTRAL HERO FLOTANTE GLOBAL) */}
+        <div className="flex-1 flex flex-col items-center justify-center relative h-full">
+          <Link
+            href="/tiendas"
+            className="w-14 h-14 bg-gradient-to-br from-green-600 to-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-green-500/30 border-4 border-white absolute -top-5 active:scale-90 transition-transform duration-150"
+          >
+            <Store size={22} className="stroke-[2.5]" />
+          </Link>
+          <span className="text-[9px] font-extrabold text-green-600 mt-7 uppercase tracking-wider">Tiendas</span>
+        </div>
+
+        {/* Botón 4: Pasillos (Categorías globales) */}
+        <button 
+          onClick={() => window.dispatchEvent(new Event('open-categorias-global'))}
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100 cursor-pointer"
+        >
+          <LayoutGrid size={20} className="stroke-[1.8]" />
+          <span className="text-[9px] font-bold">Pasillos</span>
+        </button>
 
         {/* Botón 5: Carrito */}
         <button 
