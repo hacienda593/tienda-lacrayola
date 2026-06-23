@@ -1,12 +1,13 @@
 'use client'
 import { useEffect, useState, useMemo, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import Fuse from 'fuse.js'
 import { supabase } from '@/lib/supabase'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto } from '@/lib/types'
-import { Search, X, ShoppingCart, Plus, Minus, Heart, ArrowUpDown, Share2 } from 'lucide-react'
+import { Search, X, ShoppingCart, Plus, Minus, Heart, ArrowUpDown, Share2, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { getPerfil } from '@/lib/perfil'
 import QuickViewDrawer from '@/components/QuickViewDrawer'
@@ -425,6 +426,25 @@ function ProductosContent() {
     return pool
   }, [base, query, cat, sub, tiendaId, crayolaId, marca, stockFiltro, orden, soloFrecuentes, frecuentesCodigos])
 
+  const porTienda = useMemo(() => {
+    if (!query.trim() || tiendaId) return null
+    const groups: Record<string, Producto[]> = {}
+    filtrados.forEach(p => {
+      const tId = p.tienda_id || crayolaId || 'crayola'
+      if (!groups[tId]) groups[tId] = []
+      groups[tId].push(p)
+    })
+    return Object.entries(groups).map(([tId, prods]) => {
+      const info = tiendasMap[tId] || { nombre: tId === crayolaId ? 'La Crayola' : 'Tienda Aliada', logo_url: null }
+      return {
+        id: tId,
+        nombre: info.nombre,
+        logo_url: info.logo_url,
+        productos: prods
+      }
+    })
+  }, [filtrados, query, tiendaId, tiendasMap, crayolaId])
+
   const catsCtx = useMemo(() => {
     const q = query.trim()
     let pool = q.length >= 2 && fuseRef.current ? fuseRef.current.search(q).map(r => r.item) : base
@@ -658,6 +678,52 @@ function ProductosContent() {
             </div>
           ) : filtrados.length === 0 ? (
             <EstadoVacio query={query || cat || marca} onLimpiar={limpiar} />
+          ) : porTienda ? (
+            <div className="space-y-6">
+              {porTienda.map((group) => {
+                if (group.productos.length === 0) return null
+                return (
+                  <div key={group.id} className="space-y-3 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm animate-fade-in">
+                    {/* Header de la Tienda */}
+                    <div className="flex items-center justify-between border-b border-gray-50 pb-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-xl shrink-0 overflow-hidden border border-gray-100">
+                          {group.logo_url ? (
+                            <img src={group.logo_url} alt={group.nombre} className="w-7 h-7 object-contain" />
+                          ) : (
+                            '🏪'
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-extrabold text-gray-800 text-sm truncate">{group.nombre}</h3>
+                          <p className="text-[10px] text-gray-400 mt-0.5">Entrega: en 1 hr · {group.productos.length} resultados</p>
+                        </div>
+                      </div>
+                      <Link
+                        href={`/tiendas/${group.id}?q=${encodeURIComponent(query.trim())}`}
+                        className="text-xs text-green-700 font-bold flex items-center gap-0.5 hover:underline shrink-0"
+                      >
+                        Ver más <ChevronRight size={13} />
+                      </Link>
+                    </div>
+
+                    {/* Fila Horizontal de Productos */}
+                    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
+                      {group.productos.slice(0, 15).map((p, idx) => (
+                        <div key={p.codigo} className="w-[145px] md:w-[170px] shrink-0">
+                          <ProductCard
+                            p={p}
+                            badge={badgePara(p, idx)}
+                            tiendasMap={tiendasMap}
+                            onSelect={(prod) => openQuickView(prod, group.productos.slice(0, 15))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-4">
