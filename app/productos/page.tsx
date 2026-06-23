@@ -140,11 +140,25 @@ function BtnFavorito({ prod }: { prod: Producto }) {
 }
 
 // ── Card de producto ───────────────────────────────────────────────
-function ProductCard({ p, badge, onSelect }: { p: Producto; badge?: 'nuevo' | 'oferta' | 'popular' | 'ultimas'; onSelect?: (p: Producto) => void }) {
+function ProductCard({ p, badge, onSelect, tiendasMap }: { p: Producto; badge?: 'nuevo' | 'oferta' | 'popular' | 'ultimas'; onSelect?: (p: Producto) => void; tiendasMap?: Record<string, { nombre: string; logo_url?: string | null }> }) {
   const router = useRouter()
   const [imageError, setImageError] = useState(false)
   const agotado = p.stock <= 0
   const badgeTipo = agotado ? undefined : (p.stock < 5 ? 'ultimas' : badge)
+
+  const tiendaInfo = p.tienda_id && tiendasMap ? tiendasMap[p.tienda_id] : null
+  
+  function getNombreCorto(completo: string) {
+    if (!completo) return ''
+    let s = completo.replace(/supermercados?|comisariatos?|librer[ií]a|farmacias?/gi, '').trim()
+    const parts = s.split(' ')
+    if (parts[0].toLowerCase() === 'el' || parts[0].toLowerCase() === 'la') {
+      return parts.slice(0, 2).join(' ')
+    }
+    return parts[0]
+  }
+  
+  const nombreTienda = tiendaInfo ? getNombreCorto(tiendaInfo.nombre) : ''
 
   return (
     <div
@@ -181,9 +195,16 @@ function ProductCard({ p, badge, onSelect }: { p: Producto; badge?: 'nuevo' | 'o
       <div className="p-2 flex-1 flex flex-col justify-between">
         <div className="flex-1">
           <div className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-0.5">{p.descripcion}</div>
-          {p.marca && (
-            <div className="text-[10px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
-          )}
+          <div className="flex items-center gap-1.5 flex-wrap mt-0.5 min-h-[18px]">
+            {p.marca && (
+              <span className="text-[10px] text-gray-400 font-bold truncate">{p.marca}</span>
+            )}
+            {nombreTienda && (
+              <span className="text-[8px] font-black text-green-700 bg-green-50 border border-green-200/50 px-1.5 py-0.5 rounded-md uppercase tracking-wide">
+                {nombreTienda}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="mt-1 flex items-center justify-between gap-1">
@@ -233,6 +254,7 @@ function ProductosContent() {
   const [orden, setOrden]           = useState<Orden>('relevancia')
   const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null)
   const [activeList, setActiveList] = useState<Producto[]>([])
+  const [tiendasMap, setTiendasMap] = useState<Record<string, { nombre: string; logo_url?: string | null }>>({})
 
   function openQuickView(p: Producto, list: Producto[]) {
     setSelectedProduct(p)
@@ -279,13 +301,22 @@ function ProductosContent() {
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank')
   }
 
-  // Obtener ID de La Crayola
+  // Obtener tiendas y el ID de La Crayola
   useEffect(() => {
     supabase.from('ol_tiendas')
-      .select('id')
-      .ilike('nombre', '%crayola%')
-      .single()
-      .then(({ data }) => { if (data) setCrayolaId(data.id) })
+      .select('id, nombre, logo_url')
+      .then(({ data }) => {
+        if (data) {
+          const map: Record<string, { nombre: string; logo_url?: string | null }> = {}
+          data.forEach((t: any) => {
+            map[t.id] = { nombre: t.nombre, logo_url: t.logo_url }
+            if (t.nombre.toLowerCase().includes('crayola')) {
+              setCrayolaId(t.id)
+            }
+          })
+          setTiendasMap(map)
+        }
+      })
   }, [])
 
   useEffect(() => {
@@ -640,7 +671,7 @@ function ProductosContent() {
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-4">
                 {filtrados.slice(0, visibles).map((p, idx) => (
-                  <ProductCard key={p.codigo} p={p} badge={badgePara(p, idx)} onSelect={(prod) => openQuickView(prod, filtrados.slice(0, visibles))} />
+                  <ProductCard key={p.codigo} p={p} badge={badgePara(p, idx)} tiendasMap={tiendasMap} onSelect={(prod) => openQuickView(prod, filtrados.slice(0, visibles))} />
                 ))}
               </div>
               {visibles < filtrados.length && (
