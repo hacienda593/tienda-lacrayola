@@ -637,7 +637,7 @@ function TiendaContent() {
           {/* Contador */}
           <p className="text-xs text-gray-400">{filtrados.length} productos disponibles</p>
 
-          {/* Grid productos / Rows de Subcategorías */}
+          {/* Grid productos / Rows de Subcategorías / Rows de Categorías */}
           {filtrados.length === 0 ? (
             <div className="text-center py-16 space-y-2">
               <div className="text-5xl">🔍</div>
@@ -739,6 +739,62 @@ function TiendaContent() {
                   </div>
                 )
               })()}
+            </div>
+          ) : !cat && !sub && !marca && !q ? (
+            /* Vista agrupada por categoría principal en horizontal (tipo Tipti/Aki Home de Tienda) */
+            <div className="space-y-6">
+              {cats.map(([c]) => {
+                const prodsEnCat = base.filter(p => p.stock > 0 && p.categoria === c)
+                if (prodsEnCat.length === 0) return null
+                return (
+                  <div key={c} className="space-y-2.5 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-extrabold text-gray-900 text-sm flex items-center gap-1.5">
+                        <span>{CAT_EMOJI[c] || '📦'}</span>
+                        <span>{c}</span>
+                      </h3>
+                      <button
+                        onClick={() => { setCat(c); setSub(''); setMarca(''); setVisibles(40) }}
+                        className="text-xs text-green-700 font-bold flex items-center gap-0.5 hover:underline"
+                      >
+                        Ver pasillo <ChevronRight size={12} />
+                      </button>
+                    </div>
+                    <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
+                      {prodsEnCat.slice(0, 15).map(p => (
+                        <div key={p.codigo}
+                          onClick={() => {
+                            if (USE_QUICK_VIEW) {
+                              openQuickView(p, prodsEnCat.slice(0, 15))
+                            } else {
+                              router.push(`/producto/${encodeURIComponent(p.codigo)}`)
+                            }
+                          }}
+                          className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/catrow">
+                          <div className="relative bg-gray-50 h-40 flex items-center justify-center text-2xl overflow-hidden group-hover/catrow:bg-green-50/50 transition-colors w-full">
+                            <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
+                            <BtnFavorito prod={p} />
+                          </div>
+                          <div className="p-1.5 flex-1 min-w-0 flex flex-col justify-between">
+                            <div>
+                              <div className="text-[10px] font-bold text-gray-800 leading-tight line-clamp-2 min-h-[24px] mb-0.5">{p.descripcion}</div>
+                              {p.marca && (
+                                <div className="text-[8px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+                              )}
+                            </div>
+                            <div className="mt-0.5 flex items-center justify-between gap-1">
+                              <div className="text-[11px] font-black text-gray-900">{fmt(p.precio_publico)}</div>
+                              <div className="scale-[0.7] origin-right shrink-0">
+                                <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           ) : (
             /* Grid vertical tradicional */
