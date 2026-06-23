@@ -132,7 +132,6 @@ function TiendaContent() {
   const [visibles, setVisibles] = useState(40)
   const [infoOpen, setInfoOpen] = useState(false)
   const fuseRef = useRef<Fuse<Producto> | null>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
 
   function updateFiltersUrl(newFilters: { cat?: string; sub?: string; marca?: string; q?: string }, replace = false) {
     const params = new URLSearchParams(searchParams.toString())
@@ -250,11 +249,7 @@ function TiendaContent() {
     setCat(searchParams.get('cat') || '')
     setSub(searchParams.get('sub') || '')
     setMarca(searchParams.get('marca') || '')
-    
-    // Solo sincronizar q si el input no está siendo activamente enfocado/modificado
-    if (typeof document !== 'undefined' && document.activeElement !== searchInputRef.current) {
-      setQ(searchParams.get('q') || '')
-    }
+    setQ(searchParams.get('q') || '')
     setVisibles(40)
   }, [searchParams])
 
@@ -470,18 +465,7 @@ function TiendaContent() {
         </div>
       )}
 
-      {/* Buscador */}
-      <div className="relative">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input ref={searchInputRef} value={q} onChange={e => { setQ(e.target.value); if (cat || sub || marca) updateFiltersUrl({ cat: '', sub: '', marca: '' }, true); setVisibles(40) }}
-          placeholder={`Buscar en ${tienda.nombre}...`}
-          className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-10 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 shadow-sm" />
-        {q && (
-          <button onClick={() => { setQ(''); updateFiltersUrl({ q: '' }, true); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-            <X size={15} />
-          </button>
-        )}
-      </div>
+
 
       <div className="flex flex-col md:flex-row gap-6 md:items-start">
         {/* ── SIDEBAR filtros (desktop) ── */}

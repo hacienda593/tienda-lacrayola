@@ -1,17 +1,129 @@
 'use client'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ShoppingCart, Search, LayoutGrid } from 'lucide-react'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { ShoppingCart, Search, LayoutGrid, X } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { getCarrito } from '@/lib/carrito'
+import { supabase } from '@/lib/supabase'
 import MenuDrawer from '@/components/MenuDrawer'
 import CategoriasPanel from '@/components/CategoriasPanel'
 import CartDrawer from '@/components/CartDrawer'
 
+function HeaderSearch() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [q, setQ] = useState('')
+  const [tiendaNombre, setTiendaNombre] = useState('')
+
+  // 1. Detectar si estamos en una tienda
+  const activeTId = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
+    ? pathname.split('/')[2]
+    : ''
+  const esTienda = !!activeTId
+
+  // 2. Obtener el nombre de la tienda
+  useEffect(() => {
+    if (!activeTId) {
+      setTiendaNombre('')
+      return
+    }
+    supabase.from('ol_tiendas')
+      .select('nombre')
+      .eq('id', activeTId)
+      .single()
+      .then(({ data }) => {
+        if (data) setTiendaNombre(data.nombre)
+      })
+  }, [activeTId])
+
+  // 3. Sincronizar el input local con la URL query param q
+  useEffect(() => {
+    setQ(searchParams.get('q') || '')
+  }, [searchParams])
+
+  // Limpiar el nombre para formato móvil compacto (ej: "Supermercado Tuti" -> "Tuti")
+  function getNombreCorto(completo: string) {
+    if (!completo) return ''
+    let s = completo.replace(/supermercados?|comisariatos?|librer[ií]a|farmacias?/gi, '').trim()
+    const parts = s.split(' ')
+    if (parts[0].toLowerCase() === 'el' || parts[0].toLowerCase() === 'la') {
+      return parts.slice(0, 2).join(' ')
+    }
+    return parts[0]
+  }
+
+  function buscar(e: React.SyntheticEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (esTienda) {
+      const params = new URLSearchParams(searchParams.toString())
+      if (q.trim()) params.set('q', q.trim())
+      else params.delete('q')
+      params.delete('cat')
+      params.delete('sub')
+      params.delete('marca')
+      const qs = params.toString()
+      router.replace(qs ? `${pathname}?${qs}` : pathname)
+    } else {
+      if (q.trim()) {
+        router.push(`/productos?q=${encodeURIComponent(q.trim())}`)
+      }
+    }
+  }
+
+  function manejarEscribir(val: string) {
+    setQ(val)
+    if (esTienda) {
+      const params = new URLSearchParams(searchParams.toString())
+      if (val.trim()) params.set('q', val.trim())
+      else params.delete('q')
+      params.delete('cat')
+      params.delete('sub')
+      params.delete('marca')
+      const qs = params.toString()
+      router.replace(qs ? `${pathname}?${qs}` : pathname)
+    }
+  }
+
+  function limpiar() {
+    setQ('')
+    if (esTienda) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('q')
+      const qs = params.toString()
+      router.replace(qs ? `${pathname}?${qs}` : pathname)
+    }
+  }
+
+  const nombreTiendaCorto = getNombreCorto(tiendaNombre)
+
+  return (
+    <form onSubmit={buscar} className="flex-1 max-w-xl">
+      <div className="relative">
+        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          value={q}
+          onChange={e => manejarEscribir(e.target.value)}
+          placeholder={esTienda ? `Buscar en ${nombreTiendaCorto || 'la tienda'}...` : "Buscar productos, marcas, categorías..."}
+          className="w-full bg-gray-100 border border-gray-200 rounded-xl pl-9 pr-8 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition"
+        />
+        {q && (
+          <button
+            type="button"
+            onClick={limpiar}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+    </form>
+  )
+}
+
 export default function Header() {
   const router = useRouter()
   const [n, setN]                   = useState(0)
-  const [q, setQ]                   = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [catOpen,    setCatOpen]    = useState(false)
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
@@ -36,11 +148,6 @@ export default function Header() {
       window.removeEventListener('open-cart-global', abrirCart)
     }
   }, [])
-
-  function buscar(e: React.SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (q.trim()) router.push(`/productos?q=${encodeURIComponent(q.trim())}`)
-  }
 
   return (
     <>
@@ -80,16 +187,9 @@ export default function Header() {
           </Link>
 
           {/* Buscador */}
-          <form onSubmit={buscar} className="flex-1 max-w-xl">
-            <div className="relative">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                value={q} onChange={e => setQ(e.target.value)}
-                placeholder="Buscar productos, marcas, categorías..."
-                className="w-full bg-gray-100 border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition"
-              />
-            </div>
-          </form>
+          <Suspense fallback={<div className="flex-1 max-w-xl h-10 bg-gray-100 rounded-xl" />}>
+            <HeaderSearch />
+          </Suspense>
 
           {/* Carrito */}
           <button
