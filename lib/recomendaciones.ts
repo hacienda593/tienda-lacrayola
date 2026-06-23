@@ -119,7 +119,7 @@ export async function obtenerProductosRecomendados(tiendaId?: string, limit: num
   
   let query = supabase
     .from('ol_productos')
-    .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id,imagen_url')
+    .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id,imagen_url,detalles')
     .gt('stock', 0)
     .limit(limit)
 

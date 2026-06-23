@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
-import { X, ShoppingCart, Heart, Shield, Check, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react'
+import { X, ShoppingCart, Heart, Check, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react'
 import { Producto } from '@/lib/types'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
@@ -221,7 +221,7 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
           onMouseLeave={resetImageTransform}
           onTouchMove={handlePointerMove}
           onTouchEnd={resetImageTransform}
-          className="relative bg-gradient-to-br from-gray-50/70 to-gray-100 rounded-2xl h-60 md:h-72 flex items-center justify-center text-8xl overflow-hidden border border-gray-100/50 touch-pan-y select-none"
+          className="relative bg-gradient-to-br from-gray-50/70 to-gray-100 rounded-2xl h-72 md:h-88 flex items-center justify-center text-8xl overflow-hidden border border-gray-100/50 touch-pan-y select-none"
         >
           {producto.imagen_url && !imageError ? (
             <img
@@ -302,46 +302,38 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
         </div>
 
         {/* 2. Structured Product Details below image */}
-        <div className="space-y-3.5 mt-1">
-          <div>
-            <h3 className="text-lg font-extrabold text-gray-900 leading-tight">
-              {producto.descripcion}
-            </h3>
-            {producto.marca && (
-              <span className="text-xs text-gray-400 mt-1 block">
-                Marca: <strong className="text-gray-600 font-bold">{producto.marca}</strong>
+        <div className="space-y-2.5 mt-0.5">
+          <div className="flex justify-between items-start gap-2">
+            <div className="flex-1">
+              <h3 className="text-base font-extrabold text-gray-900 leading-tight line-clamp-2">
+                {producto.descripcion}
+              </h3>
+              {producto.marca && (
+                <span className="text-[10px] text-gray-400 mt-0.5 block">
+                  Marca: <strong className="text-gray-500 font-bold">{producto.marca}</strong>
+                </span>
+              )}
+            </div>
+            <div className="text-right shrink-0">
+              <div className="text-xl font-black text-gray-900 leading-none">
+                ${producto.precio_publico.toFixed(2)}
+              </div>
+              <span className="text-[8px] text-gray-400 font-bold tracking-wider uppercase block mt-1">
+                PVP SUGERIDO
               </span>
-            )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 bg-gray-50/50 p-2.5 rounded-xl border border-gray-100/30">
-            <span className="text-2xl font-black text-gray-900 leading-none">
-              ${producto.precio_publico.toFixed(2)}
+          {/* Detalles del producto (columna detalles de DB) */}
+          <div className="text-xs text-gray-600 bg-gray-50/75 p-3 rounded-xl border border-gray-100/50 max-h-24 overflow-y-auto leading-relaxed scrollbar-thin">
+            <span className="font-bold text-gray-700 block mb-0.5 text-[10px] uppercase tracking-wider">
+              Detalles del Producto:
             </span>
-            <span className="text-[10px] text-gray-400 font-bold bg-white border border-gray-100 px-1.5 py-0.5 rounded shadow-2xs">
-              PVP SUGERIDO
+            <span className="whitespace-pre-line text-gray-600">
+              {producto.detalles || 'Este producto no cuenta con especificaciones adicionales.'}
             </span>
           </div>
-
-          {/* Mini Metadata list */}
-          <div className="space-y-1.5 text-xs text-gray-500 border-t border-gray-100/60 pt-3">
-            <div className="flex justify-between">
-              <span>Código interno de percha:</span>
-              <span className="font-mono text-gray-800 font-bold">{producto.codigo}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Estado en tienda física:</span>
-              <span className={`font-bold ${agotado ? 'text-red-500' : 'text-green-600'}`}>
-                {agotado ? 'Sin inventario' : `${producto.stock} unidades listas`}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>Garantía de frescura:</span>
-              <span className="text-gray-700 font-semibold flex items-center gap-0.5">
-                <Shield size={12} className="text-green-600 shrink-0" /> Control verificado
-              </span>
-            </div>
-          </div>
+        </div>
 
           {/* 3. Action Buttons */}
           <div className="space-y-2 pt-1.5">
@@ -392,7 +384,6 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
             </Link>
           </div>
         </div>
-      </div>
-    </>
+      </>
   )
 }

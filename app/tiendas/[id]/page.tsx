@@ -215,7 +215,7 @@ function TiendaContent() {
       const esCrayola = t.nombre.toLowerCase().includes('crayola')
 
       let pQuery = supabase.from('ol_productos')
-        .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id,imagen_url')
+        .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id,imagen_url,detalles')
         .gt('precio_publico', 0)
         .order('descripcion')
 

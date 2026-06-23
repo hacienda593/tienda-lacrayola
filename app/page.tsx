@@ -356,7 +356,7 @@ export default function Home() {
 
     // Destacados (mayor precio con stock)
     supabase.from('ol_productos')
-      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url')
+      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles')
       .gt('stock', 0).gt('precio_publico', 5)
       .order('precio_publico', { ascending: false }).limit(8)
       .then(({ data }) => {
@@ -365,7 +365,7 @@ export default function Home() {
 
     // Novedades
     supabase.from('ol_productos')
-      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url')
+      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles')
       .gt('stock', 0).gt('precio_publico', 0)
       .order('codigo', { ascending: false }).limit(8)
       .then(({ data }) => {
