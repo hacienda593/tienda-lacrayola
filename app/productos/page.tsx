@@ -157,13 +157,13 @@ function ProductCard({ p, badge, onSelect }: { p: Producto; badge?: 'nuevo' | 'o
       }}
       className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col group cursor-pointer"
     >
-      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-28 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
+      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-36 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
         {p.imagen_url && !imageError ? (
           <img
             src={p.imagen_url}
             alt={p.descripcion}
             onError={() => setImageError(true)}
-            className="w-full h-full object-contain p-1 animate-fade-in"
+            className="w-full h-full object-contain p-2 animate-fade-in"
             loading="lazy"
           />
         ) : (
@@ -178,16 +178,16 @@ function ProductCard({ p, badge, onSelect }: { p: Producto; badge?: 'nuevo' | 'o
         )}
       </div>
 
-      <div className="p-3 flex-1 flex flex-col justify-between">
+      <div className="p-2 flex-1 flex flex-col justify-between">
         <div className="flex-1">
-          <div className="text-[10px] font-semibold text-green-600 uppercase tracking-wide mb-0.5">{p.categoria}</div>
-          <div className="text-xs font-semibold text-gray-800 leading-snug line-clamp-2 mb-1">{p.descripcion}</div>
-          {p.marca && <div className="text-[10px] text-gray-400">{p.marca}</div>}
+          <div className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-1">{p.descripcion}</div>
         </div>
 
-        <div className="mt-2.5">
-          <div className="text-lg font-extrabold text-gray-900 mb-1.5">{fmt(p.precio_publico)}</div>
-          {p.stock > 0 && <BtnAgregar prod={p} />}
+        <div className="mt-2 flex items-center justify-between gap-1">
+          <div className="text-sm font-black text-gray-900 shrink-0">{fmt(p.precio_publico)}</div>
+          <div className="scale-90 origin-right shrink-0">
+            {p.stock > 0 && <BtnAgregar prod={p} />}
+          </div>
         </div>
       </div>
     </div>

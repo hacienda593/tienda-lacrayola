@@ -196,11 +196,11 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         className={`fixed z-[101] bg-white transition-all duration-300 ease-out
-          /* Mobile layout */
-          bottom-0 left-0 w-full rounded-t-3xl border-t border-gray-100 p-5 shadow-2xl flex flex-col gap-4 max-h-[95vh] overflow-y-auto
+          /* Mobile layout: Force exactly 88% screen height and tight padding */
+          bottom-0 left-0 w-full rounded-t-3xl border-t border-gray-100 p-4 shadow-2xl flex flex-col gap-3 h-[88vh] overflow-y-auto
           ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}
           /* Desktop layout */
-          md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-md md:rounded-2xl md:border md:w-full md:bottom-auto md:p-7 md:max-h-[90vh]
+          md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-md md:rounded-2xl md:border md:w-full md:bottom-auto md:p-7 md:max-h-[90vh] md:h-auto
           ${isOpen ? 'md:scale-100 md:opacity-100' : 'md:scale-95 md:opacity-0 md:pointer-events-none'}
         `}
       >
@@ -221,7 +221,7 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
           onMouseLeave={resetImageTransform}
           onTouchMove={handlePointerMove}
           onTouchEnd={resetImageTransform}
-          className="relative bg-gradient-to-br from-gray-50/70 to-gray-100 rounded-2xl h-72 md:h-88 flex items-center justify-center text-8xl overflow-hidden border border-gray-100/50 touch-pan-y select-none"
+          className="relative bg-gradient-to-br from-gray-50/70 to-gray-100 rounded-2xl h-[52vh] md:h-96 flex items-center justify-center text-8xl overflow-hidden border border-gray-100/50 touch-pan-y select-none"
         >
           {producto.imagen_url && !imageError ? (
             <img
@@ -235,7 +235,7 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
                 transform: 'scale(1)',
                 filter: 'drop-shadow(0 15px 20px rgba(0, 0, 0, 0.25))'
               }}
-              className="w-full h-full object-contain p-6"
+              className="w-full h-full object-contain p-2"
               loading="lazy"
             />
           ) : (

@@ -189,13 +189,13 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
       }
     }}
       className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group">
-      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-32 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
+      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-36 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
         {p.imagen_url && !imageError ? (
           <img
             src={p.imagen_url}
             alt={p.descripcion}
             onError={() => setImageError(true)}
-            className="w-full h-full object-contain p-1"
+            className="w-full h-full object-contain p-2"
             loading="lazy"
           />
         ) : (
@@ -212,39 +212,39 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
           </span>
         )}
       </div>
-      <div className="p-3 flex-1 flex flex-col justify-between">
+      <div className="p-2 flex-1 flex flex-col justify-between">
         <div className="flex-1">
-          <div className="text-[10px] font-semibold text-green-600 uppercase tracking-wide mb-0.5">{p.categoria}</div>
-          <div className="text-sm font-semibold text-gray-800 leading-snug line-clamp-2">{p.descripcion}</div>
-          {p.marca && <div className="text-[10px] text-gray-400 mt-0.5">{p.marca}</div>}
+          <div className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-1">{p.descripcion}</div>
         </div>
-        <div className="flex items-center justify-between mt-2.5">
-          <div className="text-lg font-extrabold text-gray-900">{fmt(p.precio_publico)}</div>
-        </div>
-        {cantidad === 0 ? (
-          <button onClick={addCart}
-            className={`mt-2 w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 active:scale-[0.96] transition-transform duration-75 cursor-pointer
-              ${ok ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-green-600'}`}>
-            <ShoppingCart size={13} />
-            {ok ? '¡Agregado!' : 'Agregar'}
-          </button>
-        ) : (
-          <div className="mt-2 flex items-center justify-between bg-green-600 rounded-lg overflow-hidden h-[34px] w-full shrink-0">
-            <button 
-              onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad - 1); }}
-              className="px-3.5 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center"
-            >
-              <Minus size={11} />
-            </button>
-            <span className="text-white text-xs font-black select-none">{cantidad} en carrito</span>
-            <button 
-              onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad + 1); }}
-              className="px-3.5 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center"
-            >
-              <Plus size={11} />
-            </button>
+        <div className="mt-2 flex items-center justify-between gap-1">
+          <div className="text-sm font-black text-gray-900 shrink-0">{fmt(p.precio_publico)}</div>
+          <div className="scale-90 origin-right shrink-0">
+            {cantidad === 0 ? (
+              <button onClick={addCart}
+                className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1 active:scale-[0.96] transition-transform duration-75 cursor-pointer
+                  ${ok ? 'bg-green-600 text-white shadow-sm' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-green-600 shadow-sm'}`}>
+                <ShoppingCart size={12} />
+                {ok ? '¡Ok!' : 'Agregar'}
+              </button>
+            ) : (
+              <div className="flex items-center justify-between bg-green-600 rounded-lg overflow-hidden h-[30px] w-[80px] shadow-sm">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad - 1); }}
+                  className="px-2 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center"
+                >
+                  <Minus size={10} />
+                </button>
+                <span className="text-white text-xs font-black select-none">{cantidad}</span>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad + 1); }}
+                  className="px-2 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center"
+                >
+                  <Plus size={10} />
+                </button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   )
@@ -475,22 +475,23 @@ export default function Home() {
                       router.push(`/producto/${encodeURIComponent(p.codigo)}`)
                     }
                   }}
-                  className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[155px] relative group/freq">
-                  <div className="relative bg-gray-50 rounded-lg h-24 flex items-center justify-center mb-2 text-3xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors">
+                  className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/freq">
+                  <div className="relative bg-gray-50 h-28 flex items-center justify-center text-2xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors w-full">
                     {p.imagen_url ? (
-                      <img src={p.imagen_url} alt={p.descripcion} className="w-full h-full object-contain p-1" />
+                      <img src={p.imagen_url} alt={p.descripcion} className="w-full h-full object-contain p-1.5" />
                     ) : (
                       CAT_CONFIG[p.categoria]?.emoji || '📦'
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[9px] font-semibold text-green-600 uppercase truncate mb-0.5">{p.categoria}</div>
-                    <div className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 min-h-[36px] mb-1">{p.descripcion}</div>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between gap-1">
-                    <div className="text-sm font-extrabold text-gray-900">{fmt(p.precio_publico)}</div>
-                    <div className="scale-75 origin-right shrink-0">
-                      <BtnAgregarFrecuente prod={p} />
+                  <div className="p-2 flex-1 min-w-0 flex flex-col justify-between">
+                    <div>
+                      <div className="text-[11px] font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-1">{p.descripcion}</div>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-1">
+                      <div className="text-xs font-black text-gray-900">{fmt(p.precio_publico)}</div>
+                      <div className="scale-75 origin-right shrink-0">
+                        <BtnAgregarFrecuente prod={p} />
+                      </div>
                     </div>
                   </div>
                 </div>
