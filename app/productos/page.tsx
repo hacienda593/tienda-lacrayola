@@ -2,8 +2,8 @@
 import { useEffect, useState, useMemo, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import Fuse from 'fuse.js'
 import { supabase } from '@/lib/supabase'
+import { customSearch } from '@/lib/search'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto } from '@/lib/types'
@@ -283,7 +283,6 @@ function ProductosContent() {
   const [soloFrecuentes, setSoloFrecuentes] = useState(false)
   const [frecuentesCodigos, setFrecuentesCodigos] = useState<string[]>([])
   const { user } = useAuth()
-  const fuseRef = useRef<Fuse<Producto> | null>(null)
 
   function compartirFiltros() {
     const params = new URLSearchParams()
@@ -382,15 +381,6 @@ function ProductosContent() {
         desde += LOTE
       }
       setBase(todos)
-      fuseRef.current = new Fuse(todos, {
-        keys: [
-          { name: 'descripcion', weight: 0.6 },
-          { name: 'codigo',      weight: 0.2 },
-          { name: 'marca',       weight: 0.1 },
-          { name: 'categoria',   weight: 0.1 },
-        ],
-        threshold: 0.35, ignoreLocation: true, minMatchCharLength: 2,
-      })
       setLoading(false)
     }
     cargar()
@@ -398,12 +388,7 @@ function ProductosContent() {
 
   const filtrados = useMemo(() => {
     const q = query.trim()
-    let pool: Producto[]
-    if (q.length >= 2 && fuseRef.current) {
-      pool = fuseRef.current.search(q).map(r => r.item)
-    } else {
-      pool = [...base]
-    }
+    let pool = q.length >= 2 ? customSearch(base, q) : [...base]
     pool = pool.filter(p => {
       if (soloFrecuentes && !frecuentesCodigos.includes(p.codigo)) return false
       if (tiendaId) {
@@ -447,7 +432,7 @@ function ProductosContent() {
 
   const catsCtx = useMemo(() => {
     const q = query.trim()
-    let pool = q.length >= 2 && fuseRef.current ? fuseRef.current.search(q).map(r => r.item) : base
+    let pool = q.length >= 2 ? customSearch(base, q) : base
     if (soloFrecuentes) {
       pool = pool.filter(p => frecuentesCodigos.includes(p.codigo))
     }
@@ -464,7 +449,7 @@ function ProductosContent() {
 
   const marcasCtx = useMemo(() => {
     const q = query.trim()
-    let pool = q.length >= 2 && fuseRef.current ? fuseRef.current.search(q).map(r => r.item) : base
+    let pool = q.length >= 2 ? customSearch(base, q) : base
     if (soloFrecuentes) {
       pool = pool.filter(p => frecuentesCodigos.includes(p.codigo))
     }

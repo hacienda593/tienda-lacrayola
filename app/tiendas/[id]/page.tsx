@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { OlTienda, Producto } from '@/lib/types'
-import Fuse from 'fuse.js'
+import { customSearch } from '@/lib/search'
 import {
   ArrowLeft, Search, ShoppingCart, Plus, Minus,
   Heart, Store, MapPin, Loader2, X, Share2, SlidersHorizontal, Info, ChevronRight,
@@ -131,7 +131,6 @@ function TiendaContent() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [visibles, setVisibles] = useState(40)
   const [infoOpen, setInfoOpen] = useState(false)
-  const fuseRef = useRef<Fuse<Producto> | null>(null)
 
   function updateFiltersUrl(newFilters: { cat?: string; sub?: string; marca?: string; q?: string }, replace = false) {
     const params = new URLSearchParams(searchParams.toString())
@@ -269,10 +268,6 @@ function TiendaContent() {
       const { data: ps } = await pQuery
       const prods = (ps ?? []) as Producto[]
       setBase(prods)
-      fuseRef.current = new Fuse(prods, {
-        keys: [{ name: 'descripcion', weight: 0.7 }, { name: 'marca', weight: 0.3 }],
-        threshold: 0.35, ignoreLocation: true, minMatchCharLength: 2,
-      })
       setCargando(false)
     }
     cargar()
@@ -326,8 +321,8 @@ function TiendaContent() {
   }, [base])
 
   const filtrados = useMemo(() => {
-    let pool = q.length >= 2 && fuseRef.current
-      ? fuseRef.current.search(q).map(r => r.item)
+    let pool = q.length >= 2
+      ? customSearch(base, q)
       : base.filter(p => p.stock > 0)
     if (cat) pool = pool.filter(p => p.categoria === cat)
     if (sub) pool = pool.filter(p => p.subcategoria === sub)
