@@ -319,6 +319,7 @@ function ProductosContent() {
       })
   }, [])
 
+  const paramsStr = params.toString()
   useEffect(() => {
     setCat(params.get('cat') || '')
     setSub(params.get('sub') || '')
@@ -326,8 +327,9 @@ function ProductosContent() {
     setSoloFrecuentes(params.get('frecuentes') === 'true')
     const q = params.get('q') || ''
     setQuery(q)
-    setMarca(''); setVisibles(40)
-  }, [params])
+    setMarca(params.get('marca') || '')
+    setVisibles(40)
+  }, [paramsStr])
 
   // Cargar códigos frecuentes
   useEffect(() => {

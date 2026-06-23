@@ -37,10 +37,11 @@ function HeaderSearch() {
       })
   }, [activeTId])
 
+  const searchParamsStr = searchParams.toString()
   // 3. Sincronizar el input local con la URL query param q
   useEffect(() => {
     setQ(searchParams.get('q') || '')
-  }, [searchParams])
+  }, [searchParamsStr])
 
   // Limpiar el nombre para formato móvil compacto (ej: "Supermercado Tuti" -> "Tuti")
   function getNombreCorto(completo: string) {

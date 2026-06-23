@@ -234,6 +234,7 @@ function TiendaContent() {
     return () => window.removeEventListener('open-store-filters', handleOpen)
   }, [])
 
+  const searchParamsStr = searchParams.toString()
   // Sincronizar estado local con query params de la URL
   useEffect(() => {
     setCat(searchParams.get('cat') || '')
@@ -241,7 +242,7 @@ function TiendaContent() {
     setMarca(searchParams.get('marca') || '')
     setQ(searchParams.get('q') || '')
     setVisibles(40)
-  }, [searchParams])
+  }, [searchParamsStr])
 
   useEffect(() => {
     async function cargar() {
