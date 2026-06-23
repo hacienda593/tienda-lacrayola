@@ -156,6 +156,9 @@ export default function MenuDrawer({ open, onClose }: Props) {
 
   function buscar(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (typeof document !== 'undefined') {
+      (document.activeElement as HTMLElement)?.blur()
+    }
     if (q.trim()) {
       router.push(`/productos?q=${encodeURIComponent(q.trim())}`)
       onClose()

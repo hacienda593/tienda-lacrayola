@@ -467,6 +467,24 @@ function ProductosContent() {
     setVisibles(40)
     router.push('/productos')
   }
+
+  function ejecutarBusqueda(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (typeof document !== 'undefined') {
+      (document.activeElement as HTMLElement)?.blur()
+    }
+    const paramsNew = new URLSearchParams(params.toString())
+    if (query.trim()) {
+      paramsNew.set('q', query.trim())
+    } else {
+      paramsNew.delete('q')
+    }
+    paramsNew.delete('cat')
+    paramsNew.delete('sub')
+    paramsNew.delete('marca')
+    router.push(`/productos?${paramsNew.toString()}`)
+  }
+
   const hayFiltros = !!(query || cat || sub || marca || soloFrecuentes || stockFiltro !== 'disponible' || orden !== 'relevancia')
 
   // Asignar badges: primeros 4 = popular, últimos en stock = ultimas (ya en ProductCard)
@@ -550,19 +568,18 @@ function ProductosContent() {
         <div className="flex-1 min-w-0 space-y-4">
 
           {/* Buscador */}
-          <div className="relative">
+          <form onSubmit={ejecutarBusqueda} className="relative">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input value={query}
               onChange={e => { setQuery(e.target.value); setCat(''); setMarca(''); setVisibles(40) }}
-              onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLElement).blur() }}
               placeholder="Buscar por nombre, código, marca..."
               className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-10 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 shadow-sm" />
             {hayFiltros && (
-              <button onClick={limpiar} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <button type="button" onClick={limpiar} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                 <X size={15} />
               </button>
             )}
-          </div>
+          </form>
 
           {/* Filtros móvil */}
           <div className="md:hidden space-y-2 w-full max-w-full overflow-hidden">

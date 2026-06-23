@@ -68,9 +68,7 @@ function HeaderSearch() {
       const qs = params.toString()
       router.replace(qs ? `${pathname}?${qs}` : pathname)
     } else {
-      if (q.trim()) {
-        router.push(`/productos?q=${encodeURIComponent(q.trim())}`)
-      }
+      router.push(`/productos${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ''}`)
     }
   }
 
