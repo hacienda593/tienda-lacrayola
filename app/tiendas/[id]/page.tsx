@@ -163,16 +163,6 @@ function TiendaContent() {
     }
   }
 
-  // Debounce para sincronizar q con la URL
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const currentUrlQ = searchParams.get('q') || ''
-      if (q !== currentUrlQ) {
-        updateFiltersUrl({ q }, true)
-      }
-    }, 450)
-    return () => clearTimeout(timer)
-  }, [q, searchParams])
   
   const { user } = useAuth()
   const [frecuentes, setFrecuentes] = useState<Producto[]>([])
