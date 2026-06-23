@@ -138,6 +138,13 @@ function TiendaContent() {
   const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null)
   const [activeList, setActiveList] = useState<Producto[]>([])
 
+  // Reset scroll to top when category or subcategory changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    }
+  }, [cat, sub, marca])
+
   function openQuickView(p: Producto, list: Producto[]) {
     setSelectedProduct(p)
     setActiveList(list)
