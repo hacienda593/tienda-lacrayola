@@ -59,7 +59,7 @@ function HeaderSearch() {
     if (typeof document !== 'undefined') {
       (document.activeElement as HTMLElement)?.blur()
     }
-    if (esTienda) {
+    if (esTienda || pathname === '/productos') {
       const params = new URLSearchParams(searchParams.toString())
       if (q.trim()) params.set('q', q.trim())
       else params.delete('q')
@@ -75,16 +75,6 @@ function HeaderSearch() {
 
   function manejarEscribir(val: string) {
     setQ(val)
-    if (esTienda || pathname === '/productos') {
-      const params = new URLSearchParams(searchParams.toString())
-      if (val.trim()) params.set('q', val.trim())
-      else params.delete('q')
-      params.delete('cat')
-      params.delete('sub')
-      params.delete('marca')
-      const qs = params.toString()
-      router.replace(qs ? `${pathname}?${qs}` : pathname)
-    }
   }
 
   function limpiar() {
