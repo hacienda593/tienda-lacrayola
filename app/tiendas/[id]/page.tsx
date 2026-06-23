@@ -344,10 +344,10 @@ function TiendaContent() {
   )
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-5 space-y-5">
+    <div className="max-w-5xl mx-auto px-4 pt-0 pb-5 md:py-5 space-y-5">
 
-      {/* Header tienda */}
-      <div className="flex items-center justify-between gap-3">
+      {/* Header tienda (Sticky en móvil) */}
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 py-3.5 -mx-4 px-4 flex items-center justify-between gap-3 shadow-sm md:shadow-none md:border-none md:relative md:top-auto md:z-auto md:bg-transparent md:py-0 md:mx-0 md:px-0">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-xl transition shrink-0">
             <ArrowLeft size={18} className="text-gray-600" />
