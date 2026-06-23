@@ -574,7 +574,7 @@ function TiendaContent() {
                   Tus habituales
                 </span>
               </div>
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
                 {frecuentes.map(p => (
                   <div key={p.codigo}
                     onClick={() => {
@@ -590,9 +590,12 @@ function TiendaContent() {
                     </div>
                     <div className="p-2 flex-1 min-w-0 flex flex-col justify-between">
                       <div>
-                        <div className="text-[11px] font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-1">{p.descripcion}</div>
+                        <div className="text-[11px] font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-0.5">{p.descripcion}</div>
+                        {p.marca && (
+                          <div className="text-[9px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+                        )}
                       </div>
-                      <div className="mt-2 flex items-center justify-between gap-1">
+                      <div className="mt-1 flex items-center justify-between gap-1">
                         <div className="text-xs font-black text-gray-900">{fmt(p.precio_publico)}</div>
                         <div className="scale-75 origin-right shrink-0">
                           <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
@@ -617,7 +620,7 @@ function TiendaContent() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-1.5 md:gap-4">
                 {filtrados.slice(0, visibles).map(p => (
                   <div key={p.codigo}
                     onClick={() => {
@@ -639,9 +642,12 @@ function TiendaContent() {
                     </div>
                     <div className="p-2 flex-1 flex flex-col justify-between">
                       <div className="flex-1">
-                        <div className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-1">{p.descripcion}</div>
+                        <div className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-0.5">{p.descripcion}</div>
+                        {p.marca && (
+                          <div className="text-[10px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+                        )}
                       </div>
-                      <div className="mt-2 flex items-center justify-between gap-1">
+                      <div className="mt-1 flex items-center justify-between gap-1">
                         <div className="text-sm font-black text-gray-900 shrink-0">{fmt(p.precio_publico)}</div>
                         <div className="scale-90 origin-right shrink-0">
                           <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />

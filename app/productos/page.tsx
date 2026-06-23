@@ -180,10 +180,13 @@ function ProductCard({ p, badge, onSelect }: { p: Producto; badge?: 'nuevo' | 'o
 
       <div className="p-2 flex-1 flex flex-col justify-between">
         <div className="flex-1">
-          <div className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-1">{p.descripcion}</div>
+          <div className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-0.5">{p.descripcion}</div>
+          {p.marca && (
+            <div className="text-[10px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+          )}
         </div>
 
-        <div className="mt-2 flex items-center justify-between gap-1">
+        <div className="mt-1 flex items-center justify-between gap-1">
           <div className="text-sm font-black text-gray-900 shrink-0">{fmt(p.precio_publico)}</div>
           <div className="scale-90 origin-right shrink-0">
             {p.stock > 0 && <BtnAgregar prod={p} />}
@@ -628,14 +631,14 @@ function ProductosContent() {
 
           {/* Grid */}
           {loadingState ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-4">
               {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : filtrados.length === 0 ? (
             <EstadoVacio query={query || cat || marca} onLimpiar={limpiar} />
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-4">
                 {filtrados.slice(0, visibles).map((p, idx) => (
                   <ProductCard key={p.codigo} p={p} badge={badgePara(p, idx)} onSelect={(prod) => openQuickView(prod, filtrados.slice(0, visibles))} />
                 ))}
@@ -676,7 +679,7 @@ export default function ProductosPage() {
   return (
     <Suspense fallback={
       <div className="max-w-5xl mx-auto px-4 py-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-4">
           {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
         </div>
       </div>

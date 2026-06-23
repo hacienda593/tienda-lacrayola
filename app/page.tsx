@@ -214,9 +214,12 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
       </div>
       <div className="p-2 flex-1 flex flex-col justify-between">
         <div className="flex-1">
-          <div className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-1">{p.descripcion}</div>
+          <div className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-0.5">{p.descripcion}</div>
+          {p.marca && (
+            <div className="text-[10px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+          )}
         </div>
-        <div className="mt-2 flex items-center justify-between gap-1">
+        <div className="mt-1 flex items-center justify-between gap-1">
           <div className="text-sm font-black text-gray-900 shrink-0">{fmt(p.precio_publico)}</div>
           <div className="scale-90 origin-right shrink-0">
             {cantidad === 0 ? (
@@ -579,11 +582,11 @@ export default function Home() {
             </Link>
           </div>
           {cargandoProds ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-4">
               {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-4">
               {destacados.map(p => <ProdCard key={p.codigo} p={p} onSelect={(prod) => openQuickView(prod, destacados)} />)}
             </div>
           )}
@@ -614,11 +617,11 @@ export default function Home() {
             </Link>
           </div>
           {cargandoProds ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-4">
               {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-4">
               {novedades.map(p => <ProdCard key={p.codigo} p={p} onSelect={(prod) => openQuickView(prod, novedades)} />)}
             </div>
           )}
