@@ -74,7 +74,7 @@ function HeaderSearch() {
 
   function manejarEscribir(val: string) {
     setQ(val)
-    if (esTienda) {
+    if (esTienda || pathname === '/productos') {
       const params = new URLSearchParams(searchParams.toString())
       if (val.trim()) params.set('q', val.trim())
       else params.delete('q')
@@ -88,7 +88,7 @@ function HeaderSearch() {
 
   function limpiar() {
     setQ('')
-    if (esTienda) {
+    if (esTienda || pathname === '/productos') {
       const params = new URLSearchParams(searchParams.toString())
       params.delete('q')
       const qs = params.toString()

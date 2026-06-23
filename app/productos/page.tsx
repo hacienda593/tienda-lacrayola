@@ -325,7 +325,7 @@ function ProductosContent() {
     setTiendaId(params.get('tienda_id') || '')
     setSoloFrecuentes(params.get('frecuentes') === 'true')
     const q = params.get('q') || ''
-    if (q) setQuery(q)
+    setQuery(q)
     setMarca(''); setVisibles(40)
   }, [params])
 
@@ -468,22 +468,6 @@ function ProductosContent() {
     router.push('/productos')
   }
 
-  function ejecutarBusqueda(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (typeof document !== 'undefined') {
-      (document.activeElement as HTMLElement)?.blur()
-    }
-    const paramsNew = new URLSearchParams(params.toString())
-    if (query.trim()) {
-      paramsNew.set('q', query.trim())
-    } else {
-      paramsNew.delete('q')
-    }
-    paramsNew.delete('cat')
-    paramsNew.delete('sub')
-    paramsNew.delete('marca')
-    router.push(`/productos?${paramsNew.toString()}`)
-  }
 
   const hayFiltros = !!(query || cat || sub || marca || soloFrecuentes || stockFiltro !== 'disponible' || orden !== 'relevancia')
 
@@ -567,19 +551,6 @@ function ProductosContent() {
         {/* ── CONTENIDO PRINCIPAL ── */}
         <div className="flex-1 min-w-0 space-y-4">
 
-          {/* Buscador */}
-          <form onSubmit={ejecutarBusqueda} className="relative">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={query}
-              onChange={e => { setQuery(e.target.value); setCat(''); setMarca(''); setVisibles(40) }}
-              placeholder="Buscar por nombre, código, marca..."
-              className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-10 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 shadow-sm" />
-            {hayFiltros && (
-              <button type="button" onClick={limpiar} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <X size={15} />
-              </button>
-            )}
-          </form>
 
           {/* Filtros móvil */}
           <div className="md:hidden space-y-2 w-full max-w-full overflow-hidden">
