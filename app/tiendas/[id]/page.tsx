@@ -8,7 +8,7 @@ import { OlTienda, Producto } from '@/lib/types'
 import Fuse from 'fuse.js'
 import {
   ArrowLeft, Search, ShoppingCart, Plus, Minus,
-  Heart, Store, MapPin, Loader2, X, Share2, SlidersHorizontal, Info,
+  Heart, Store, MapPin, Loader2, X, Share2, SlidersHorizontal, Info, ChevronRight,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { getPerfil } from '@/lib/perfil'
@@ -608,17 +608,140 @@ function TiendaContent() {
             </div>
           )}
 
+          {/* Barra Horizontal de Subcategorías (Navegación horizontal tipo Tipti) */}
+          {cat && subcats.length > 0 && (
+            <div className="w-full overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-hide">
+              <div className="flex gap-4 border-b border-gray-100 whitespace-nowrap text-xs font-bold">
+                <button
+                  onClick={() => { setSub(''); setVisibles(40) }}
+                  className={`pb-2.5 transition-all relative ${!sub ? 'text-green-700 border-b-2 border-green-700 font-extrabold' : 'text-gray-500'}`}
+                >
+                  Todos los productos
+                </button>
+                {subcats.map(([s, count]) => {
+                  const esActiva = sub === s
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => { setSub(s); setVisibles(40) }}
+                      className={`pb-2.5 transition-all relative ${esActiva ? 'text-green-700 border-b-2 border-green-700 font-extrabold' : 'text-gray-500'}`}
+                    >
+                      {s} ({count})
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Contador */}
           <p className="text-xs text-gray-400">{filtrados.length} productos disponibles</p>
 
-          {/* Grid productos */}
+          {/* Grid productos / Rows de Subcategorías */}
           {filtrados.length === 0 ? (
             <div className="text-center py-16 space-y-2">
               <div className="text-5xl">🔍</div>
               <p className="text-gray-500 font-medium">Sin productos con ese filtro</p>
               <button onClick={() => { setQ(''); limpiarFiltros() }} className="text-sm text-green-600 underline">Limpiar</button>
             </div>
+          ) : cat && !sub ? (
+            /* Vista agrupada por subcategoría en horizontal (tipo Tipti) */
+            <div className="space-y-6">
+              {subcats.map(([s]) => {
+                const prodsEnSub = base.filter(p => p.stock > 0 && p.categoria === cat && p.subcategoria === s)
+                if (prodsEnSub.length === 0) return null
+                return (
+                  <div key={s} className="space-y-2.5 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-extrabold text-gray-900 text-sm">{s}</h3>
+                      <button
+                        onClick={() => { setSub(s); setVisibles(40) }}
+                        className="text-xs text-green-700 font-bold flex items-center gap-0.5 hover:underline"
+                      >
+                        Ver más <ChevronRight size={12} />
+                      </button>
+                    </div>
+                    <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
+                      {prodsEnSub.map(p => (
+                        <div key={p.codigo}
+                          onClick={() => {
+                            if (USE_QUICK_VIEW) {
+                              openQuickView(p, prodsEnSub)
+                            } else {
+                              router.push(`/producto/${encodeURIComponent(p.codigo)}`)
+                            }
+                          }}
+                          className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/subrow">
+                          <div className="relative bg-gray-50 h-40 flex items-center justify-center text-2xl overflow-hidden group-hover/subrow:bg-green-50/50 transition-colors w-full">
+                            <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
+                            <BtnFavorito prod={p} />
+                          </div>
+                          <div className="p-1.5 flex-1 min-w-0 flex flex-col justify-between">
+                            <div>
+                              <div className="text-[10px] font-bold text-gray-800 leading-tight line-clamp-2 min-h-[24px] mb-0.5">{p.descripcion}</div>
+                              {p.marca && (
+                                <div className="text-[8px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+                              )}
+                            </div>
+                            <div className="mt-0.5 flex items-center justify-between gap-1">
+                              <div className="text-[11px] font-black text-gray-900">{fmt(p.precio_publico)}</div>
+                              <div className="scale-[0.7] origin-right shrink-0">
+                                <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+
+              {/* Si hay productos sin subcategoría asignada */}
+              {(() => {
+                const prodsSinSub = base.filter(p => p.stock > 0 && p.categoria === cat && !p.subcategoria)
+                if (prodsSinSub.length === 0) return null
+                return (
+                  <div className="space-y-2.5 animate-fade-in">
+                    <h3 className="font-extrabold text-gray-900 text-sm">Otros productos</h3>
+                    <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
+                      {prodsSinSub.map(p => (
+                        <div key={p.codigo}
+                          onClick={() => {
+                            if (USE_QUICK_VIEW) {
+                              openQuickView(p, prodsSinSub)
+                            } else {
+                              router.push(`/producto/${encodeURIComponent(p.codigo)}`)
+                            }
+                          }}
+                          className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/subrow">
+                          <div className="relative bg-gray-50 h-40 flex items-center justify-center text-2xl overflow-hidden group-hover/subrow:bg-green-50/50 transition-colors w-full">
+                            <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
+                            <BtnFavorito prod={p} />
+                          </div>
+                          <div className="p-1.5 flex-1 min-w-0 flex flex-col justify-between">
+                            <div>
+                              <div className="text-[10px] font-bold text-gray-800 leading-tight line-clamp-2 min-h-[24px] mb-0.5">{p.descripcion}</div>
+                              {p.marca && (
+                                <div className="text-[8px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+                              )}
+                            </div>
+                            <div className="mt-0.5 flex items-center justify-between gap-1">
+                              <div className="text-[11px] font-black text-gray-900">{fmt(p.precio_publico)}</div>
+                              <div className="scale-[0.7] origin-right shrink-0">
+                                <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
           ) : (
+            /* Grid vertical tradicional */
             <>
               <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-1.5 md:gap-4">
                 {filtrados.slice(0, visibles).map(p => (
