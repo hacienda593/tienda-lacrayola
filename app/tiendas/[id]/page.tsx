@@ -585,19 +585,19 @@ function TiendaContent() {
                       }
                     }}
                     className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/freq">
-                    <div className="relative bg-gray-50 h-28 flex items-center justify-center text-2xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors w-full">
+                    <div className="relative bg-gray-50 h-40 md:h-28 flex items-center justify-center text-2xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors w-full">
                       <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
                     </div>
-                    <div className="p-2 flex-1 min-w-0 flex flex-col justify-between">
+                    <div className="p-1.5 flex-1 min-w-0 flex flex-col justify-between">
                       <div>
-                        <div className="text-[11px] font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-0.5">{p.descripcion}</div>
+                        <div className="text-[10px] md:text-[11px] font-bold text-gray-800 leading-tight md:leading-snug line-clamp-2 min-h-[24px] md:min-h-[32px] mb-0.5">{p.descripcion}</div>
                         {p.marca && (
-                          <div className="text-[9px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+                          <div className="text-[8px] md:text-[9px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
                         )}
                       </div>
-                      <div className="mt-1 flex items-center justify-between gap-1">
-                        <div className="text-xs font-black text-gray-900">{fmt(p.precio_publico)}</div>
-                        <div className="scale-75 origin-right shrink-0">
+                      <div className="mt-0.5 md:mt-1 flex items-center justify-between gap-1">
+                        <div className="text-[11px] md:text-xs font-black text-gray-900">{fmt(p.precio_publico)}</div>
+                        <div className="scale-[0.7] md:scale-75 origin-right shrink-0">
                           <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
                         </div>
                       </div>
@@ -631,7 +631,7 @@ function TiendaContent() {
                       }
                     }}
                     className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group">
-                    <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-36 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
+                    <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-48 md:h-36 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
                       <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
                       <BtnFavorito prod={p} />
                       {p.stock > 0 && p.stock < 5 && (
@@ -640,16 +640,16 @@ function TiendaContent() {
                         </span>
                       )}
                     </div>
-                    <div className="p-2 flex-1 flex flex-col justify-between">
+                    <div className="p-1.5 flex-1 flex flex-col justify-between">
                       <div className="flex-1">
-                        <div className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-0.5">{p.descripcion}</div>
+                        <div className="text-[11px] md:text-xs font-bold text-gray-800 leading-tight md:leading-snug line-clamp-2 min-h-[26px] md:min-h-[32px] mb-0.5">{p.descripcion}</div>
                         {p.marca && (
-                          <div className="text-[10px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+                          <div className="text-[9px] md:text-[10px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
                         )}
                       </div>
-                      <div className="mt-1 flex items-center justify-between gap-1">
+                      <div className="mt-0.5 md:mt-1 flex items-center justify-between gap-1">
                         <div className="text-sm font-black text-gray-900 shrink-0">{fmt(p.precio_publico)}</div>
-                        <div className="scale-90 origin-right shrink-0">
+                        <div className="scale-75 md:scale-90 origin-right shrink-0">
                           <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
                         </div>
                       </div>
