@@ -22,6 +22,25 @@ function levenshtein(a: string, b: string): number {
   return tmp[a.length][b.length]
 }
 
+function obtenerAlternativas(word: string): string[] {
+  const alts = [word]
+  if (word.length > 3) {
+    if (word.endsWith('es')) {
+      alts.push(word.slice(0, -2)) // ej: "panes" -> "pan"
+    } else if (word.endsWith('s')) {
+      alts.push(word.slice(0, -1)) // ej: "leches" -> "leche"
+    } else {
+      // Inverso: agregar plural tentativo
+      if (['a', 'e', 'i', 'o', 'u'].includes(word.slice(-1))) {
+        alts.push(word + 's')
+      } else {
+        alts.push(word + 'es')
+      }
+    }
+  }
+  return alts
+}
+
 export function customSearch(products: Producto[], queryText: string): Producto[] {
   const query = queryText.toLowerCase().trim()
   if (!query) return products
@@ -38,49 +57,62 @@ export function customSearch(products: Producto[], queryText: string): Producto[
     let matchesAll = true
     let totalScore = 0
 
+    // Dividimos las palabras de la descripción y marca para verificar la posición exacta
+    const prodWords = descLower.split(/[\s,./()\-+]+/).concat(brandLower.split(/[\s,./()\-+]+/))
+
     for (const qw of qWords) {
       let wordMatched = false
       let bestWordScore = 1
 
-      // 1. Exact substring check in description, brand, category, or code
-      if (descLower.includes(qw)) {
-        wordMatched = true
-        bestWordScore = Math.min(bestWordScore, 0.1)
-      }
-      if (brandLower.includes(qw) || catLower.includes(qw) || codeLower.includes(qw)) {
-        wordMatched = true
-        bestWordScore = Math.min(bestWordScore, 0.2)
-      }
+      // Obtenemos alternativas gramaticales de la palabra buscada (singular/plural)
+      const qwAlts = obtenerAlternativas(qw)
 
-      // 2. Word-level prefix and typo matching
-      const prodWords = descLower.split(/[\s,./()\-+]+/).concat(brandLower.split(/[\s,./()\-+]+/))
-      
-      for (const pw of prodWords) {
-        if (!pw) continue
-        
-        // Exact match
-        if (pw === qw) {
+      for (const qwa of qwAlts) {
+        let currentAltScore = 1
+        const altPenalty = qwa === qw ? 0 : 0.02 // Leve penalidad si es coincidencia por alternativa plural/singular
+
+        // 1. Coincidencia de subcadena exacta
+        if (descLower.includes(qwa)) {
           wordMatched = true
-          bestWordScore = Math.min(bestWordScore, 0.0)
-          break
+          currentAltScore = Math.min(currentAltScore, 0.1 + altPenalty)
         }
-        
-        // Prefix match
-        if (pw.startsWith(qw) && qw.length >= 3) {
+        if (brandLower.includes(qwa) || catLower.includes(qwa) || codeLower.includes(qwa)) {
           wordMatched = true
-          bestWordScore = Math.min(bestWordScore, 0.05 + (0.05 * (pw.length - qw.length) / pw.length))
+          currentAltScore = Math.min(currentAltScore, 0.2 + altPenalty)
         }
 
-        // Typo tolerance
-        const maxDist = qw.length <= 3 ? 0 : 1
-        if (qw.length >= 3) {
-          const dist = levenshtein(qw, pw)
-          if (dist <= maxDist) {
+        // 2. Coincidencia a nivel de palabra con penalización por posición (Index Penalty)
+        for (let idx = 0; idx < prodWords.length; idx++) {
+          const pw = prodWords[idx]
+          if (!pw) continue
+
+          const posPenalty = idx * 0.005 // 0.005 de penalización por palabra de distancia
+
+          // Coincidencia exacta de palabra
+          if (pw === qwa) {
             wordMatched = true
-            const score = 0.15 + (0.2 * dist / maxDist)
-            bestWordScore = Math.min(bestWordScore, score)
+            currentAltScore = Math.min(currentAltScore, 0.0 + posPenalty + altPenalty)
+          }
+
+          // Coincidencia de prefijo
+          if (pw.startsWith(qwa) && qwa.length >= 3) {
+            wordMatched = true
+            currentAltScore = Math.min(currentAltScore, 0.05 + (0.05 * (pw.length - qwa.length) / pw.length) + posPenalty + altPenalty)
+          }
+
+          // Tolerancia a errores tipográficos (Levenshtein)
+          const maxDist = qwa.length <= 3 ? 0 : 1
+          if (qwa.length >= 3) {
+            const dist = levenshtein(qwa, pw)
+            if (dist <= maxDist) {
+              wordMatched = true
+              const score = 0.15 + (0.2 * dist / maxDist) + posPenalty + altPenalty
+              currentAltScore = Math.min(currentAltScore, score)
+            }
           }
         }
+
+        bestWordScore = Math.min(bestWordScore, currentAltScore)
       }
 
       if (!wordMatched) {
@@ -91,12 +123,25 @@ export function customSearch(products: Producto[], queryText: string): Producto[
     }
 
     if (matchesAll) {
+      let finalScore = totalScore / qWords.length
+
+      // Impulso de inicio directo (Starts-with Boost)
+      if (descLower.startsWith(query)) {
+        finalScore -= 0.15 // Gran beneficio si el título empieza exactamente con la búsqueda
+      } else {
+        const firstWord = prodWords[0]
+        if (firstWord && qWords.some(qw => firstWord.startsWith(qw))) {
+          finalScore -= 0.05 // Beneficio menor si la primera palabra coincide parcialmente
+        }
+      }
+
       results.push({
         item: p,
-        score: totalScore / qWords.length
+        score: finalScore
       })
     }
   }
 
+  // Ordenar de menor score (más relevante) a mayor score
   return results.sort((a, b) => a.score - b.score).map(r => r.item)
 }
