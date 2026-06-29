@@ -121,11 +121,15 @@ export default function PedidoPage() {
   const [repartidor, setRepartidor] = useState<Repartidor | null>(null)
   const [error,  setError]  = useState(false)
   const [ultima, setUltima] = useState<Date>(new Date())
+  const [comprobantes, setComprobantes] = useState<any[]>([])
 
   const cargar = useCallback(async () => {
-    const [{ data: p }, { data: its }] = await Promise.all([
+    const [{ data: p }, { data: its }, { data: comps }] = await Promise.all([
       supabase.from('ol_pedidos').select('*').eq('id', id).single(),
       supabase.from('ol_pedido_items').select('codigo,descripcion,cantidad,precio_unitario,picking_completado,picking_agotado').eq('pedido_id', id),
+      supabase.from('ol_pedidos_comprobantes_proveedor')
+        .select('prov_establecimiento, prov_punto_emision, prov_secuencial, prov_costo_real, prov_factura_url, prov_ruc, tienda_id, ol_tiendas(nombre)')
+        .eq('pedido_id', id)
     ])
     if (!p) { setError(true); return }
 
@@ -149,6 +153,7 @@ export default function PedidoPage() {
 
     setPedido(p as Pedido)
     setItems(itemsMapeados)
+    setComprobantes(comps ?? [])
     setUltima(new Date())
     actualizarEstadoPedidoLocal(id, (p as Pedido).estado)
 
@@ -396,61 +401,81 @@ const HORARIOS_TIENDAS: Record<string, string> = {
       </div>
 
       {/* Pago y Facturación */}
-      {(infoNotas.pago || infoNotas.factura || infoNotas.cleanNotas || pedido.prov_secuencial) && (
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-2.5">
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pago y Facturación</div>
-          <div className="space-y-1.5 text-sm">
-            {infoNotas.pago && (
-              <div className="flex gap-2">
-                <span className="text-gray-400 w-24 shrink-0 font-medium">Forma de pago</span>
-                <span className="text-gray-800 font-semibold">{infoNotas.pago}</span>
-              </div>
-            )}
-            
-            {pedido.prov_secuencial ? (
-              <>
-                <div className="flex gap-2">
-                  <span className="text-gray-400 w-24 shrink-0 font-medium">Comprobante</span>
-                  <span className="text-gray-800 font-mono">
-                    {pedido.prov_establecimiento}-{pedido.prov_punto_emision}-{pedido.prov_secuencial}
-                  </span>
-                </div>
-                {pedido.prov_costo_real && (
-                  <div className="flex gap-2">
-                    <span className="text-gray-400 w-24 shrink-0 font-medium">Costo Compra</span>
-                    <span className="text-gray-800 font-semibold">${Number(pedido.prov_costo_real).toFixed(2)}</span>
-                  </div>
-                )}
-                {pedido.prov_factura_url && (
-                  <div className="flex gap-2 mt-1">
-                    <span className="text-gray-400 w-24 shrink-0 font-medium">Foto Ticket</span>
-                    <a 
-                      href={pedido.prov_factura_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-green-600 hover:text-green-700 font-semibold underline flex items-center gap-1"
-                    >
-                      Ver comprobante adjunto
-                    </a>
-                  </div>
-                )}
-              </>
-            ) : infoNotas.factura ? (
-              <div className="flex gap-2">
-                <span className="text-gray-400 w-24 shrink-0 font-medium">Factura</span>
-                <span className="text-gray-800">{infoNotas.factura}</span>
-              </div>
-            ) : null}
+      {(infoNotas.pago || infoNotas.factura || infoNotas.cleanNotas || comprobantes.length > 0 || pedido.prov_secuencial) && (() => {
+        const listadoComprobantes = comprobantes.length > 0 
+          ? comprobantes 
+          : (pedido.prov_secuencial ? [{
+              prov_establecimiento: pedido.prov_establecimiento,
+              prov_punto_emision: pedido.prov_punto_emision,
+              prov_secuencial: pedido.prov_secuencial,
+              prov_costo_real: pedido.prov_costo_real,
+              prov_factura_url: pedido.prov_factura_url,
+              prov_ruc: pedido.prov_ruc,
+              ol_tiendas: { nombre: 'Proveedor' }
+            }] : [])
 
-            {infoNotas.cleanNotas && (
-              <div className="flex gap-2 pt-1.5 border-t border-gray-100 mt-1.5">
-                <span className="text-gray-400 w-24 shrink-0 font-medium">Notas</span>
-                <span className="text-gray-650 italic">"{infoNotas.cleanNotas}"</span>
-              </div>
-            )}
+        return (
+          <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-2.5">
+            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pago y Facturación</div>
+            <div className="space-y-3.5 text-sm">
+              {infoNotas.pago && (
+                <div className="flex gap-2">
+                  <span className="text-gray-400 w-24 shrink-0 font-medium">Forma de pago</span>
+                  <span className="text-gray-800 font-semibold">{infoNotas.pago}</span>
+                </div>
+              )}
+              
+              {/* Listado de comprobantes de proveedores */}
+              {listadoComprobantes.map((comp: any, idx: number) => (
+                <div key={idx} className="border-t border-gray-100 pt-2.5 first:border-0 first:pt-0 space-y-1">
+                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                    🛒 Compra en {comp.ol_tiendas?.nombre || 'Proveedor'}
+                  </p>
+                  <div className="flex gap-2">
+                    <span className="text-gray-400 w-24 shrink-0 font-medium">Comprobante</span>
+                    <span className="text-gray-800 font-mono font-semibold">
+                      {comp.prov_establecimiento}-{comp.prov_punto_emision}-{comp.prov_secuencial}
+                    </span>
+                  </div>
+                  {comp.prov_costo_real && (
+                    <div className="flex gap-2">
+                      <span className="text-gray-400 w-24 shrink-0 font-medium">Costo Compra</span>
+                      <span className="text-gray-800 font-semibold">${Number(comp.prov_costo_real).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {comp.prov_factura_url && (
+                    <div className="flex gap-2 pt-0.5">
+                      <span className="text-gray-400 w-24 shrink-0 font-medium">Foto Ticket</span>
+                      <a 
+                        href={comp.prov_factura_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-green-600 hover:text-green-700 font-semibold underline flex items-center gap-1"
+                      >
+                        Ver comprobante adjunto
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {!pedido.prov_secuencial && infoNotas.factura && listadoComprobantes.length === 0 && (
+                <div className="flex gap-2">
+                  <span className="text-gray-400 w-24 shrink-0 font-medium">Factura</span>
+                  <span className="text-gray-800">{infoNotas.factura}</span>
+                </div>
+              )}
+
+              {infoNotas.cleanNotas && (
+                <div className="flex gap-2 pt-2 border-t border-gray-100">
+                  <span className="text-gray-400 w-24 shrink-0 font-medium">Notas</span>
+                  <span className="text-gray-650 italic">"{infoNotas.cleanNotas}"</span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Productos */}
       <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
