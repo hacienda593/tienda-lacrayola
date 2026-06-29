@@ -45,6 +45,13 @@ interface Pedido {
   notas?: string | null
   geo_lat?: number | null
   geo_lng?: number | null
+  prov_establecimiento?: string | null
+  prov_punto_emision?: string | null
+  prov_secuencial?: string | null
+  prov_costo_real?: number | null
+  prov_factura_url?: string | null
+  prov_clave_acceso?: string | null
+  prov_ruc?: string | null
 }
 
 interface Repartidor {
@@ -389,7 +396,7 @@ const HORARIOS_TIENDAS: Record<string, string> = {
       </div>
 
       {/* Pago y Facturación */}
-      {(infoNotas.pago || infoNotas.factura || infoNotas.cleanNotas) && (
+      {(infoNotas.pago || infoNotas.factura || infoNotas.cleanNotas || pedido.prov_secuencial) && (
         <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-2.5">
           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pago y Facturación</div>
           <div className="space-y-1.5 text-sm">
@@ -399,12 +406,42 @@ const HORARIOS_TIENDAS: Record<string, string> = {
                 <span className="text-gray-800 font-semibold">{infoNotas.pago}</span>
               </div>
             )}
-            {infoNotas.factura && (
+            
+            {pedido.prov_secuencial ? (
+              <>
+                <div className="flex gap-2">
+                  <span className="text-gray-400 w-24 shrink-0 font-medium">Comprobante</span>
+                  <span className="text-gray-800 font-mono">
+                    {pedido.prov_establecimiento}-{pedido.prov_punto_emision}-{pedido.prov_secuencial}
+                  </span>
+                </div>
+                {pedido.prov_costo_real && (
+                  <div className="flex gap-2">
+                    <span className="text-gray-400 w-24 shrink-0 font-medium">Costo Compra</span>
+                    <span className="text-gray-800 font-semibold">${Number(pedido.prov_costo_real).toFixed(2)}</span>
+                  </div>
+                )}
+                {pedido.prov_factura_url && (
+                  <div className="flex gap-2 mt-1">
+                    <span className="text-gray-400 w-24 shrink-0 font-medium">Foto Ticket</span>
+                    <a 
+                      href={pedido.prov_factura_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-green-600 hover:text-green-700 font-semibold underline flex items-center gap-1"
+                    >
+                      Ver comprobante adjunto
+                    </a>
+                  </div>
+                )}
+              </>
+            ) : infoNotas.factura ? (
               <div className="flex gap-2">
                 <span className="text-gray-400 w-24 shrink-0 font-medium">Factura</span>
                 <span className="text-gray-800">{infoNotas.factura}</span>
               </div>
-            )}
+            ) : null}
+
             {infoNotas.cleanNotas && (
               <div className="flex gap-2 pt-1.5 border-t border-gray-100 mt-1.5">
                 <span className="text-gray-400 w-24 shrink-0 font-medium">Notas</span>
