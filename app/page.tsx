@@ -135,7 +135,7 @@ function BannerCarrusel() {
 // ── Skeleton card ──────────────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse">
+    <div className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse w-[155px] shrink-0 md:w-auto md:shrink">
       <div className="bg-gray-100 h-32 rounded-xl mb-3" />
       <div className="h-2.5 bg-gray-100 rounded w-1/3 mb-2" />
       <div className="h-3.5 bg-gray-100 rounded mb-1" />
@@ -188,7 +188,7 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
         router.push(`/producto/${encodeURIComponent(p.codigo)}`)
       }
     }}
-      className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group">
+      className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group w-[155px] shrink-0 snap-start md:w-auto md:shrink md:snap-align-none">
       <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-36 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
         {p.imagen_url && !imageError ? (
           <img
@@ -582,11 +582,11 @@ export default function Home() {
             </Link>
           </div>
           {cargandoProds ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-4">
+            <div className="flex gap-3.5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x md:grid md:grid-cols-4 md:gap-4 md:overflow-visible">
               {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-4">
+            <div className="flex gap-3.5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x md:grid md:grid-cols-4 md:gap-4 md:overflow-visible">
               {destacados.map(p => <ProdCard key={p.codigo} p={p} onSelect={(prod) => openQuickView(prod, destacados)} />)}
             </div>
           )}
@@ -617,11 +617,11 @@ export default function Home() {
             </Link>
           </div>
           {cargandoProds ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-4">
+            <div className="flex gap-3.5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x md:grid md:grid-cols-4 md:gap-4 md:overflow-visible">
               {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-4">
+            <div className="flex gap-3.5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x md:grid md:grid-cols-4 md:gap-4 md:overflow-visible">
               {novedades.map(p => <ProdCard key={p.codigo} p={p} onSelect={(prod) => openQuickView(prod, novedades)} />)}
             </div>
           )}
