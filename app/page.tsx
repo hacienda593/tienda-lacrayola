@@ -89,43 +89,62 @@ function BannerCarrusel() {
   const b = BANNERS[idx]
 
   return (
-    <div className={`relative bg-gradient-to-br ${b.bg} text-white overflow-hidden transition-all duration-500`}>
-      <div className="max-w-5xl mx-auto px-4 py-10 md:py-14 flex flex-col md:flex-row items-center gap-6">
-        <div className="flex-1 text-center md:text-left">
-          <div className="inline-block bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full mb-4">
-            {b.badge}
+    <div className={`relative bg-gradient-to-br ${b.bg} text-white overflow-hidden transition-all duration-500 rounded-2xl`}>
+      {/* Móvil (Cinta Compacta - Estilo Tipti) */}
+      <Link href={b.href} className="block md:hidden">
+        <div className="flex items-center justify-between px-5 h-[115px] relative">
+          <div className="pr-4 z-10 flex flex-col justify-center">
+            <span className="inline-block bg-white/20 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full mb-1 w-max">
+              {b.badge}
+            </span>
+            <h2 className="text-sm font-extrabold leading-snug">{b.titulo}</h2>
+            <span className="text-[10px] text-white/90 font-bold mt-1.5 flex items-center gap-0.5 hover:underline">
+              Ver oferta <ChevronRight size={10} />
+            </span>
           </div>
-          <h1 className="text-2xl md:text-4xl font-extrabold leading-tight mb-3">{b.titulo}</h1>
-          <p className="text-white/80 text-sm md:text-base mb-6 max-w-md">{b.sub}</p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
-            <Link href={b.href}
-              className="bg-white text-gray-800 font-bold px-6 py-3 rounded-xl hover:bg-gray-50 transition text-sm text-center">
-              {b.cta}
-            </Link>
-            <Link href="/productos"
-              className="bg-white/20 text-white font-semibold px-6 py-3 rounded-xl hover:bg-white/30 transition text-sm text-center border border-white/20">
-              Todo el catálogo →
-            </Link>
-          </div>
+          <div className="text-6xl leading-none select-none shrink-0 z-10">{b.emoji}</div>
         </div>
-        <div className="text-[100px] md:text-[140px] leading-none select-none">{b.emoji}</div>
+      </Link>
+
+      {/* Escritorio (Banner Completo original) */}
+      <div className="hidden md:block">
+        <div className="max-w-5xl mx-auto px-4 py-8 md:py-10 flex flex-row items-center gap-6">
+          <div className="flex-1">
+            <div className="inline-block bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">
+              {b.badge}
+            </div>
+            <h1 className="text-2xl md:text-3xl font-extrabold leading-tight mb-2">{b.titulo}</h1>
+            <p className="text-white/80 text-sm mb-4 max-w-md">{b.sub}</p>
+            <div className="flex gap-3">
+              <Link href={b.href}
+                className="bg-white text-gray-800 font-bold px-5 py-2.5 rounded-xl hover:bg-gray-50 transition text-xs text-center">
+                {b.cta}
+              </Link>
+              <Link href="/productos"
+                className="bg-white/20 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-white/30 transition text-xs text-center border border-white/20">
+                Todo el catálogo →
+              </Link>
+            </div>
+          </div>
+          <div className="text-[100px] leading-none select-none">{b.emoji}</div>
+        </div>
       </div>
 
-      {/* Controles */}
+      {/* Controles (Solo Escritorio) */}
       <button onClick={() => ir(-1)}
-        className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center transition">
+        className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/20 hover:bg-white/40 rounded-full hidden md:flex items-center justify-center transition">
         <ChevronLeft size={18} className="text-white" />
       </button>
       <button onClick={() => ir(+1)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/20 hover:bg-white/40 rounded-full flex items-center justify-center transition">
+        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/20 hover:bg-white/40 rounded-full hidden md:flex items-center justify-center transition">
         <ChevronRight size={18} className="text-white" />
       </button>
 
       {/* Dots */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+      <div className="absolute bottom-2 md:bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
         {BANNERS.map((_, i) => (
           <button key={i} onClick={() => { setIdx(i); resetTimer() }}
-            className={`rounded-full transition-all ${i === idx ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/40'}`} />
+            className={`rounded-full transition-all ${i === idx ? 'w-5 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40'}`} />
         ))}
       </div>
     </div>
@@ -431,9 +450,6 @@ export default function Home() {
 
   return (
     <div>
-      {/* ── CARRUSEL ── */}
-      <BannerCarrusel />
-
       {/* ── TRUST BADGES ── */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 py-4 grid grid-cols-3 gap-4">
@@ -456,6 +472,9 @@ export default function Home() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-12">
+
+        {/* ── SELECCIÓN DE VERTICALES (LocalGrid al inicio estilo PedidosYa) ── */}
+        <LocalGrid />
 
         {/* ── PRODUCTOS FRECUENTES (Comprar de nuevo) ── */}
         {frecuentes.length > 0 && (
@@ -503,8 +522,8 @@ export default function Home() {
           </section>
         )}
 
-        {/* ── SELECCIÓN DE VERTICALES ── */}
-        <LocalGrid />
+        {/* ── CARRUSEL COMPACTO (Debajo de categorías estilo Tipti) ── */}
+        <BannerCarrusel />
 
         {/* ── TIENDAS ALIADAS ── */}
         {tiendas.length > 0 && (
