@@ -1,7 +1,7 @@
 import { Producto } from './types'
 
 function levenshtein(a: string, b: string): number {
-  if (Math.abs(a.length - b.length) > 2) return 99
+  if (Math.abs(a.length - b.length) > 3) return 99
   const tmp: number[][] = []
   let i: number, j: number
   for (i = 0; i <= a.length; i++) {
@@ -20,6 +20,15 @@ function levenshtein(a: string, b: string): number {
     }
   }
   return tmp[a.length][b.length]
+}
+
+function normalizeText(str: string): string {
+  if (!str) return ''
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Elimina tildes y diacríticos
+    .toLowerCase()
+    .trim()
 }
 
 function obtenerAlternativas(word: string): string[] {
@@ -42,17 +51,17 @@ function obtenerAlternativas(word: string): string[] {
 }
 
 export function customSearch(products: Producto[], queryText: string): Producto[] {
-  const query = queryText.toLowerCase().trim()
+  const query = normalizeText(queryText)
   if (!query) return products
 
   const qWords = query.split(/\s+/)
   const results: { item: Producto; score: number }[] = []
 
   for (const p of products) {
-    const descLower = (p.descripcion || '').toLowerCase()
-    const brandLower = (p.marca || '').toLowerCase()
-    const catLower = (p.categoria || '').toLowerCase()
-    const codeLower = (p.codigo || '').toLowerCase()
+    const descLower = normalizeText(p.descripcion)
+    const brandLower = normalizeText(p.marca)
+    const catLower = normalizeText(p.categoria)
+    const codeLower = normalizeText(p.codigo)
 
     let matchesAll = true
     let totalScore = 0
@@ -100,9 +109,17 @@ export function customSearch(products: Producto[], queryText: string): Producto[
             currentAltScore = Math.min(currentAltScore, 0.05 + (0.05 * (pw.length - qwa.length) / pw.length) + posPenalty + altPenalty)
           }
 
-          // Tolerancia a errores tipográficos (Levenshtein)
-          const maxDist = qwa.length <= 3 ? 0 : 1
-          if (qwa.length >= 3) {
+          // Tolerancia a errores tipográficos (Levenshtein) dinámica según longitud de palabra
+          let maxDist = 0
+          if (qwa.length >= 11) {
+            maxDist = 3
+          } else if (qwa.length >= 7) {
+            maxDist = 2
+          } else if (qwa.length >= 4) {
+            maxDist = 1
+          }
+
+          if (qwa.length >= 4) {
             const dist = levenshtein(qwa, pw)
             if (dist <= maxDist) {
               wordMatched = true

@@ -100,18 +100,60 @@ function BtnFavorito({ prod }: { prod: Producto }) {
   )
 }
 
+const CAT_COLORS: Record<string, { from: string; to: string; text: string; bg: string }> = {
+  'Escolar':      { from: 'from-blue-50/70',      to: 'to-blue-100/50',      text: 'text-blue-600',      bg: 'bg-blue-50' },
+  'Arte':         { from: 'from-purple-50/70',    to: 'to-purple-100/50',    text: 'text-purple-600',    bg: 'bg-purple-50' },
+  'Oficina':      { from: 'from-gray-50/70',      to: 'to-gray-150',         text: 'text-gray-600',      bg: 'bg-gray-100' },
+  'Tecnologia':   { from: 'from-indigo-50/70',    to: 'to-indigo-100/50',    text: 'text-indigo-600',    bg: 'bg-indigo-50' },
+  'Juguetes':     { from: 'from-orange-50/70',    to: 'to-orange-100/50',    text: 'text-orange-600',    bg: 'bg-orange-50' },
+  'Manualidades': { from: 'from-pink-50/70',      to: 'to-pink-100/50',      text: 'text-pink-600',      bg: 'bg-pink-50' },
+  'Libros':       { from: 'from-amber-50/70',     to: 'to-amber-100/50',     text: 'text-amber-600',     bg: 'bg-amber-50' },
+  'Pintura':      { from: 'from-red-50/70',       to: 'to-red-100/50',       text: 'text-red-600',       bg: 'bg-red-50' },
+  'Papeleria':    { from: 'from-teal-50/70',      to: 'to-teal-100/50',      text: 'text-teal-600',      bg: 'bg-teal-50' },
+  'Alimentos':    { from: 'from-emerald-50/70',   to: 'to-emerald-100/50',   text: 'text-emerald-600',   bg: 'bg-emerald-50' },
+  'Bebidas':      { from: 'from-cyan-50/70',      to: 'to-cyan-100/50',      text: 'text-cyan-600',      bg: 'bg-cyan-50' },
+  'Limpieza':     { from: 'from-sky-50/70',       to: 'to-sky-100/50',       text: 'text-sky-600',       bg: 'bg-sky-50' },
+  'Higiene':      { from: 'from-rose-50/70',      to: 'to-rose-100/50',      text: 'text-rose-600',      bg: 'bg-rose-50' },
+  'Farmacia':     { from: 'from-rose-100/30',     to: 'to-red-100/30',       text: 'text-red-600',       bg: 'bg-red-50' },
+  'Abarrotes':    { from: 'from-emerald-50/70',   to: 'to-green-100/50',     text: 'text-green-600',     bg: 'bg-green-50' },
+  'Bebidas y Licores': { from: 'from-cyan-50/70', to: 'to-blue-100/50',      text: 'text-cyan-600',      bg: 'bg-cyan-50' },
+  'Congelados y Refrigerados': { from: 'from-blue-50/70', to: 'to-cyan-100/30', text: 'text-blue-500',   bg: 'bg-blue-50' },
+  'Golosinas y Snacks': { from: 'from-amber-50/70', to: 'to-yellow-100/50',  text: 'text-amber-600',     bg: 'bg-amber-50' },
+  'Panadería':    { from: 'from-yellow-50/70',    to: 'to-amber-100/40',     text: 'text-yellow-700',    bg: 'bg-yellow-50' },
+  'Cuidado Personal': { from: 'from-rose-50/70',  to: 'to-pink-100/40',      text: 'text-rose-600',      bg: 'bg-rose-50' },
+  'Hogar y Limpieza': { from: 'from-sky-50/70',   to: 'to-indigo-100/30',    text: 'text-sky-600',       bg: 'bg-sky-50' },
+  'Mascotas':     { from: 'from-amber-50/70',     to: 'to-orange-100/30',    text: 'text-amber-700',     bg: 'bg-amber-50' },
+  'Huevos Lácteos y Leches': { from: 'from-yellow-50/40', to: 'to-blue-50/30', text: 'text-yellow-600', bg: 'bg-yellow-50' },
+}
+
+const DEFAULT_COLOR = { from: 'from-green-50/70', to: 'to-green-100/50', text: 'text-green-600', bg: 'bg-green-50' }
+
 function ImagenProducto({ src, categoria, alt }: { src?: string | null; categoria: string; alt: string }) {
   const [error, setError] = useState(false)
   const emoji = CAT_EMOJI[categoria] || '📦'
+  const colors = CAT_COLORS[categoria] || DEFAULT_COLOR
 
-  if (!src || error) return <span className="text-4xl select-none">{emoji}</span>
+  if (!src || error) {
+    return (
+      <div className={`w-full h-full bg-gradient-to-br ${colors.from} ${colors.to} flex flex-col items-center justify-center relative select-none overflow-hidden transition-transform duration-300`}>
+        {/* Decoraciones suaves de fondo flotantes */}
+        <div className="absolute w-24 h-24 rounded-full bg-white/40 blur-md -top-7 -left-7" />
+        <div className="absolute w-16 h-16 rounded-full bg-white/20 blur-sm -bottom-5 -right-5" />
+        
+        {/* Contenedor de Emoji estilo tarjeta glassmorphic */}
+        <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm shadow-sm flex items-center justify-center text-3xl transform group-hover:rotate-6 transition-transform duration-300 relative z-10 border border-white/60">
+          {emoji}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <img
       src={src}
       alt={alt}
       onError={() => setError(true)}
-      className="w-full h-full object-contain p-1"
+      className="w-full h-full object-contain p-2 hover:scale-[1.03] transition-transform duration-200"
       loading="lazy"
     />
   )
@@ -130,6 +172,8 @@ function TiendaContent() {
   const [marca,    setMarca]    = useState('')
   const [visibles, setVisibles] = useState(40)
   const [infoOpen, setInfoOpen] = useState(false)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+
 
   function updateFiltersUrl(newFilters: { cat?: string; sub?: string; marca?: string; q?: string }, replace = false) {
     const params = new URLSearchParams(searchParams.toString())
@@ -343,6 +387,30 @@ function TiendaContent() {
     })
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
   }, [base, cat])
+
+  // Efecto para scroll infinito automático (sentinel)
+  useEffect(() => {
+    if (!sentinelRef.current) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0]
+        if (first.isIntersecting) {
+          setVisibles((prev) => prev + 40)
+        }
+      },
+      { threshold: 0.1, rootMargin: '150px' }
+    )
+
+    const currentSentinel = sentinelRef.current
+    observer.observe(currentSentinel)
+
+    return () => {
+      if (currentSentinel) {
+        observer.unobserve(currentSentinel)
+      }
+    }
+  }, [filtrados.length])
 
   function limpiarFiltros() {
     updateFiltersUrl({ cat: '', sub: '', marca: '', q: '' })
@@ -852,10 +920,10 @@ function TiendaContent() {
                 ))}
               </div>
               {visibles < filtrados.length && (
-                <button onClick={() => setVisibles(v => v + 40)}
-                  className="w-full py-3.5 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm rounded-xl border border-gray-200 shadow-sm transition">
-                  Ver más ({filtrados.length - visibles} restantes)
-                </button>
+                <div ref={sentinelRef} className="w-full py-6 flex items-center justify-center gap-2 text-gray-400 text-xs select-none">
+                  <Loader2 size={16} className="animate-spin text-green-500" />
+                  Cargando más productos...
+                </div>
               )}
             </>
           )}

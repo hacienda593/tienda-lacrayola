@@ -280,10 +280,11 @@ function CategoriasPanelInner({ open, onClose }: Props) {
   }
 
   // Filtro de búsqueda local en las categorías cargadas
+  const normalize = (str: string) => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   const catsFiltradas = q.trim()
     ? cats.filter(c =>
-        c.categoria.toLowerCase().includes(q.toLowerCase()) ||
-        c.subcategorias.some(s => s.nombre.toLowerCase().includes(q.toLowerCase()))
+        normalize(c.categoria).includes(normalize(q)) ||
+        c.subcategorias.some(s => normalize(s.nombre).includes(normalize(q)))
       )
     : cats
 
