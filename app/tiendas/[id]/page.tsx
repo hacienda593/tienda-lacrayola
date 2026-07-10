@@ -128,7 +128,6 @@ function TiendaContent() {
   const [cat,      setCat]      = useState('')
   const [sub,      setSub]      = useState('')
   const [marca,    setMarca]    = useState('')
-  const [drawerOpen, setDrawerOpen] = useState(false)
   const [visibles, setVisibles] = useState(40)
   const [infoOpen, setInfoOpen] = useState(false)
 
@@ -226,12 +225,7 @@ function TiendaContent() {
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank')
   }
 
-  // Escuchar el evento del menu inferior movil para abrir filtros
-  useEffect(() => {
-    const handleOpen = () => setDrawerOpen(true)
-    window.addEventListener('open-store-filters', handleOpen)
-    return () => window.removeEventListener('open-store-filters', handleOpen)
-  }, [])
+
 
   const searchParamsStr = searchParams.toString()
   // Sincronizar estado local con query params de la URL
@@ -398,7 +392,7 @@ function TiendaContent() {
         <div className="flex items-center gap-1 shrink-0">
           {/* Botón de Filtros (solo móvil, en desktop ya se muestra el sidebar) */}
           <button
-            onClick={() => setDrawerOpen(true)}
+            onClick={() => window.dispatchEvent(new Event('open-categorias-global'))}
             className="md:hidden w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-500 hover:text-green-600 hover:bg-green-50 transition cursor-pointer animate-fade-in"
             title="Ver pasillos y categorías"
           >
@@ -868,141 +862,6 @@ function TiendaContent() {
         </div>
       </div>
 
-      {/* Drawer de Filtros Lateral Izquierdo */}
-      {drawerOpen && (
-        <>
-          {/* Overlay */}
-          <div
-            onClick={() => setDrawerOpen(false)}
-            className="fixed inset-0 bg-black/50 z-[60] transition-opacity duration-300 animate-fade-in"
-          />
-          
-          {/* Panel */}
-          <div className="fixed inset-y-0 left-0 w-[280px] bg-white z-[70] shadow-2xl flex flex-col transition-transform duration-300 animate-slide-in-left">
-            
-            {/* Header Drawer */}
-            <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
-              <span className="font-extrabold text-gray-800 text-sm">Pasillos y Filtros</span>
-              <button onClick={() => setDrawerOpen(false)} className="p-1 hover:bg-gray-100 rounded-lg text-gray-500 transition">
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Contenido */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-5">
-              {!cat ? (
-                // Nivel 1: Lista de Categorías
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Selecciona un Pasillo</p>
-                  {cats.map(([c, count]) => (
-                    <button
-                      key={c}
-                      onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
-                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-green-700 transition flex items-center justify-between border border-transparent hover:border-green-100"
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className="text-sm">{CAT_EMOJI[c] || '📦'}</span>
-                        <span>{c}</span>
-                      </span>
-                      <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold">{count}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                // Nivel 2: Subcategorías y Marcas de la categoría seleccionada
-                <div className="space-y-5">
-                  
-                  {/* Botón Volver */}
-                  <button
-                    onClick={() => updateFiltersUrl({ cat: '', sub: '', marca: '' })}
-                    className="w-full py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5"
-                  >
-                    ← Todos los pasillos
-                  </button>
-
-                  {/* Pasillo Activo */}
-                  <div>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Pasillo seleccionado</span>
-                    <div className="text-sm font-black text-green-700 bg-green-50 border border-green-100 rounded-xl px-3 py-2.5 flex items-center gap-2">
-                      <span>{CAT_EMOJI[cat] || '📦'}</span>
-                      <span>{cat}</span>
-                    </div>
-                  </div>
-
-                  {/* Lista de Subcategorías (si hay) */}
-                  {subcats.length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Subcategorías</p>
-                      <div className="space-y-1">
-                        {subcats.map(([s, count]) => {
-                          const esActiva = sub === s
-                          return (
-                            <button
-                              key={s}
-                              onClick={() => updateFiltersUrl({ sub: esActiva ? '' : s })}
-                              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-between border
-                                ${esActiva 
-                                  ? 'bg-teal-50 border-teal-200 text-teal-700' 
-                                  : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
-                            >
-                              <span>🛍️ {s}</span>
-                              <span className="text-[9px] font-bold text-gray-400">({count})</span>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Lista de Marcas (si hay) */}
-                  {marcas.length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Marcas</p>
-                      <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
-                        {marcas.map(([m, count]) => {
-                          const esActiva = marca === m
-                          return (
-                            <button
-                              key={m}
-                              onClick={() => updateFiltersUrl({ marca: esActiva ? '' : m })}
-                              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-between border
-                                ${esActiva 
-                                  ? 'bg-purple-50 border-purple-200 text-purple-700' 
-                                  : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
-                            >
-                              <span>🏷️ {m}</span>
-                              <span className="text-[9px] font-bold text-gray-400">({count})</span>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-              )}
-            </div>
-
-            {/* Footer Drawer */}
-            <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-2 shrink-0">
-              <button
-                onClick={limpiarFiltros}
-                disabled={!q && !cat && !sub && !marca}
-                className="flex-1 py-3 border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-xs font-bold rounded-xl transition disabled:opacity-50"
-              >
-                Limpiar
-              </button>
-              <button
-                onClick={() => setDrawerOpen(false)}
-                className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-xl transition shadow-md"
-              >
-                Ver {filtrados.length} productos
-              </button>
-            </div>
-
-          </div>
-        </>
-      )}
 
       <style>{`
         @keyframes fadeIn {
