@@ -160,21 +160,33 @@ function CategoriasPanelInner({ open, onClose }: Props) {
     const esCrayola = tiendaActiva.nombre.toLowerCase().includes('crayola')
 
     async function cargar() {
-      let query = supabase
-        .from('ol_productos')
-        .select('categoria, subcategoria')
-        .gt('stock', 0)
-        .gt('precio_publico', 0)
+      let todos: { categoria: string; subcategoria: string }[] = []
+      let desde = 0
+      const LOTE = 1000
+      let hayMas = true
 
-      if (esCrayola) {
-        query = query.or(`tienda_id.eq.${activeId},tienda_id.is.null`)
-      } else {
-        query = query.eq('tienda_id', activeId)
+      while (hayMas) {
+        let query = supabase
+          .from('ol_productos')
+          .select('categoria, subcategoria')
+          .gt('stock', 0)
+          .gt('precio_publico', 0)
+          .range(desde, desde + LOTE - 1)
+
+        if (esCrayola) {
+          query = query.or(`tienda_id.eq.${activeId},tienda_id.is.null`)
+        } else {
+          query = query.eq('tienda_id', activeId)
+        }
+
+        const { data } = await query
+        const lote = (data ?? []) as { categoria: string; subcategoria: string }[]
+        todos = [...todos, ...lote]
+        hayMas = lote.length === LOTE
+        desde += LOTE
       }
 
-      const { data } = await query
-
-      if (!data) { 
+      if (todos.length === 0) { 
         setCats([])
         setActiva('')
         setCargando(false)
@@ -183,7 +195,7 @@ function CategoriasPanelInner({ open, onClose }: Props) {
 
       // Agrupar
       const map = new Map<string, Map<string, number>>()
-      data.forEach(({ categoria, subcategoria }) => {
+      todos.forEach(({ categoria, subcategoria }) => {
         if (!categoria) return
         if (!map.has(categoria)) map.set(categoria, new Map())
         const subMap = map.get(categoria)!

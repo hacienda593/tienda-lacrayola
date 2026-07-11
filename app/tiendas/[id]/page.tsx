@@ -292,20 +292,32 @@ function TiendaContent() {
 
       const esCrayola = t.nombre.toLowerCase().includes('crayola')
 
-      let pQuery = supabase.from('ol_productos')
-        .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id,imagen_url,detalles')
-        .gt('precio_publico', 0)
-        .order('descripcion')
+      let todos: Producto[] = []
+      let desde = 0
+      const LOTE = 1000
+      let hayMas = true
 
-      if (esCrayola) {
-        pQuery = pQuery.or(`tienda_id.eq.${id},tienda_id.is.null`)
-      } else {
-        pQuery = pQuery.eq('tienda_id', id)
+      while (hayMas) {
+        let pQuery = supabase.from('ol_productos')
+          .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,tienda_id,imagen_url,detalles')
+          .gt('precio_publico', 0)
+          .order('descripcion')
+          .range(desde, desde + LOTE - 1)
+
+        if (esCrayola) {
+          pQuery = pQuery.or(`tienda_id.eq.${id},tienda_id.is.null`)
+        } else {
+          pQuery = pQuery.eq('tienda_id', id)
+        }
+
+        const { data: ps } = await pQuery
+        const lote = (ps ?? []) as Producto[]
+        todos = [...todos, ...lote]
+        hayMas = lote.length === LOTE
+        desde += LOTE
       }
 
-      const { data: ps } = await pQuery
-      const prods = (ps ?? []) as Producto[]
-      setBase(prods)
+      setBase(todos)
       setCargando(false)
     }
     cargar()
