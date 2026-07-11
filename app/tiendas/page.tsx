@@ -48,17 +48,17 @@ export default function TiendasPage() {
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
 
       {/* Hero */}
-      <div className="bg-gradient-to-br from-green-700 to-emerald-600 rounded-2xl p-6 text-white">
-        <div className="flex items-center gap-3 mb-2">
-          <Store size={24} />
-          <h1 className="text-xl font-extrabold">Tiendas disponibles</h1>
+      <div className="bg-gradient-to-br from-green-700 to-emerald-600 rounded-2xl p-4 sm:p-6 text-white">
+        <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+          <Store className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+          <h1 className="text-lg sm:text-xl font-extrabold">Tiendas disponibles</h1>
         </div>
-        <p className="text-green-100 text-sm max-w-md">
+        <p className="text-green-100 text-xs sm:text-sm max-w-md leading-relaxed">
           Compra en tus tiendas favoritas de Los Bancos. Nosotros recogemos y te entregamos en casa.
         </p>
-        <div className="flex gap-3 mt-4 flex-wrap">
+        <div className="flex gap-2 mt-3 overflow-x-auto flex-nowrap scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
           {['📍 Solo en Los Bancos', '🚚 Entrega a domicilio', '🛒 Varias tiendas en 1 pedido'].map(b => (
-            <span key={b} className="bg-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full">{b}</span>
+            <span key={b} className="bg-white/20 text-white text-[11px] sm:text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap shrink-0">{b}</span>
           ))}
         </div>
       </div>
