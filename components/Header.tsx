@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { ShoppingCart, Search, LayoutGrid, X } from 'lucide-react'
+import { ShoppingCart, Search, LayoutGrid, X, Home } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { getCarrito } from '@/lib/carrito'
 import { supabase } from '@/lib/supabase'
@@ -170,8 +170,10 @@ export default function Header() {
           </button>
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <span className="text-2xl">🖍️</span>
+          <Link href="/" className="flex items-center gap-2 shrink-0 group" aria-label="Inicio">
+            <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:bg-green-50 group-hover:border-green-100 transition-colors shrink-0">
+              <Home size={18} className="text-gray-700 group-hover:text-green-700 transition-colors" />
+            </div>
             <div className="hidden sm:block">
               <div className="text-base font-extrabold text-green-700 leading-tight">La Crayola</div>
               <div className="text-[10px] text-gray-400 leading-tight">Librería & Papelería</div>
