@@ -712,9 +712,9 @@ function TiendaContent() {
                           <div className="text-[8px] md:text-[9px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
                         )}
                       </div>
-                      <div className="mt-0.5 md:mt-1 flex items-center justify-between gap-1">
+                      <div className="mt-2 space-y-1.5">
                         <div className="text-[11px] md:text-xs font-black text-gray-900">{fmt(p.precio_publico)}</div>
-                        <div className="scale-[0.7] md:scale-75 origin-right shrink-0">
+                        <div className="w-full">
                           <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
                         </div>
                       </div>
@@ -800,9 +800,9 @@ function TiendaContent() {
                                 <div className="text-[8px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
                               )}
                             </div>
-                            <div className="mt-0.5 flex items-center justify-between gap-1">
+                            <div className="mt-2 space-y-1.5">
                               <div className="text-[11px] font-black text-gray-900">{fmt(p.precio_publico)}</div>
-                              <div className="scale-[0.7] origin-right shrink-0">
+                              <div className="w-full">
                                 <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
                               </div>
                             </div>
@@ -843,9 +843,9 @@ function TiendaContent() {
                                 <div className="text-[8px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
                               )}
                             </div>
-                            <div className="mt-0.5 flex items-center justify-between gap-1">
+                            <div className="mt-2 space-y-1.5">
                               <div className="text-[11px] font-black text-gray-900">{fmt(p.precio_publico)}</div>
-                              <div className="scale-[0.7] origin-right shrink-0">
+                              <div className="w-full">
                                 <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
                               </div>
                             </div>
@@ -899,9 +899,9 @@ function TiendaContent() {
                                 <div className="text-[8px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
                               )}
                             </div>
-                            <div className="mt-0.5 flex items-center justify-between gap-1">
+                            <div className="mt-2 space-y-1.5">
                               <div className="text-[11px] font-black text-gray-900">{fmt(p.precio_publico)}</div>
-                              <div className="scale-[0.7] origin-right shrink-0">
+                              <div className="w-full">
                                 <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
                               </div>
                             </div>
@@ -943,9 +943,9 @@ function TiendaContent() {
                           <div className="text-[9px] md:text-[10px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
                         )}
                       </div>
-                      <div className="mt-0.5 md:mt-1 flex items-center justify-between gap-1">
-                        <div className="text-sm font-black text-gray-900 shrink-0">{fmt(p.precio_publico)}</div>
-                        <div className="scale-75 md:scale-90 origin-right shrink-0">
+                      <div className="mt-2 space-y-1.5">
+                        <div className="text-sm font-black text-gray-900">{fmt(p.precio_publico)}</div>
+                        <div className="w-full">
                           <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
                         </div>
                       </div>

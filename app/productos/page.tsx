@@ -218,9 +218,12 @@ function ProductCard({ p, badge, onSelect, tiendasMap }: { p: Producto; badge?: 
           </div>
         </div>
 
-        <div className="mt-1 flex items-center justify-between gap-1">
-          <div className="text-sm font-black text-gray-900 shrink-0">{fmt(p.precio_publico)}</div>
-          <div className="scale-90 origin-right shrink-0">
+        <div className="mt-2 space-y-1.5">
+          {/* Precio */}
+          <div className="text-sm font-black text-gray-900">{fmt(p.precio_publico)}</div>
+          
+          {/* Botón agregar full-width */}
+          <div className="w-full">
             {p.stock > 0 && <BtnAgregar prod={p} />}
           </div>
         </div>
