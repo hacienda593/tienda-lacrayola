@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { X, ShoppingCart, Heart, Check, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react'
 import { Producto, CAT_EMOJI } from '@/lib/types'
@@ -29,6 +29,16 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
   const [touchStart, setTouchStart] = useState<number | null>(null)
   const [touchEnd, setTouchEnd] = useState<number | null>(null)
   const minSwipeDistance = 60
+
+  const presVal = useMemo(() => {
+    if (!producto?.descripcion) return ''
+    const regex = /\b(\d+(?:\.\d+)?\s*(?:ml|l|g|kg|oz|u|unidades))\b/gi;
+    const matches = producto.descripcion.match(regex);
+    if (matches && matches.length > 0) {
+      return matches[matches.length - 1];
+    }
+    return '';
+  }, [producto?.descripcion])
 
   // Sync state when product changes
   useEffect(() => {
@@ -196,13 +206,14 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
           ${isOpen ? 'md:scale-100 md:opacity-100' : 'md:scale-95 md:opacity-0 md:pointer-events-none'}
         `}
       >
-        {/* Floating Close button in header */}
+        {/* Floating Close button in header - Enhanced for accessibility */}
         <div className="flex justify-end items-center absolute top-4 right-4 z-50">
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/80 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition shadow-sm"
+            className="w-10 h-10 rounded-full bg-white/95 text-gray-700 border-2 border-gray-200 shadow-md hover:bg-gray-100 hover:text-gray-900 flex items-center justify-center active:scale-90 transition duration-75"
+            aria-label="Cerrar modal"
           >
-            <X size={15} />
+            <X size={20} className="stroke-[2.5]" />
           </button>
         </div>
 
@@ -234,10 +245,17 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
             CAT_EMOJI[producto.categoria] || '📦'
           )}
 
-          {/* Floating Category Badge inside image */}
-          <span className="absolute bottom-3 left-3 text-[10px] font-extrabold text-green-700 bg-white/90 border border-green-100/50 px-2.5 py-1 rounded-lg backdrop-blur shadow-sm select-none">
-            {producto.categoria}
-          </span>
+          {/* Floating Category and Size Badges inside image */}
+          <div className="absolute bottom-3 left-3 flex items-center gap-1.5 z-20">
+            <span className="text-[10px] font-extrabold text-green-700 bg-white/95 border border-green-100/50 px-2.5 py-1 rounded-lg backdrop-blur shadow-sm select-none">
+              {producto.categoria}
+            </span>
+            {presVal && (
+              <span className="text-[10px] font-black text-white bg-black/75 border border-white/10 px-2.5 py-1 rounded-lg backdrop-blur shadow-sm select-none uppercase tracking-wider">
+                {presVal}
+              </span>
+            )}
+          </div>
           
           {/* Favorite badge inside image */}
           <button
