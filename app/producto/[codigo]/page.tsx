@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
@@ -72,6 +72,16 @@ export default function ProductoPage() {
 
   const imageRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  const presVal = useMemo(() => {
+    if (!prod?.descripcion) return ''
+    const regex = /\b(\d+(?:\.\d+)?\s*(?:ml|l|g|kg|oz|u|unidades))\b/gi;
+    const matches = prod.descripcion.match(regex);
+    if (matches && matches.length > 0) {
+      return matches[matches.length - 1];
+    }
+    return '';
+  }, [prod?.descripcion])
 
   function handlePointerMove(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) {
     const container = containerRef.current
@@ -235,6 +245,11 @@ export default function ProductoPage() {
         {ultimas && (
           <div className="absolute top-3 right-3 bg-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
             ¡Últimas {prod.stock}!
+          </div>
+        )}
+        {presVal && (
+          <div className="absolute bottom-3 left-3 bg-black/75 backdrop-blur-[2px] text-white text-[10px] font-black px-2.5 py-1 rounded-lg tracking-wider uppercase z-20 shadow-sm border border-white/10 select-none">
+            {presVal}
           </div>
         )}
         {/* Acciones flotantes */}
