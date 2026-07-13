@@ -19,6 +19,84 @@ const USE_QUICK_VIEW = true; // Cambiar a 'false' para deshabilitar el Bottom Sh
 
 function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
 
+function TiendaProductCard({ p, tienda, onSelect }: { p: Producto; tienda: OlTienda; onSelect?: (p: Producto) => void }) {
+  const router = useRouter()
+  const [cantidad, setCantidad] = useState(() => {
+    return getCarrito().find(i => i.codigo === p.codigo)?.cantidad ?? 0
+  })
+
+  useEffect(() => {
+    const sync = () => {
+      setCantidad(getCarrito().find(i => i.codigo === p.codigo)?.cantidad ?? 0)
+    }
+    window.addEventListener('carrito-update', sync)
+    return () => window.removeEventListener('carrito-update', sync)
+  }, [p.codigo])
+
+  const agotado = p.stock <= 0
+
+  function agregar(e: React.MouseEvent) {
+    e.stopPropagation(); e.preventDefault()
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15)
+    }
+    agregarItem({
+      ...p,
+      precio_publico: p.precio_publico,
+      tienda_id: tienda.id,
+      tienda_nombre: tienda.nombre
+    }, 1)
+  }
+
+  return (
+    <div
+      onClick={() => {
+        if (USE_QUICK_VIEW && onSelect) {
+          onSelect(p)
+        } else {
+          router.push(`/producto/${encodeURIComponent(p.codigo)}`)
+        }
+      }}
+      className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group"
+    >
+      <div className="relative bg-gray-50 h-40 flex items-center justify-center text-2xl overflow-hidden group-hover:bg-green-50/50 transition-colors w-full">
+        <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
+        <BtnFavorito prod={p} />
+        {cantidad === 0 && p.stock > 0 && (
+          <button
+            onClick={agregar}
+            className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-90 transition z-20 cursor-pointer border border-white/60"
+            aria-label="Agregar al carrito"
+          >
+            <Plus size={16} className="stroke-[3]" />
+          </button>
+        )}
+        {agotado && (
+          <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
+            <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">AGOTADO</span>
+          </div>
+        )}
+      </div>
+      <div className="p-1.5 flex-1 min-w-0 flex flex-col justify-between">
+        <div>
+          <div className="text-[10px] md:text-[11px] font-bold text-gray-800 leading-tight md:leading-snug line-clamp-2 min-h-[24px] md:min-h-[32px] mb-0.5">{p.descripcion}</div>
+          {p.marca && (
+            <div className="text-[8px] md:text-[9px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+          )}
+        </div>
+        <div className="mt-2 space-y-1.5">
+          <div className="text-[11px] md:text-xs font-black text-gray-900">{fmt(p.precio_publico)}</div>
+          {cantidad > 0 && (
+            <div className="w-full animate-fade-in">
+              <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const CAT_EMOJI: Record<string, string> = {
   'Escolar':'📚','Arte':'🎨','Oficina':'🖊️','Tecnologia':'💻','Juguetes':'🧸',
   'Manualidades':'✂️','Libros':'📖','Pintura':'🖌️','Papeleria':'📄',

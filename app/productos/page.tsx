@@ -147,6 +147,18 @@ function ProductCard({ p, badge, onSelect, tiendasMap }: { p: Producto; badge?: 
   const agotado = p.stock <= 0
   const badgeTipo = agotado ? undefined : (p.stock < 5 ? 'ultimas' : badge)
 
+  const [cantidad, setCantidad] = useState(() => {
+    return getCarrito().find(i => i.codigo === p.codigo)?.cantidad ?? 0
+  })
+
+  useEffect(() => {
+    const sync = () => {
+      setCantidad(getCarrito().find(i => i.codigo === p.codigo)?.cantidad ?? 0)
+    }
+    window.addEventListener('carrito-update', sync)
+    return () => window.removeEventListener('carrito-update', sync)
+  }, [p.codigo])
+
   const tiendaInfo = p.tienda_id && tiendasMap ? tiendasMap[p.tienda_id] : null
   
   function getNombreCorto(completo: string) {
@@ -196,6 +208,22 @@ function ProductCard({ p, badge, onSelect, tiendasMap }: { p: Producto; badge?: 
             </div>
           ) : null;
         })()}
+        {cantidad === 0 && p.stock > 0 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate(15)
+              }
+              agregarItem(p)
+            }}
+            className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-90 transition z-20 cursor-pointer border border-white/60"
+            aria-label="Agregar al carrito"
+          >
+            <Plus size={16} className="stroke-[3]" />
+          </button>
+        )}
         {agotado && (
           <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
             <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">AGOTADO</span>
@@ -222,10 +250,12 @@ function ProductCard({ p, badge, onSelect, tiendasMap }: { p: Producto; badge?: 
           {/* Precio */}
           <div className="text-sm font-black text-gray-900">{fmt(p.precio_publico)}</div>
           
-          {/* Botón agregar full-width */}
-          <div className="w-full">
-            {p.stock > 0 && <BtnAgregar prod={p} />}
-          </div>
+          {/* Stepper de cantidad solo si cantidad > 0 */}
+          {cantidad > 0 && (
+            <div className="w-full animate-fade-in">
+              {p.stock > 0 && <BtnAgregar prod={p} />}
+            </div>
+          )}
         </div>
       </div>
     </div>
