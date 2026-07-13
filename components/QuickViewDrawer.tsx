@@ -245,17 +245,12 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
             CAT_EMOJI[producto.categoria] || '📦'
           )}
 
-          {/* Floating Category and Size Badges inside image */}
-          <div className="absolute bottom-3 left-3 flex items-center gap-1.5 z-20">
-            <span className="text-[10px] font-extrabold text-green-700 bg-white/95 border border-green-100/50 px-2.5 py-1 rounded-lg backdrop-blur shadow-sm select-none">
-              {producto.categoria}
-            </span>
-            {presVal && (
-              <span className="text-[10px] font-black text-white bg-black/75 border border-white/10 px-2.5 py-1 rounded-lg backdrop-blur shadow-sm select-none uppercase tracking-wider">
-                {presVal}
-              </span>
-            )}
-          </div>
+          {/* Floating Size Badge inside image */}
+          {presVal && (
+            <div className="absolute bottom-3 left-3 bg-black/75 backdrop-blur-[2px] text-white text-[10px] font-black px-2.5 py-1.5 rounded-lg tracking-wider uppercase z-20 shadow-sm border border-white/10 select-none">
+              {presVal}
+            </div>
+          )}
           
           {/* Favorite badge inside image */}
           <button
