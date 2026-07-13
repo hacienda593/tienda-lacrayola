@@ -186,6 +186,16 @@ function ProductCard({ p, badge, onSelect, tiendasMap }: { p: Producto; badge?: 
         )}
         {badgeTipo && <Badge tipo={badgeTipo} />}
         <BtnFavorito prod={p} />
+        {(() => {
+          const regex = /\b(\d+(?:\.\d+)?\s*(?:ml|l|g|kg|oz|u|unidades))\b/gi;
+          const matches = p.descripcion.match(regex);
+          const presVal = matches && matches.length > 0 ? matches[matches.length - 1] : '';
+          return presVal ? (
+            <div className="absolute bottom-2 left-2 bg-black/75 backdrop-blur-[2px] text-white text-[9px] font-black px-1.5 py-0.5 rounded-md tracking-wider uppercase z-20 shadow-sm border border-white/10 select-none">
+              {presVal}
+            </div>
+          ) : null;
+        })()}
         {agotado && (
           <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
             <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">AGOTADO</span>

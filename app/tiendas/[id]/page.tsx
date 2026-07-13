@@ -128,13 +128,24 @@ const CAT_COLORS: Record<string, { from: string; to: string; text: string; bg: s
 
 const DEFAULT_COLOR = { from: 'from-green-50/70', to: 'to-green-100/50', text: 'text-green-600', bg: 'bg-green-50' }
 
-function ImagenProducto({ src, categoria, alt }: { src?: string | null; categoria: string; alt: string }) {
+function ImagenProducto({ src, categoria, alt, descripcion }: { src?: string | null; categoria: string; alt: string; descripcion?: string }) {
   const [error, setError] = useState(false)
   const emoji = CAT_EMOJI[categoria] || '📦'
   const colors = CAT_COLORS[categoria] || DEFAULT_COLOR
 
+  const presVal = useMemo(() => {
+    if (!descripcion) return ''
+    const regex = /\b(\d+(?:\.\d+)?\s*(?:ml|l|g|kg|oz|u|unidades))\b/gi;
+    const matches = descripcion.match(regex);
+    if (matches && matches.length > 0) {
+      return matches[matches.length - 1];
+    }
+    return '';
+  }, [descripcion])
+
+  let content;
   if (!src || error) {
-    return (
+    content = (
       <div className={`w-full h-full bg-gradient-to-br ${colors.from} ${colors.to} flex flex-col items-center justify-center relative select-none overflow-hidden transition-transform duration-300`}>
         {/* Decoraciones suaves de fondo flotantes */}
         <div className="absolute w-24 h-24 rounded-full bg-white/40 blur-md -top-7 -left-7" />
@@ -146,16 +157,27 @@ function ImagenProducto({ src, categoria, alt }: { src?: string | null; categori
         </div>
       </div>
     )
+  } else {
+    content = (
+      <img
+        src={src}
+        alt={alt}
+        onError={() => setError(true)}
+        className="w-full h-full object-contain p-2 hover:scale-[1.03] transition-transform duration-200"
+        loading="lazy"
+      />
+    )
   }
 
   return (
-    <img
-      src={src}
-      alt={alt}
-      onError={() => setError(true)}
-      className="w-full h-full object-contain p-2 hover:scale-[1.03] transition-transform duration-200"
-      loading="lazy"
-    />
+    <div className="w-full h-full relative flex items-center justify-center">
+      {content}
+      {presVal && (
+        <div className="absolute bottom-1.5 left-1.5 bg-black/75 backdrop-blur-[2px] text-white text-[9px] font-black px-1.5 py-0.5 rounded-md tracking-wider uppercase z-20 shadow-sm border border-white/10 select-none">
+          {presVal}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -681,7 +703,7 @@ function TiendaContent() {
                     }}
                     className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/freq">
                     <div className="relative bg-gray-50 h-40 md:h-28 flex items-center justify-center text-2xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors w-full">
-                      <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
+                      <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
                     </div>
                     <div className="p-1.5 flex-1 min-w-0 flex flex-col justify-between">
                       <div>
@@ -768,7 +790,7 @@ function TiendaContent() {
                           }}
                           className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/subrow">
                           <div className="relative bg-gray-50 h-40 flex items-center justify-center text-2xl overflow-hidden group-hover/subrow:bg-green-50/50 transition-colors w-full">
-                            <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
+                            <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
                             <BtnFavorito prod={p} />
                           </div>
                           <div className="p-1.5 flex-1 min-w-0 flex flex-col justify-between">
@@ -811,7 +833,7 @@ function TiendaContent() {
                           }}
                           className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/subrow">
                           <div className="relative bg-gray-50 h-40 flex items-center justify-center text-2xl overflow-hidden group-hover/subrow:bg-green-50/50 transition-colors w-full">
-                            <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
+                            <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
                             <BtnFavorito prod={p} />
                           </div>
                           <div className="p-1.5 flex-1 min-w-0 flex flex-col justify-between">
@@ -867,7 +889,7 @@ function TiendaContent() {
                           }}
                           className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/catrow">
                           <div className="relative bg-gray-50 h-40 flex items-center justify-center text-2xl overflow-hidden group-hover/catrow:bg-green-50/50 transition-colors w-full">
-                            <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
+                            <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
                             <BtnFavorito prod={p} />
                           </div>
                           <div className="p-1.5 flex-1 min-w-0 flex flex-col justify-between">
@@ -906,7 +928,7 @@ function TiendaContent() {
                     }}
                     className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group">
                     <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-48 md:h-36 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
-                      <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
+                      <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
                       <BtnFavorito prod={p} />
                       {p.stock > 0 && p.stock < 5 && (
                         <span className="absolute top-2 left-2 text-[9px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded-full z-10">
