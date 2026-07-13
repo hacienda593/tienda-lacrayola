@@ -307,7 +307,7 @@ function CategoriasPanelInner({ open, onClose }: Props) {
           categoria,
           subcategorias: Array.from(subMap.entries())
             .map(([nombre, cantidad]) => ({ nombre, cantidad }))
-            .sort((a, b) => b.cantidad - a.cantidad),
+            .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })),
           total: Array.from(subMap.values()).reduce((s, n) => s + n, 0),
         }))
         .sort((a, b) => b.total - a.total)
