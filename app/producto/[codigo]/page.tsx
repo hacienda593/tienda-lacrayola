@@ -4,21 +4,13 @@ import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
-import { Producto } from '@/lib/types'
+import { Producto, CAT_EMOJI } from '@/lib/types'
 import {
   ArrowLeft, Heart, ShoppingCart, Plus, Minus,
   Package, Tag, Barcode, CheckCircle, Share2,
 } from 'lucide-react'
 
 function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
-
-const CAT_EMOJI: Record<string, string> = {
-  'Escolar':'📚','Arte':'🎨','Oficina':'🖊️','Tecnologia':'💻','Juguetes':'🧸',
-  'Manualidades':'✂️','Libros':'📖','Pintura':'🖌️','Papeleria':'📄',
-  'Abarrotes':'🥬','Bebidas y Licores':'🥤','Congelados y Refrigerados':'❄️',
-  'Golosinas y Snacks':'🍪','Panadería':'🍞','Cuidado Personal':'🧴',
-  'Hogar y Limpieza':'🧹','Mascotas':'🐶','Huevos Lácteos y Leches':'🥛',
-}
 
 const CAT_BG: Record<string, string> = {
   'Escolar':'from-blue-50 to-blue-100','Arte':'from-purple-50 to-purple-100',

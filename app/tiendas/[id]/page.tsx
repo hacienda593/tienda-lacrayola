@@ -4,7 +4,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
-import { OlTienda, Producto } from '@/lib/types'
+import { OlTienda, Producto, CAT_EMOJI } from '@/lib/types'
 import { customSearch } from '@/lib/search'
 import {
   ArrowLeft, Search, ShoppingCart, Plus, Minus,
@@ -180,15 +180,7 @@ function TiendaVerticalProductCard({ p, tienda, onSelect }: { p: Producto; tiend
   )
 }
 
-const CAT_EMOJI: Record<string, string> = {
-  'Escolar':'📚','Arte':'🎨','Oficina':'🖊️','Tecnologia':'💻','Juguetes':'🧸',
-  'Manualidades':'✂️','Libros':'📖','Pintura':'🖌️','Papeleria':'📄',
-  'Alimentos':'🥦','Bebidas':'🥤','Limpieza':'🧹','Higiene':'🧴',
-  'Farmacia':'💊','Electronicos':'💡','Ropa':'👕',
-  'Abarrotes':'🥬','Bebidas y Licores':'🥤','Congelados y Refrigerados':'❄️',
-  'Golosinas y Snacks':'🍪','Panadería':'🍞','Cuidado Personal':'🧴',
-  'Hogar y Limpieza':'🧹','Mascotas':'🐶','Huevos Lácteos y Leches':'🥛',
-}
+
 
 function BtnAgregar({ prod, tiendaId, tiendaNombre }: { prod: Producto; tiendaId: string; tiendaNombre: string }) {
   const [cantidad, setCantidad] = useState(() => {

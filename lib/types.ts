@@ -50,3 +50,48 @@ export interface Pedido {
   total_items:    number
   created_at:     string
 }
+
+export const CAT_EMOJI: Record<string, string> = {
+  'Escolar': '📚',
+  'Arte': '🎨',
+  'Oficina': '🖊️',
+  'Tecnologia': '💻',
+  'Juguetes': '🧸',
+  'Manualidades': '✂️',
+  'Libros': '📖',
+  'Pintura': '🖌️',
+  'Papeleria': '📄',
+  'Alimentos': '🥦',
+  'Bebidas': '🥤',
+  'Limpieza': '🧹',
+  'Higiene': '🧴',
+  'Farmacia': '💊',
+  'Electronicos': '💡',
+  'Ropa': '👕',
+  'Abarrotes': '🥬',
+  'Bebidas y Licores': '🥤',
+  'Congelados y Refrigerados': '❄️',
+  'Golosinas y Snacks': '🍪',
+  'Panadería': '🍞',
+  'Cuidado Personal': '🧴',
+  'Hogar y Limpieza': '🧹',
+  'Mascotas': '🐶',
+  'Huevos Lácteos y Leches': '🥛',
+  
+  // Variaciones de nombres de categorías en base de datos de Supermercados
+  'Lácteos': '🥛',
+  'Aguas y bebidas': '🥤',
+  'Snacks y golosinas': '🍪',
+  'Snacks y Golosinas': '🍪',
+  'Cuidado corporal': '🧴',
+  'Cuidado corporal y facial': '🧴',
+  'Cuidado capilar': '🧴',
+  'Limpieza para el hogar': '🧹',
+  'Limpieza para el Hogar': '🧹',
+  'Carnes y embutidos': '🥩',
+  'Carnes': '🥩',
+  'Frutas y verduras': '🍎',
+  'Panadería y pastelería': '🍞',
+  'Desayunos': '🍳',
+  'Congelados': '❄️',
+}

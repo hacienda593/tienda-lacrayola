@@ -11,8 +11,7 @@ import { getPuntosCloud, EstadoPuntosCloud } from '@/lib/puntosCloud'
 import { getPerfil } from '@/lib/perfil'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { OlTienda } from '@/lib/types'
-
+import { OlTienda, CAT_EMOJI } from '@/lib/types'
 const STORE_EMOJI: Record<string, string> = {
   supermercado: '🛒',
   farmacia: '💊',
@@ -21,26 +20,6 @@ const STORE_EMOJI: Record<string, string> = {
   tecnologia: '💻',
   ropa: '👕',
   otros: '🏪',
-}
-
-const CAT_EMOJI: Record<string, string> = {
-  'Escolar':      '📚',
-  'Arte':         '🎨',
-  'Oficina':      '🖊️',
-  'Tecnologia':   '💻',
-  'Juguetes':     '🧸',
-  'Manualidades': '✂️',
-  'Libros':       '📖',
-  'Pintura':      '🖌️',
-  'Papeleria':    '📄',
-  'Alimentos':    '🥦',
-  'Bebidas':      '🥤',
-  'Limpieza':     '🧹',
-  'Higiene':      '🧴',
-  'Farmacia':     '💊',
-  'Carnes':       '🥩',
-  'Lacteos':      '🧀',
-  'Snacks':       '🍿',
 }
 
 type Tab = 'cuenta' | 'explorar'

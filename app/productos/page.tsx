@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { customSearch } from '@/lib/search'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
-import { Producto } from '@/lib/types'
+import { Producto, CAT_EMOJI } from '@/lib/types'
 import { Search, X, ShoppingCart, Plus, Minus, Heart, ArrowUpDown, Share2, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { getPerfil } from '@/lib/perfil'
@@ -16,15 +16,6 @@ function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
 
 // --- CONFIGURACIÓN DE VISUALIZACIÓN REVERSIBLE ---
 const USE_QUICK_VIEW = true; // Cambiar a 'false' para deshabilitar el Bottom Sheet/Popup y volver al comportamiento original
-
-const CAT_EMOJI: Record<string, string> = {
-  'Escolar':'📚','Arte':'🎨','Oficina':'🖊️','Tecnologia':'💻','Juguetes':'🧸',
-  'Manualidades':'✂️','Libros':'📖','Pintura':'🖌️','Papeleria':'📄',
-  'Abarrotes':'🥬','Bebidas y Licores':'🥤','Congelados y Refrigerados':'❄️',
-  'Golosinas y Snacks':'🍪','Panadería':'🍞','Cuidado Personal':'🧴',
-  'Hogar y Limpieza':'🧹','Mascotas':'🐶','Huevos Lácteos y Leches':'🥛',
-  'Alimentos':'🥦','Bebidas':'🥤','Limpieza':'🧹','Higiene':'🧴'
-}
 
 type Orden = 'relevancia' | 'precio_asc' | 'precio_desc' | 'nombre_asc'
 

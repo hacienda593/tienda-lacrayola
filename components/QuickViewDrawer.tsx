@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { X, ShoppingCart, Heart, Check, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react'
-import { Producto } from '@/lib/types'
+import { Producto, CAT_EMOJI } from '@/lib/types'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 
@@ -14,14 +14,6 @@ interface QuickViewDrawerProps {
   onClose: () => void
   onNext?: () => void
   onPrev?: () => void
-}
-
-const CAT_EMOJI: Record<string, string> = {
-  'Escolar': '📚', 'Arte': '🎨', 'Oficina': '🖊️', 'Tecnologia': '💻',
-  'Juguetes': '🧸', 'Manualidades': '✂️', 'Libros': '📖', 'Pintura': '🖌️',
-  'Abarrotes': '🥬', 'Bebidas y Licores': '🥤', 'Congelados y Refrigerados': '❄️',
-  'Golosinas y Snacks': '🍪', 'Panadería': '🍞', 'Cuidado Personal': '🧴',
-  'Hogar y Limpieza': '🧹', 'Mascotas': '🐶', 'Huevos Lácteos y Leches': '🥛'
 }
 
 export default function QuickViewDrawer({ producto, prevProducto, nextProducto, isOpen, onClose, onNext, onPrev }: QuickViewDrawerProps) {
