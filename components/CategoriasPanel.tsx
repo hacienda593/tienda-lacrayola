@@ -91,6 +91,106 @@ function toSentenceCase(str: string) {
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
 }
 
+function obtenerEmojiSubcategoria(nombreSub: string, categoria: string): string {
+  const subNormalized = (nombreSub || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const catNormalized = (categoria || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  // 1. Detección por palabras clave en la subcategoría
+  if (subNormalized.includes('aceite')) return '🛢️';
+  if (subNormalized.includes('arroz')) return '🍚';
+  if (subNormalized.includes('atun') || subNormalized.includes('pescado') || subNormalized.includes('marisco')) return '🐟';
+  if (subNormalized.includes('enlatado') || subNormalized.includes('conserva') || subNormalized.includes('salsa') || subNormalized.includes('aderezo') || subNormalized.includes('condimento') || subNormalized.includes('alineo')) return '🥫';
+  if (subNormalized.includes('azucar') || subNormalized.includes('endulzante') || subNormalized.includes('reposteria')) return '🍬';
+  if (subNormalized.includes('cafe')) return '☕';
+  if (subNormalized.includes('cereal') || subNormalized.includes('granola') || subNormalized.includes('avena')) return '🥣';
+  if (subNormalized.includes('fideo') || subNormalized.includes('pasta') || subNormalized.includes('sopa')) return '🍝';
+  if (subNormalized.includes('grano') || subNormalized.includes('semilla')) return '🫘';
+  if (subNormalized.includes('harina')) return '🌾';
+  if (subNormalized.includes('te ') || subNormalized.includes('aromatica') || subNormalized === 'te') return '🍵';
+  if (subNormalized.includes('mermelada') || subNormalized.includes('untable') || subNormalized.includes('dulce') || subNormalized.includes('postre') || subNormalized.includes('chocolate') || subNormalized.includes('bocadito')) return '🍫';
+  if (subNormalized.includes('caramelo') || subNormalized.includes('chicle')) return '🍬';
+  if (subNormalized.includes('snack') || subNormalized.includes('papas') || subNormalized.includes('mani') || subNormalized.includes('frutos secos') || subNormalized.includes('galleta')) return '🍿';
+  if (subNormalized.includes('galleta')) return '🍪';
+
+  if (subNormalized.includes('agua')) return '💧';
+  if (subNormalized.includes('cola') || subNormalized.includes('gaseosa') || subNormalized.includes('refresco') || subNormalized.includes('bebida')) return '🥤';
+  if (subNormalized.includes('energizante') || subNormalized.includes('hidratante')) return '⚡';
+  if (subNormalized.includes('jugo')) return '🧃';
+  if (subNormalized.includes('cerveza')) return '🍺';
+  if (subNormalized.includes('vino') || subNormalized.includes('licor')) return '🍷';
+
+  if (subNormalized.includes('shampoo') || subNormalized.includes('acondicionador') || subNormalized.includes('capilar') || subNormalized.includes('crema') || subNormalized.includes('facial') || subNormalized.includes('locion')) return '🧴';
+  if (subNormalized.includes('jabon') || subNormalized.includes('ducha') || subNormalized.includes('gel') || subNormalized.includes('intimo') || subNormalized.includes('toalla humeda') || subNormalized.includes('femenina')) return '🧼';
+  if (subNormalized.includes('desodorante') || subNormalized.includes('antitranspirante')) return '💨';
+  if (subNormalized.includes('afeita') || subNormalized.includes('depila') || subNormalized.includes('rasuradora')) return '🪒';
+  if (subNormalized.includes('oral') || subNormalized.includes('diente') || subNormalized.includes('dental') || subNormalized.includes('bucal') || subNormalized.includes('cepillo')) return '🪥';
+  if (subNormalized.includes('perfume') || subNormalized.includes('splash')) return '🧪';
+
+  if (subNormalized.includes('pollo') || subNormalized.includes('ave') || subNormalized.includes('carne') || subNormalized.includes('res') || subNormalized.includes('cerdo')) return '🥩';
+  if (subNormalized.includes('embutido') || subNormalized.includes('chorizo') || subNormalized.includes('salchicha') || subNormalized.includes('jamon')) return '🌭';
+  if (subNormalized.includes('helado')) return '🍨';
+
+  if (subNormalized.includes('desechable') || subNormalized.includes('funda') || subNormalized.includes('plato') || subNormalized.includes('vaso') || subNormalized.includes('cubierto') || subNormalized.includes('servilleta') || subNormalized.includes('papel y empaque')) return '🍽️';
+
+  if (subNormalized.includes('limpieza') || subNormalized.includes('desinfectante') || subNormalized.includes('lavavajillas') || subNormalized.includes('multiuso') || subNormalized.includes('utensilio')) return '🧹';
+  if (subNormalized.includes('detergente') || subNormalized.includes('suavizante') || subNormalized.includes('blanqueador') || subNormalized.includes('ropa')) return '🫧';
+
+  if (subNormalized.includes('leche') || subNormalized.includes('yogurt')) return '🥛';
+  if (subNormalized.includes('queso')) return '🧀';
+  if (subNormalized.includes('huevo')) return '🥚';
+  if (subNormalized.includes('mantequilla') || subNormalized.includes('crema de leche')) return '🧈';
+
+  if (subNormalized.includes('perro') || subNormalized.includes('canino')) return '🐶';
+  if (subNormalized.includes('gato') || subNormalized.includes('felino')) return '🐱';
+  if (subNormalized.includes('mascota') || subNormalized.includes('animal')) return '🐹';
+
+  if (subNormalized.includes('pan ') || subNormalized === 'pan' || subNormalized.includes('panaderia') || subNormalized.includes('pastel') || subNormalized.includes('cake')) return '🍞';
+
+  if (subNormalized.includes('insecticida') || subNormalized.includes('mosquito') || subNormalized.includes('mosca') || subNormalized.includes('raton') || subNormalized.includes('rastrero') || subNormalized.includes('insecto')) return '🚫';
+
+  if (subNormalized.includes('cuaderno') || subNormalized.includes('carpeta')) return '📓';
+  if (subNormalized.includes('lapiz') || subNormalized.includes('esfero') || subNormalized.includes('pluma') || subNormalized.includes('boligrafo') || subNormalized.includes('marcador') || subNormalized.includes('dibujo')) return '✏️';
+  if (subNormalized.includes('mochila') || subNormalized.includes('bolso')) return '🎒';
+  if (subNormalized.includes('regla') || subNormalized.includes('escuadra')) return '📐';
+  if (subNormalized.includes('goma') || subNormalized.includes('silicona') || subNormalized.includes('pega') || subNormalized.includes('grapadora')) return '🧪';
+  if (subNormalized.includes('pintura') || subNormalized.includes('oleo') || subNormalized.includes('tempera') || subNormalized.includes('acrilico') || subNormalized.includes('pincel')) return '🎨';
+  if (subNormalized.includes('fomix') || subNormalized.includes('cartulina') || subNormalized.includes('papel')) return '📄';
+  if (subNormalized.includes('cinta')) return '🎀';
+  if (subNormalized.includes('escarcha')) return '✨';
+  if (subNormalized.includes('limpiapipas')) return '🧶';
+  if (subNormalized.includes('libro') || subNormalized.includes('novela') || subNormalized.includes('cuento') || subNormalized.includes('lectura')) return '📖';
+  if (subNormalized.includes('peluche')) return '🧸';
+  if (subNormalized.includes('regalo')) return '🎁';
+  if (subNormalized.includes('fiesta')) return '🎉';
+  if (subNormalized.includes('yanbal')) return '💄';
+
+  if (subNormalized.includes('audifono') || subNormalized.includes('parlante') || subNormalized.includes('tecnologia') || subNormalized.includes('teclado') || subNormalized.includes('mouse') || subNormalized.includes('cable') || subNormalized.includes('cargador')) return '💻';
+
+  if (subNormalized.includes('sexual') || subNormalized.includes('preservativo') || subNormalized.includes('condon') || subNormalized.includes('lubricante')) return '❤️';
+  if (subNormalized.includes('farmacia') || subNormalized.includes('medicina') || subNormalized.includes('pastilla') || subNormalized.includes('salud') || subNormalized.includes('bienestar')) return '💊';
+
+  // 2. Respaldo por categoría si no hubo coincidencia por palabra clave
+  if (catNormalized.includes('abarrotes') || catNormalized.includes('alimento')) return '🥬';
+  if (catNormalized.includes('bebida') || catNormalized.includes('licor') || catNormalized.includes('agua')) return '🥤';
+  if (catNormalized.includes('personal') || catNormalized.includes('higiene') || catNormalized.includes('belleza') || catNormalized.includes('oral') || catNormalized.includes('capilar')) return '🧴';
+  if (catNormalized.includes('limpieza') || catNormalized.includes('hogar') || catNormalized.includes('lavado')) return '🧹';
+  if (catNormalized.includes('lacteo') || catNormalized.includes('leche')) return '🥛';
+  if (catNormalized.includes('mascota')) return '🐶';
+  if (catNormalized.includes('panaderia') || catNormalized.includes('pasteleria')) return '🍞';
+  if (catNormalized.includes('congelado') || catNormalized.includes('refrigerado')) return '❄️';
+  if (catNormalized.includes('golosina') || catNormalized.includes('snack') || catNormalized.includes('dulce')) return '🍪';
+  if (catNormalized.includes('farmacia') || catNormalized.includes('salud')) return '💊';
+  if (catNormalized.includes('escolar') || catNormalized.includes('libreria') || catNormalized.includes('papeleria')) return '📚';
+  if (catNormalized.includes('arte') || catNormalized.includes('pintura')) return '🎨';
+  if (catNormalized.includes('oficina')) return '🖊️';
+  if (catNormalized.includes('manualidades') || catNormalized.includes('peluche')) return '✂️';
+  if (catNormalized.includes('libros')) return '📖';
+  if (catNormalized.includes('tecnologia')) return '💻';
+  if (catNormalized.includes('juguetes')) return '🧸';
+
+  return '📦';
+}
+
 interface CatData {
   categoria:    string
   subcategorias: { nombre: string; cantidad: number }[]
@@ -312,7 +412,7 @@ function CategoriasPanelInner({ open, onClose }: Props) {
         const match = FALLBACK_SUBS[activaData.categoria]?.find(f => f.nombre.toLowerCase() === sub.nombre.toLowerCase())
         return {
           nombre: sub.nombre,
-          emoji: match?.emoji || '📦',
+          emoji: match?.emoji || obtenerEmojiSubcategoria(sub.nombre, activaData.categoria),
           hot: match?.hot || (idx % 3 === 0)
         }
       })
