@@ -209,7 +209,7 @@ export default function Header() {
                 className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shrink-0 mr-2"
               >
                 <LayoutGrid size={13} />
-                Categorías
+                Tiendas
               </button>
 
               {/* Links rápidos desktop */}

@@ -451,7 +451,7 @@ export default function Home() {
   return (
     <div>
       {/* ── TRUST BADGES ── */}
-      <div className="bg-white border-b border-gray-100">
+      <div className="hidden md:block bg-white border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 py-4 grid grid-cols-3 gap-4">
           {[
             { icon: Truck,  text: 'Envíos a domicilio', sub: 'En Los Bancos' },
