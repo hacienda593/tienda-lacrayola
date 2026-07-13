@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { OlTienda } from '@/lib/types'
 import { Loader2, Store, ChevronRight, MapPin } from 'lucide-react'
@@ -15,8 +15,11 @@ const CAT_CFG: Record<string, { emoji: string; color: string; bg: string }> = {
   otros:        { emoji: '🏪', color: 'text-gray-700',   bg: 'bg-gray-50' },
 }
 
-export default function TiendasPage() {
+function TiendasContent() {
   const router  = useRouter()
+  const searchParams = useSearchParams()
+  const catFiltrada = searchParams.get('cat') || ''
+
   const [tiendas,  setTiendas]  = useState<OlTienda[]>([])
   const [cargando, setCargando] = useState(true)
 
@@ -43,6 +46,7 @@ export default function TiendasPage() {
   }, [])
 
   const categorias = [...new Set(tiendas.map(t => t.categoria ?? 'otros'))]
+    .filter(c => !catFiltrada || c.toLowerCase() === catFiltrada.toLowerCase())
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
@@ -128,5 +132,17 @@ export default function TiendasPage() {
         })
       )}
     </div>
+  )
+}
+
+export default function TiendasPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center py-16">
+        <Loader2 size={28} className="animate-spin text-green-500" />
+      </div>
+    }>
+      <TiendasContent />
+    </Suspense>
   )
 }

@@ -412,7 +412,7 @@ function ProductosContent() {
   }, [base, query, cat, sub, tiendaId, crayolaId, marca, stockFiltro, orden, soloFrecuentes, frecuentesCodigos])
 
   const porTienda = useMemo(() => {
-    if (!query.trim() || tiendaId) return null
+    if ((!query.trim() && !cat) || tiendaId) return null
     const groups: Record<string, Producto[]> = {}
     filtrados.forEach(p => {
       const tId = p.tienda_id || crayolaId || 'crayola'
@@ -428,7 +428,7 @@ function ProductosContent() {
         productos: prods
       }
     })
-  }, [filtrados, query, tiendaId, tiendasMap, crayolaId])
+  }, [filtrados, query, cat, tiendaId, tiendasMap, crayolaId])
 
   const catsCtx = useMemo(() => {
     const q = query.trim()
