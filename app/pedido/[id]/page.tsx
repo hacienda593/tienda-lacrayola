@@ -31,6 +31,7 @@ interface Item {
   picking_completado?: boolean
   picking_agotado?: boolean
   tienda_nombre?: string | null
+  imagen_url?: string | null
 }
 
 interface Pedido {
@@ -138,14 +139,19 @@ export default function PedidoPage() {
       const codigos = its.map(it => it.codigo).filter(Boolean)
       const { data: prods } = await supabase
         .from('ol_productos')
-        .select('codigo,descripcion,tienda_nombre')
+        .select('codigo,descripcion,imagen_url,tienda_id,ol_tiendas(nombre)')
         .in('codigo', codigos)
       if (prods && prods.length > 0) {
         const prodMap = new Map(prods.map(pr => [pr.codigo, pr.descripcion]))
-        const tiendaMap = new Map(prods.map(pr => [pr.codigo, pr.tienda_nombre]))
+        const imageMap = new Map(prods.map(pr => [pr.codigo, pr.imagen_url]))
+        const tiendaMap = new Map(prods.map(pr => [
+          pr.codigo, 
+          (pr.ol_tiendas as any)?.nombre || null
+        ]))
         itemsMapeados = its.map(it => ({
           ...it,
           descripcion: prodMap.get(it.codigo) || it.descripcion,
+          imagen_url: imageMap.get(it.codigo) || null,
           tienda_nombre: tiendaMap.get(it.codigo) || null
         })) as Item[]
       }
@@ -488,32 +494,43 @@ const HORARIOS_TIENDAS: Record<string, string> = {
             const isPending = !isPicked && !isAgotado
 
             return (
-              <div key={i} className="flex items-center justify-between text-sm pt-2 first:pt-0">
-                <div className="flex-1 min-w-0 pr-2">
-                  <span className={`text-gray-700 block truncate ${isAgotado ? 'line-through text-gray-400' : ''}`}>
-                    {it.descripcion} <span className="text-gray-400 font-medium text-xs">×{it.cantidad}</span>
-                  </span>
+              <div key={i} className="flex items-center justify-between text-sm pt-2 first:pt-0 gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  {/* Miniature Thumbnail */}
+                  <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-150 flex items-center justify-center overflow-hidden shrink-0">
+                    {it.imagen_url ? (
+                      <img src={it.imagen_url} alt={it.descripcion} className="w-full h-full object-contain p-1" />
+                    ) : (
+                      <Package size={16} className="text-gray-400" />
+                    )}
+                  </div>
                   
-                  {/* Badge de estado en tiempo real */}
-                  {showStatus && (
-                    <div className="mt-0.5">
-                      {isPicked && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded">
-                          🧺 En canasta
-                        </span>
-                      )}
-                      {isAgotado && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-650 bg-red-50 px-1.5 py-0.5 rounded">
-                          ❌ No disponible
-                        </span>
-                      )}
-                      {isPending && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gray-450 bg-gray-50 px-1.5 py-0.5 rounded">
-                          ⏳ Pendiente
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-gray-750 block font-medium truncate ${isAgotado ? 'line-through text-gray-400' : ''}`}>
+                      {it.descripcion} <span className="text-gray-400 font-normal text-xs">×{it.cantidad}</span>
+                    </span>
+                    
+                    {/* Badge de estado en tiempo real */}
+                    {showStatus && (
+                      <div className="mt-0.5">
+                        {isPicked && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded">
+                            🧺 En canasta
+                          </span>
+                        )}
+                        {isAgotado && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-650 bg-red-50 px-1.5 py-0.5 rounded">
+                            ❌ No disponible
+                          </span>
+                        )}
+                        {isPending && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gray-450 bg-gray-50 px-1.5 py-0.5 rounded">
+                            ⏳ Pendiente
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <span className={`text-gray-800 font-semibold shrink-0 ${isAgotado ? 'text-gray-400 line-through' : ''}`}>
                   {fmt(it.precio_unitario * it.cantidad)}

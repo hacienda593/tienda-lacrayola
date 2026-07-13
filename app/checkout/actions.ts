@@ -10,6 +10,8 @@ export interface LineaCarrito {
   codigo: string
   cantidad: number
   precio_unitario?: number
+  descripcion?: string
+  categoria?: string
 }
 
 export interface DatosCliente {
@@ -126,14 +128,17 @@ export async function crearPedido(
   const mapaDetalle = new Map((productosDetalle ?? []).map(p => [p.codigo, p]))
 
   const { error: errItems } = await supabaseServer.from('ol_pedido_items').insert(
-    items.map(i => ({
-      pedido_id:       pedido.id,
-      codigo:          i.codigo,
-      descripcion:     mapaDetalle.get(i.codigo)?.descripcion ?? i.codigo,
-      categoria:       mapaDetalle.get(i.codigo)?.categoria ?? '',
-      precio_unitario: i.precio_unitario,
-      cantidad:        i.cantidad,
-    }))
+    items.map(i => {
+      const orig = lineas.find(l => l.codigo === i.codigo)
+      return {
+        pedido_id:       pedido.id,
+        codigo:          i.codigo,
+        descripcion:     orig?.descripcion || mapaDetalle.get(i.codigo)?.descripcion || i.codigo,
+        categoria:       orig?.categoria || mapaDetalle.get(i.codigo)?.categoria || '',
+        precio_unitario: i.precio_unitario,
+        cantidad:        i.cantidad,
+      }
+    })
   )
 
   if (errItems) {

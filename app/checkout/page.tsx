@@ -478,7 +478,13 @@ export default function CheckoutPage() {
         geo_lng: metodoEntrega === 'retiro' ? null : geo?.lng, 
         user_id: user?.id ?? null 
       },
-      items.map(i => ({ codigo: i.codigo, cantidad: i.cantidad, precio_unitario: i.precio_unitario }))
+      items.map(i => ({
+        codigo: i.codigo,
+        cantidad: i.cantidad,
+        precio_unitario: i.precio_unitario,
+        descripcion: i.descripcion,
+        categoria: i.categoria
+      }))
     )
 
     if (!resultado.ok) {
