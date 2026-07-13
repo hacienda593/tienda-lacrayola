@@ -97,6 +97,89 @@ function TiendaProductCard({ p, tienda, onSelect }: { p: Producto; tienda: OlTie
   )
 }
 
+function TiendaVerticalProductCard({ p, tienda, onSelect }: { p: Producto; tienda: OlTienda; onSelect?: (p: Producto) => void }) {
+  const router = useRouter()
+  const [cantidad, setCantidad] = useState(() => {
+    return getCarrito().find(i => i.codigo === p.codigo)?.cantidad ?? 0
+  })
+
+  useEffect(() => {
+    const sync = () => {
+      setCantidad(getCarrito().find(i => i.codigo === p.codigo)?.cantidad ?? 0)
+    }
+    window.addEventListener('carrito-update', sync)
+    return () => window.removeEventListener('carrito-update', sync)
+  }, [p.codigo])
+
+  const agotado = p.stock <= 0
+
+  function agregar(e: React.MouseEvent) {
+    e.stopPropagation(); e.preventDefault()
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15)
+    }
+    agregarItem({
+      ...p,
+      precio_publico: p.precio_publico,
+      tienda_id: tienda.id,
+      tienda_nombre: tienda.nombre
+    }, 1)
+  }
+
+  return (
+    <div
+      onClick={() => {
+        if (USE_QUICK_VIEW && onSelect) {
+          onSelect(p)
+        } else {
+          router.push(`/producto/${encodeURIComponent(p.codigo)}`)
+        }
+      }}
+      className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group"
+    >
+      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-48 md:h-36 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
+        <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
+        <BtnFavorito prod={p} />
+        {p.stock > 0 && p.stock < 5 && (
+          <span className="absolute top-2 left-2 text-[9px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded-full z-10 animate-pulse">
+            ⚡ Últimas
+          </span>
+        )}
+        {cantidad === 0 && p.stock > 0 && (
+          <button
+            onClick={agregar}
+            className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-90 transition z-20 cursor-pointer border border-white/60"
+            aria-label="Agregar al carrito"
+          >
+            <Plus size={16} className="stroke-[3]" />
+          </button>
+        )}
+        {agotado && (
+          <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
+            <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">AGOTADO</span>
+          </div>
+        )}
+      </div>
+      <div className="p-1.5 flex-1 flex flex-col justify-between">
+        <div className="flex-1">
+          <div className="text-[11px] md:text-xs font-bold text-gray-800 leading-tight md:leading-snug line-clamp-2 min-h-[26px] md:min-h-[32px] mb-0.5">{p.descripcion}</div>
+          {p.marca && (
+            <div className="text-[9px] md:text-[10px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+          )}
+        </div>
+        <div className="mt-2 space-y-1.5">
+          <div className="text-sm font-black text-gray-900">{fmt(p.precio_publico)}</div>
+          {cantidad > 0 && (
+            <div className="w-full animate-fade-in">
+              <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const CAT_EMOJI: Record<string, string> = {
   'Escolar':'📚','Arte':'🎨','Oficina':'🖊️','Tecnologia':'💻','Juguetes':'🧸',
   'Manualidades':'✂️','Libros':'📖','Pintura':'🖌️','Papeleria':'📄',
@@ -771,33 +854,12 @@ function TiendaContent() {
               </div>
               <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
                 {frecuentes.map(p => (
-                  <div key={p.codigo}
-                    onClick={() => {
-                      if (USE_QUICK_VIEW) {
-                        openQuickView(p, frecuentes)
-                      } else {
-                        router.push(`/producto/${encodeURIComponent(p.codigo)}`)
-                      }
-                    }}
-                    className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/freq">
-                    <div className="relative bg-gray-50 h-40 md:h-28 flex items-center justify-center text-2xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors w-full">
-                      <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
-                    </div>
-                    <div className="p-1.5 flex-1 min-w-0 flex flex-col justify-between">
-                      <div>
-                        <div className="text-[10px] md:text-[11px] font-bold text-gray-800 leading-tight md:leading-snug line-clamp-2 min-h-[24px] md:min-h-[32px] mb-0.5">{p.descripcion}</div>
-                        {p.marca && (
-                          <div className="text-[8px] md:text-[9px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
-                        )}
-                      </div>
-                      <div className="mt-2 space-y-1.5">
-                        <div className="text-[11px] md:text-xs font-black text-gray-900">{fmt(p.precio_publico)}</div>
-                        <div className="w-full">
-                          <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <TiendaProductCard
+                    key={p.codigo}
+                    p={p}
+                    tienda={tienda}
+                    onSelect={(prod) => openQuickView(prod, frecuentes)}
+                  />
                 ))}
               </div>
             </div>
@@ -858,34 +920,12 @@ function TiendaContent() {
                     </div>
                     <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
                       {prodsEnSub.map(p => (
-                        <div key={p.codigo}
-                          onClick={() => {
-                            if (USE_QUICK_VIEW) {
-                              openQuickView(p, prodsEnSub)
-                            } else {
-                              router.push(`/producto/${encodeURIComponent(p.codigo)}`)
-                            }
-                          }}
-                          className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/subrow">
-                          <div className="relative bg-gray-50 h-40 flex items-center justify-center text-2xl overflow-hidden group-hover/subrow:bg-green-50/50 transition-colors w-full">
-                            <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
-                            <BtnFavorito prod={p} />
-                          </div>
-                          <div className="p-1.5 flex-1 min-w-0 flex flex-col justify-between">
-                            <div>
-                              <div className="text-[10px] font-bold text-gray-800 leading-tight line-clamp-2 min-h-[24px] mb-0.5">{p.descripcion}</div>
-                              {p.marca && (
-                                <div className="text-[8px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
-                              )}
-                            </div>
-                            <div className="mt-2 space-y-1.5">
-                              <div className="text-[11px] font-black text-gray-900">{fmt(p.precio_publico)}</div>
-                              <div className="w-full">
-                                <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        <TiendaProductCard
+                          key={p.codigo}
+                          p={p}
+                          tienda={tienda}
+                          onSelect={(prod) => openQuickView(prod, prodsEnSub)}
+                        />
                       ))}
                     </div>
                   </div>
@@ -901,34 +941,12 @@ function TiendaContent() {
                     <h3 className="font-extrabold text-gray-900 text-sm">Otros productos</h3>
                     <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
                       {prodsSinSub.map(p => (
-                        <div key={p.codigo}
-                          onClick={() => {
-                            if (USE_QUICK_VIEW) {
-                              openQuickView(p, prodsSinSub)
-                            } else {
-                              router.push(`/producto/${encodeURIComponent(p.codigo)}`)
-                            }
-                          }}
-                          className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/subrow">
-                          <div className="relative bg-gray-50 h-40 flex items-center justify-center text-2xl overflow-hidden group-hover/subrow:bg-green-50/50 transition-colors w-full">
-                            <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
-                            <BtnFavorito prod={p} />
-                          </div>
-                          <div className="p-1.5 flex-1 min-w-0 flex flex-col justify-between">
-                            <div>
-                              <div className="text-[10px] font-bold text-gray-800 leading-tight line-clamp-2 min-h-[24px] mb-0.5">{p.descripcion}</div>
-                              {p.marca && (
-                                <div className="text-[8px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
-                              )}
-                            </div>
-                            <div className="mt-2 space-y-1.5">
-                              <div className="text-[11px] font-black text-gray-900">{fmt(p.precio_publico)}</div>
-                              <div className="w-full">
-                                <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        <TiendaProductCard
+                          key={p.codigo}
+                          p={p}
+                          tienda={tienda}
+                          onSelect={(prod) => openQuickView(prod, prodsSinSub)}
+                        />
                       ))}
                     </div>
                   </div>
@@ -957,34 +975,12 @@ function TiendaContent() {
                     </div>
                     <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
                       {prodsEnCat.slice(0, 15).map(p => (
-                        <div key={p.codigo}
-                          onClick={() => {
-                            if (USE_QUICK_VIEW) {
-                              openQuickView(p, prodsEnCat.slice(0, 15))
-                            } else {
-                              router.push(`/producto/${encodeURIComponent(p.codigo)}`)
-                            }
-                          }}
-                          className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/catrow">
-                          <div className="relative bg-gray-50 h-40 flex items-center justify-center text-2xl overflow-hidden group-hover/catrow:bg-green-50/50 transition-colors w-full">
-                            <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
-                            <BtnFavorito prod={p} />
-                          </div>
-                          <div className="p-1.5 flex-1 min-w-0 flex flex-col justify-between">
-                            <div>
-                              <div className="text-[10px] font-bold text-gray-800 leading-tight line-clamp-2 min-h-[24px] mb-0.5">{p.descripcion}</div>
-                              {p.marca && (
-                                <div className="text-[8px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
-                              )}
-                            </div>
-                            <div className="mt-2 space-y-1.5">
-                              <div className="text-[11px] font-black text-gray-900">{fmt(p.precio_publico)}</div>
-                              <div className="w-full">
-                                <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        <TiendaProductCard
+                          key={p.codigo}
+                          p={p}
+                          tienda={tienda}
+                          onSelect={(prod) => openQuickView(prod, prodsEnCat.slice(0, 15))}
+                        />
                       ))}
                     </div>
                   </div>
@@ -996,39 +992,12 @@ function TiendaContent() {
             <>
               <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-1.5 md:gap-4">
                 {filtrados.slice(0, visibles).map(p => (
-                  <div key={p.codigo}
-                    onClick={() => {
-                      if (USE_QUICK_VIEW) {
-                        openQuickView(p, filtrados)
-                      } else {
-                        router.push(`/producto/${encodeURIComponent(p.codigo)}`)
-                      }
-                    }}
-                    className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group">
-                    <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-48 md:h-36 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
-                      <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
-                      <BtnFavorito prod={p} />
-                      {p.stock > 0 && p.stock < 5 && (
-                        <span className="absolute top-2 left-2 text-[9px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded-full z-10">
-                          ⚡ Últimas
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-1.5 flex-1 flex flex-col justify-between">
-                      <div className="flex-1">
-                        <div className="text-[11px] md:text-xs font-bold text-gray-800 leading-tight md:leading-snug line-clamp-2 min-h-[26px] md:min-h-[32px] mb-0.5">{p.descripcion}</div>
-                        {p.marca && (
-                          <div className="text-[9px] md:text-[10px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
-                        )}
-                      </div>
-                      <div className="mt-2 space-y-1.5">
-                        <div className="text-sm font-black text-gray-900">{fmt(p.precio_publico)}</div>
-                        <div className="w-full">
-                          <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <TiendaVerticalProductCard
+                    key={p.codigo}
+                    p={p}
+                    tienda={tienda}
+                    onSelect={(prod) => openQuickView(prod, filtrados)}
+                  />
                 ))}
               </div>
               {visibles < filtrados.length && (
