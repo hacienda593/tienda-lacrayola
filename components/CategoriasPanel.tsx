@@ -446,61 +446,54 @@ function CategoriasPanelInner({ open, onClose }: Props) {
         }
       `}>
 
-        {/* 1. Header del panel */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-gray-100 shrink-0">
-          <div className="flex items-center gap-2">
-            <LayoutGrid size={18} className="text-green-600" />
-            <span className="font-extrabold text-gray-800 text-base">Buscar por Categorías</span>
+        {/* Header Premium (Estilo Temu) */}
+        <div className="px-4 pt-3.5 pb-2 border-b border-gray-100 shrink-0 bg-white">
+          <div className="flex items-center justify-between gap-3 mb-2.5">
+            {/* Selector de Tiendas como Tabs de Categorías */}
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide flex-1">
+              {tiendas.map(tienda => {
+                const esActiva = tiendaActiva?.id === tienda.id
+                const fallbackEmoji = STORE_EMOJI[tienda.categoria ?? 'otros'] || '🏪'
+                return (
+                  <button
+                    key={tienda.id}
+                    onClick={() => setTiendaActiva(tienda)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-extrabold transition whitespace-nowrap border shrink-0
+                      ${esActiva 
+                        ? 'bg-green-600 border-green-600 text-white shadow-sm' 
+                        : 'bg-gray-50 border-gray-100 text-gray-600 hover:bg-gray-100'
+                      }`}
+                  >
+                    <span className="text-xs">
+                      {tienda.logo_url 
+                        ? <img src={tienda.logo_url} alt={tienda.nombre} className="w-3.5 h-3.5 object-contain inline rounded-sm" />
+                        : fallbackEmoji
+                      }
+                    </span>
+                    <span>{tienda.nombre}</span>
+                  </button>
+                )
+              })}
+            </div>
+            {/* Botón de Cerrar */}
+            <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-xl transition shrink-0 border border-gray-100 bg-gray-50 text-gray-500">
+              <X size={15} />
+            </button>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg transition">
-            <X size={18} className="text-gray-500" />
-          </button>
-        </div>
 
-        {/* 2. Selector de Tiendas Superior (Temu Store Slider) */}
-        <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 shrink-0">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Selecciona la Tienda</p>
-          <div className="flex gap-2.5 overflow-x-auto pb-1.5 scrollbar-hide">
-            {tiendas.map(tienda => {
-              const esActiva = tiendaActiva?.id === tienda.id
-              const fallbackEmoji = STORE_EMOJI[tienda.categoria ?? 'otros'] || '🏪'
-              return (
-                <button
-                  key={tienda.id}
-                  onClick={() => setTiendaActiva(tienda)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap border shrink-0 shadow-sm
-                    ${esActiva 
-                      ? 'bg-green-600 border-green-600 text-white hover:bg-green-700' 
-                      : 'bg-white border-gray-200 text-gray-700 hover:border-green-300'
-                    }`}
-                >
-                  <span className="text-sm">
-                    {tienda.logo_url 
-                      ? <img src={tienda.logo_url} alt={tienda.nombre} className="w-4 h-4 object-contain inline" />
-                      : fallbackEmoji
-                    }
-                  </span>
-                  <span>{tienda.nombre}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* 3. Buscador */}
-        <div className="px-4 py-2.5 border-b border-gray-100 shrink-0">
+          {/* Buscador de Categorías */}
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               value={q}
               onChange={e => setQ(e.target.value)}
-              placeholder={`Buscar categorías en ${tiendaActiva?.nombre ?? 'la tienda'}...`}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-4 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition"
+              placeholder={`Buscar departamentos en ${tiendaActiva?.nombre ?? 'la tienda'}...`}
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-8.5 pr-4 py-1.5 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition"
             />
           </div>
         </div>
 
-        {/* 4. Cuerpo — 2 columnas de Temu */}
+        {/* Cuerpo — 2 columnas de Temu */}
         {cargando ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 size={28} className="animate-spin text-green-500" />
@@ -518,7 +511,7 @@ function CategoriasPanelInner({ open, onClose }: Props) {
                     onClick={() => setActiva(cat.categoria)}
                     className={`w-full text-left px-4 py-3.5 transition-all relative font-extrabold text-[11px] border-b border-gray-100/50
                       ${estaAct 
-                        ? 'bg-white text-green-600 border-l-4 border-l-green-600 shadow-sm' 
+                        ? 'bg-white text-green-700 border-l-4 border-l-green-600 shadow-sm' 
                         : 'text-gray-500 hover:bg-white/50 hover:text-gray-700'
                       }`}
                   >
@@ -535,23 +528,23 @@ function CategoriasPanelInner({ open, onClose }: Props) {
                   {/* Banner de Categoría */}
                   <button
                     onClick={() => navegar(activaData.categoria)}
-                    className={`w-full flex items-center justify-between px-4 py-3 ${cfg.bg} border-b border-gray-100 hover:opacity-90 transition shrink-0`}
+                    className="m-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-xl flex items-center justify-between hover:opacity-90 transition shrink-0 shadow-sm"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className={`w-8 h-8 ${cfg.bgActive} rounded-full flex items-center justify-center text-sm shadow-sm`}>
+                      <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-base shadow-sm">
                         <span className="brightness-0 invert">{cfg.emoji}</span>
                       </div>
                       <div className="text-left">
-                        <div className={`font-extrabold text-[11px] ${cfg.color}`}>Ver Todo en {activaData.categoria}</div>
-                        <div className="text-[9px] text-gray-400">{activaData.total} productos disponibles</div>
+                        <div className="font-extrabold text-[11px] text-green-800">Ver todo {activaData.categoria}</div>
+                        <div className="text-[9px] text-green-600/80">{activaData.total} productos · Explorar pasillo</div>
                       </div>
                     </div>
-                    <ChevronRight size={13} className="text-gray-400" />
+                    <ChevronRight size={13} className="text-green-700" />
                   </button>
 
                   {/* Title of Section */}
-                  <div className="px-4 pt-3.5 pb-1 shrink-0">
-                    <h3 className="text-[11px] font-extrabold text-gray-800 uppercase tracking-wider">Comprar por categoría</h3>
+                  <div className="px-3 pt-2 pb-1 shrink-0">
+                    <h3 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Subcategorías</h3>
                   </div>
 
                   {/* ── Subcategorías Grid Circular (Temu Style) ── */}
@@ -567,16 +560,16 @@ function CategoriasPanelInner({ open, onClose }: Props) {
                               className="flex flex-col items-center group relative transition active:scale-95 duration-100"
                             >
                               {/* Círculo de Subcategoría */}
-                              <div className="w-16 h-16 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-3xl shadow-sm group-hover:shadow-md group-hover:scale-105 group-hover:bg-white transition-all relative">
+                              <div className="w-14 h-14 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-2xl shadow-sm group-hover:shadow-md group-hover:scale-105 group-hover:bg-white transition-all relative">
                                 <span>{sub.emoji}</span>
                                 {sub.hot && (
-                                  <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider scale-90 origin-top-right animate-pulse shadow-sm shadow-red-500/20">
+                                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[7px] font-black px-1 py-0.5 rounded-full uppercase scale-85 origin-top-right shadow-sm shadow-red-500/20">
                                     Hot
                                   </span>
                                 )}
                               </div>
                               {/* Nombre de Subcategoría */}
-                              <span className="text-[10px] text-gray-600 text-center font-extrabold mt-1.5 leading-tight line-clamp-2 max-w-[70px] group-hover:text-green-700">
+                              <span className="text-[10px] text-gray-700 font-extrabold text-center mt-1.5 leading-tight line-clamp-2 max-w-[72px] group-hover:text-green-700">
                                 {sub.nombre}
                               </span>
                             </button>
