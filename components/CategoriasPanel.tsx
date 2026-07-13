@@ -509,13 +509,13 @@ function CategoriasPanelInner({ open, onClose }: Props) {
                   <button
                     key={cat.categoria}
                     onClick={() => setActiva(cat.categoria)}
-                    className={`w-full text-left px-4 py-3.5 transition-all relative font-extrabold text-[11px] border-b border-gray-100/50
+                    className={`w-full text-left px-3 py-3 transition-all relative text-[10px] border-b border-gray-100/50
                       ${estaAct 
-                        ? 'bg-white text-green-700 border-l-4 border-l-green-600 shadow-sm' 
-                        : 'text-gray-500 hover:bg-white/50 hover:text-gray-700'
+                        ? 'bg-white text-green-700 border-l-4 border-l-green-600 font-bold shadow-sm' 
+                        : 'text-gray-500 hover:bg-white/50 hover:text-gray-700 font-medium'
                       }`}
                   >
-                    <span className="line-clamp-2 leading-tight">{toSentenceCase(cat.categoria)}</span>
+                    <span className="block leading-tight break-words max-w-full">{toSentenceCase(cat.categoria)}</span>
                   </button>
                 )
               })}
@@ -569,7 +569,7 @@ function CategoriasPanelInner({ open, onClose }: Props) {
                                 )}
                               </div>
                               {/* Nombre de Subcategoría */}
-                              <span className="text-[10px] text-gray-700 font-extrabold text-center mt-1.5 leading-tight line-clamp-2 max-w-[72px] group-hover:text-green-700">
+                              <span className="text-[10px] text-gray-700 font-extrabold text-center mt-1.5 leading-tight line-clamp-3 max-w-[72px] group-hover:text-green-700">
                                 {sub.nombre}
                               </span>
                             </button>
