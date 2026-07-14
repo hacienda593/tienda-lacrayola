@@ -983,6 +983,19 @@ export default function CheckoutPage() {
                   <span className="font-medium text-gray-300 select-all">pagos@lacrayola.com</span>
                 </div>
               </div>
+
+              {/* Botón Deuna */}
+              <div className="pt-2 border-t border-gray-850">
+                <a
+                  href="https://pagar.deuna.app/H92p/merchant?id=828c98695b77537a52da2f2dd281b2746c019154"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 bg-[#702082] hover:bg-[#5a166a] active:scale-[0.99] text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg border border-purple-800 text-center select-none"
+                >
+                  <span className="text-sm">🟣</span> Pagar con Deuna
+                </a>
+              </div>
+
               <div className="text-[10px] text-gray-400 leading-relaxed border-t border-gray-800 pt-2 flex items-start gap-1">
                 <span>💡</span>
                 <span>Por favor, realiza la transferencia y envíanos el comprobante por WhatsApp al terminar. Tu pedido será procesado una vez verificado.</span>
