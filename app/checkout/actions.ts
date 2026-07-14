@@ -152,7 +152,6 @@ export async function crearPedido(
       return {
         pedido_id:    pedido.id,
         tienda_id:    det?.tienda_id ?? null,
-        tienda_nombre: det?.tienda_nombre ?? 'La Crayola',
         descripcion:  det?.descripcion ?? i.codigo,
         cantidad:     i.cantidad,
         precio_ref:   i.precio_unitario,
