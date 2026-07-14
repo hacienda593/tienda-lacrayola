@@ -749,20 +749,42 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            <div className="flex gap-3 justify-end border-b border-gray-800 pb-2">
-              <button type="button" onClick={pedirUbicacion}
-                className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-green-400 transition cursor-pointer">
-                <MapPin size={10}/> Obtener GPS
+            {/* Botón de Obtener Ubicación GPS Destacado */}
+            <div className="flex gap-2.5 border-b border-gray-800 pb-3">
+              <button
+                type="button"
+                onClick={pedirUbicacion}
+                disabled={geoMsg === 'Obteniendo...'}
+                className="flex-1 flex items-center justify-center gap-2 bg-green-500/10 text-green-400 border border-green-500/30 hover:bg-green-500/20 active:bg-green-500/30 disabled:bg-green-500/5 disabled:text-green-600 disabled:border-green-500/10 font-bold py-2.5 px-4 rounded-xl transition text-xs shadow-sm cursor-pointer select-none"
+              >
+                {geoMsg === 'Obteniendo...' ? (
+                  <>
+                    <Loader2 className="animate-spin" size={14} />
+                    Obteniendo ubicación...
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="animate-bounce" size={14} />
+                    Obtener dirección por GPS
+                  </>
+                )}
               </button>
-              <button type="button" onClick={() => {
-                if (!geo) {
-                  setGeo({ lat: -0.0221, lng: -78.8983 })
-                  setGeoMsg('✓ Ubicación manual')
-                }
-                setVerMapa(!verMapa)
-                setDireccionSeleccionadaId('nueva')
-              }}
-                className="flex items-center gap-1 text-[10px] text-green-400 hover:text-green-300 font-bold underline cursor-pointer">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!geo) {
+                    setGeo({ lat: -0.0221, lng: -78.8983 })
+                    setGeoMsg('✓ Ubicación manual')
+                  }
+                  setVerMapa(!verMapa)
+                  setDireccionSeleccionadaId('nueva')
+                }}
+                className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-semibold transition cursor-pointer select-none ${
+                  verMapa 
+                    ? 'bg-orange-600/10 text-orange-400 border-orange-500/30 hover:bg-orange-600/20' 
+                    : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700 hover:text-white'
+                }`}
+              >
                 🗺️ {verMapa ? 'Ocultar mapa' : 'Ver mapa'}
               </button>
             </div>
