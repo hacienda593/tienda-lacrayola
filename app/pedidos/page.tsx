@@ -31,7 +31,6 @@ function fechaRelativa(iso: string) {
   return 'Ahora mismo'
 }
 
-// ── Tipo unificado para mostrar ────────────────────────────────────
 interface PedidoVista {
   id: string
   numero: number
@@ -41,13 +40,14 @@ interface PedidoVista {
   items: { codigo: string; descripcion: string; cantidad: number; precio_unitario: number }[]
 }
 
-// ── Tarjeta de pedido ──────────────────────────────────────────────
 function TarjetaPedido({ pedido, onRecomprar, recomprando }: {
   pedido: PedidoVista
   onRecomprar: (p: PedidoVista) => void
   recomprando: boolean
 }) {
   const estado = ESTADOS[pedido.estado] ?? { label: pedido.estado, color: 'text-gray-600', bg: 'bg-gray-100' }
+  const esActivo = ['pendiente', 'confirmado', 'preparando', 'preparado', 'enviado'].includes(pedido.estado)
+
   return (
     <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
       <div className="flex items-start justify-between gap-2">
@@ -57,7 +57,7 @@ function TarjetaPedido({ pedido, onRecomprar, recomprando }: {
             <Clock size={11} />{fechaRelativa(pedido.fecha)}
           </div>
         </div>
-        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${estado.bg} ${estado.color}`}>
+        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${estado.bg} ${estado.color}`}>
           {estado.label}
         </span>
       </div>
@@ -75,23 +75,34 @@ function TarjetaPedido({ pedido, onRecomprar, recomprando }: {
       </div>
 
       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-        <span className="font-bold text-green-700">{fmt(pedido.total)}</span>
+        <span className="font-black text-green-700">{fmt(pedido.total)}</span>
         <div className="flex items-center gap-2">
-          <button onClick={() => onRecomprar(pedido)} disabled={recomprando}
-            className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
-            {recomprando
-              ? <><ShoppingCart size={12} className="animate-bounce" />Agregando...</>
-              : <><RotateCcw size={12} />Recomprar</>}
-          </button>
-          <Link href={`/pedido/${pedido.id}`}
-            className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition">
-            Ver <ChevronRight size={13} />
-          </Link>
+          {/* Si ya se entregó, mostramos Recomprar, si está activo mostramos un botón de Seguimiento */}
+          {esActivo ? (
+            <Link href={`/pedido/${pedido.id}`}
+              className="flex items-center gap-1 bg-green-50 hover:bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-lg transition border border-green-200">
+              Rastrear pedido <ChevronRight size={12} className="mt-0.5" />
+            </Link>
+          ) : (
+            <button onClick={() => onRecomprar(pedido)} disabled={recomprando}
+              className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition cursor-pointer">
+              {recomprando
+                ? <><ShoppingCart size={12} className="animate-bounce" />Agregando...</>
+                : <><RotateCcw size={12} />Recomprar</>}
+            </button>
+          )}
+          {!esActivo && (
+            <Link href={`/pedido/${pedido.id}`}
+              className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition p-1">
+              Ver detalles <ChevronRight size={13} />
+            </Link>
+          )}
         </div>
       </div>
     </div>
   )
 }
+
 async function mapearDescripciones(pedidosRaw: PedidoVista[]): Promise<PedidoVista[]> {
   const codigos = pedidosRaw.flatMap(p => p.items.map(it => it.codigo)).filter(Boolean)
   const uniqueCodigos = Array.from(new Set(codigos))
@@ -112,20 +123,24 @@ async function mapearDescripciones(pedidosRaw: PedidoVista[]): Promise<PedidoVis
   }))
 }
 
-// ── Página ─────────────────────────────────────────────────────────
 export default function PedidosPage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
-  const [pedidos,     setPedidos]     = useState<PedidoVista[]>([])
-  const [cargando,    setCargando]    = useState(true)
+  const [pedidos, setPedidos] = useState<PedidoVista[]>([])
+  const [cargando, setCargando] = useState(true)
   const [recomprandoId, setRecomprandoId] = useState<string | null>(null)
+  
+  // Estado para la pestaña de clasificación
+  const [activeTab, setActiveTab] = useState<'activos' | 'historial'>('activos')
+
+  const pedidosActivos = pedidos.filter(p => ['pendiente', 'confirmado', 'preparando', 'preparado', 'enviado'].includes(p.estado))
+  const pedidosHistorial = pedidos.filter(p => ['entregado', 'cancelado'].includes(p.estado))
 
   useEffect(() => {
     if (authLoading) return
 
     async function cargar() {
       if (user) {
-        // Registrado: buscar por user_id + por email (pedidos previos al registro)
         const email = user.email ?? ''
         const [{ data: porId }, { data: porEmail }] = await Promise.all([
           supabase.from('ol_pedidos')
@@ -166,7 +181,6 @@ export default function PedidosPage() {
         setPedidos(mapeados)
         setCargando(false)
       } else {
-        // Invitado: localStorage
         const locales = getPedidosLocales()
         const rawLocales = locales.map(p => ({
           id:     p.id,
@@ -185,6 +199,18 @@ export default function PedidosPage() {
     cargar()
   }, [user, authLoading])
 
+  // Ajustar pestaña inicial de forma inteligente cuando cargan los datos
+  useEffect(() => {
+    if (!cargando) {
+      if (pedidosActivos.length > 0) {
+        setActiveTab('activos')
+      } else {
+        setActiveTab('historial')
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cargando, pedidos.length])
+
   function recomprar(pedido: PedidoVista) {
     setRecomprandoId(pedido.id)
     pedido.items.forEach(it => agregarItem({
@@ -197,37 +223,89 @@ export default function PedidosPage() {
   if (authLoading || cargando) {
     return (
       <div className="max-w-lg mx-auto px-4 py-16 flex justify-center">
-        <Loader2 size={28} className="animate-spin text-green-500" />
+        <Loader2 size={28} className="animate-spin text-green-600" />
       </div>
     )
   }
 
+  const listToShow = activeTab === 'activos' ? pedidosActivos : pedidosHistorial
+
   return (
-    <div className="max-w-lg mx-auto px-4 py-5 space-y-4">
+    <div className="max-w-lg mx-auto px-4 py-5 space-y-4 pb-20">
+      {/* Cabecera */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-gray-800">Mis pedidos</h1>
+          <h1 className="text-xl font-black text-gray-900 flex items-center gap-1.5">
+            <Package size={22} className="text-green-600" />
+            <span>Mis pedidos</span>
+          </h1>
           {user && <p className="text-xs text-gray-400">Cuenta registrada · {pedidos.length} pedido{pedidos.length !== 1 ? 's' : ''}</p>}
           {!user && <p className="text-xs text-gray-400">Modo invitado · {pedidos.length} pedido{pedidos.length !== 1 ? 's' : ''} en este dispositivo</p>}
         </div>
         {!user && (
-          <Link href="/cuenta" className="text-xs text-green-600 underline">Registrarme →</Link>
+          <Link href="/cuenta" className="text-xs text-green-600 font-bold underline">Registrarme →</Link>
         )}
       </div>
 
+      {/* Tabs Selector de Pedidos */}
+      {pedidos.length > 0 && (
+        <div className="flex bg-gray-100 p-1.5 rounded-2xl gap-1">
+          <button
+            onClick={() => setActiveTab('activos')}
+            className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer
+              ${activeTab === 'activos'
+                ? 'bg-white text-gray-800 shadow-xs border border-gray-200/50'
+                : 'text-gray-500 hover:text-gray-800'}`}
+          >
+            <span>En Camino / Activos</span>
+            {pedidosActivos.length > 0 ? (
+              <span className="w-5 h-5 bg-green-600 text-white rounded-full text-[10px] font-black flex items-center justify-center animate-pulse">
+                {pedidosActivos.length}
+              </span>
+            ) : (
+              <span className="text-[10px] text-gray-400 font-extrabold">(0)</span>
+            )}
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('historial')}
+            className={`flex-1 py-2 text-center text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer
+              ${activeTab === 'historial'
+                ? 'bg-white text-gray-800 shadow-xs border border-gray-200/50'
+                : 'text-gray-500 hover:text-gray-800'}`}
+          >
+            <span>Historial / Entregados</span>
+            <span className="text-[10px] text-gray-400 font-extrabold">({pedidosHistorial.length})</span>
+          </button>
+        </div>
+      )}
+
+      {/* Listado de Pedidos Filtrados */}
       {pedidos.length === 0 ? (
-        <div className="text-center py-16 space-y-3">
+        <div className="text-center py-16 space-y-3 bg-white border border-gray-100 rounded-3xl p-6 shadow-xs">
           <Package size={48} className="text-gray-200 mx-auto" />
-          <p className="text-gray-600 font-semibold">Sin pedidos aún</p>
-          <p className="text-sm text-gray-400">Tus pedidos aparecerán aquí una vez que confirmes tu primera compra.</p>
+          <p className="text-gray-600 font-extrabold">Sin pedidos aún</p>
+          <p className="text-xs text-gray-400 leading-relaxed max-w-xs mx-auto">Tus pedidos aparecerán aquí una vez que confirmes tu primera compra.</p>
           <Link href="/productos"
-            className="inline-block mt-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition">
+            className="inline-block mt-2 bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs transition shadow-sm">
             Ver productos
           </Link>
         </div>
+      ) : listToShow.length === 0 ? (
+        <div className="text-center py-12 space-y-2 bg-white border border-gray-100 rounded-3xl p-6 shadow-xs">
+          <Package size={36} className="text-gray-300 mx-auto" />
+          <h3 className="font-bold text-gray-700 text-xs">
+            {activeTab === 'activos' ? 'Sin pedidos en camino' : 'Historial vacío'}
+          </h3>
+          <p className="text-[11px] text-gray-400 leading-normal max-w-xs mx-auto">
+            {activeTab === 'activos' 
+              ? 'Actualmente no tienes pedidos pendientes de entrega o en preparación.' 
+              : 'Aquí verás tus compras pasadas una vez que completemos tus entregas.'}
+          </p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {pedidos.map(p => (
+          {listToShow.map(p => (
             <TarjetaPedido key={p.id} pedido={p}
               onRecomprar={recomprar}
               recomprando={recomprandoId === p.id} />
