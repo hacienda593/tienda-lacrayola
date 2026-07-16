@@ -9,8 +9,8 @@ import { AuthProvider } from '@/context/AuthContext'
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
-  title: 'La Crayola — Librería & Papelería',
-  description: 'Útiles escolares, arte, papelería y tecnología. Envíos a domicilio en Quito.',
+  title: 'Tienlo — Lo quieres, Tenlo (por La Crayola)',
+  description: 'Compra útiles escolares, tecnología, abarrotes, farmacia y más en tus tiendas favoritas de Los Bancos. ¡Pagas un solo envío consolidado!',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

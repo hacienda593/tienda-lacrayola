@@ -5,11 +5,15 @@ export default function Footer() {
     <footer className="hidden md:block bg-gray-900 text-gray-400 mt-16">
       <div className="max-w-5xl mx-auto px-4 py-10 grid grid-cols-3 gap-8">
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl">🖍️</span>
-            <span className="text-white font-bold text-lg">La Crayola</span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-white font-extrabold text-xl">Tienlo</span>
+            <span className="text-[10px] text-green-400 font-bold bg-green-950/50 border border-green-800 px-2 py-0.5 rounded-md">
+              por La Crayola
+            </span>
           </div>
-          <p className="text-sm leading-relaxed">Librería y papelería con más de 17,000 productos en stock. Útiles escolares, arte, oficina y tecnología.</p>
+          <p className="text-xs leading-relaxed text-gray-400 mt-2">
+            La Crayola evoluciona para darte un mejor servicio. Compra útiles, arte, y además abarrotes, farmacia y más tiendas locales en un solo envío consolidado.
+          </p>
         </div>
         <div>
           <h4 className="text-white font-semibold mb-3 text-sm">Categorías</h4>
@@ -31,7 +35,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="border-t border-gray-800 text-center py-4 text-xs text-gray-600">
-        © 2026 La Crayola. Todos los derechos reservados.
+        © 2026 Tienlo por La Crayola. Todos los derechos reservados.
       </div>
     </footer>
   )

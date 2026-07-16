@@ -151,8 +151,8 @@ export default function Header() {
 
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         {/* Top bar */}
-        <div className="bg-green-700 text-white text-xs text-center py-1.5 px-4">
-          🚚 Envíos a domicilio en Los Bancos · Pedidos por WhatsApp
+        <div className="bg-green-700 text-white text-[11px] md:text-xs text-center py-1.5 px-4 font-medium">
+          🚚 Envíos a domicilio en Los Bancos · Respaldado por La Crayola
         </div>
 
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
@@ -171,12 +171,15 @@ export default function Header() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0 group" aria-label="Inicio">
-            <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:bg-green-50 group-hover:border-green-100 transition-colors shrink-0">
-              <Home size={18} className="text-gray-700 group-hover:text-green-700 transition-colors" />
-            </div>
-            <div className="hidden sm:block">
-              <div className="text-base font-extrabold text-green-700 leading-tight">La Crayola</div>
-              <div className="text-[10px] text-gray-400 leading-tight">Librería & Papelería</div>
+            <img
+              src="/logo-tienlo.png"
+              alt="Tienlo Logo"
+              className="h-9 w-auto object-contain bg-white rounded-lg p-0.5"
+            />
+            <div className="hidden md:flex items-center gap-2 pl-2 border-l border-gray-200">
+              <span className="text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-md">
+                Una marca de La Crayola
+              </span>
             </div>
           </Link>
 

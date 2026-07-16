@@ -40,13 +40,13 @@ const CAT_CONFIG: Record<string, { emoji: string; color: string; bg: string }> =
 
 const BANNERS = [
   {
-    titulo: '¿Cómo pedir en La Crayola?',
-    sub: 'Elige los productos de tus tiendas favoritas, nosotros compramos por ti y te los entregamos a domicilio.',
-    emoji: '🛵',
-    cta: 'Ver tiendas',
+    titulo: '¡La Crayola evoluciona a Tienlo! 🎉',
+    sub: 'Seguimos ofreciéndote los mismos útiles escolares y tecnología de siempre, pero ahora compramos por ti en tus tiendas locales favoritas.',
+    emoji: '🚀',
+    cta: 'Conoce las tiendas',
     href: '/tiendas',
     bg: 'from-green-700 via-green-600 to-emerald-500',
-    badge: '⚡ Servicio Express',
+    badge: '🚀 Nueva Etapa',
   },
   {
     titulo: 'Compra en múltiples tiendas a la vez',
@@ -59,11 +59,11 @@ const BANNERS = [
   },
   {
     titulo: 'Recibe todo en la puerta de tu hogar',
-    sub: 'Haces tu pedido por la web, lo confirmamos por WhatsApp y te lo entregamos rápido en Los Bancos.',
+    sub: 'Haz tu pedido por la web de Tienlo, lo confirmamos por WhatsApp y te lo entregamos rápido en Los Bancos.',
     emoji: '🏡',
     cta: 'Pedir por WhatsApp',
     href: 'https://wa.me/593984341953?text=Hola%2C%20quiero%20hacer%20un%20pedido',
-    bg: 'from-indigo-700 via-indigo-600 to-blue-500',
+    bg: 'from-orange-600 via-orange-500 to-amber-500',
     badge: '📍 Solo en Los Bancos',
   },
 ]
