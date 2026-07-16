@@ -122,16 +122,16 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             <div className="space-y-5">
               {Object.entries(itemsPorTienda).map(([tiendaNombre, prods]) => (
                 <div key={tiendaNombre} className="space-y-2.5">
-                  <div className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider pl-1.5 flex items-center gap-1.5">
+                  <div className="text-xs font-black text-gray-400 uppercase tracking-wider pl-1.5 flex items-center gap-1.5">
                     <span>🏪</span> {tiendaNombre}
                   </div>
                   <div className="space-y-2">
                     {prods.map(item => (
                       <div key={item.codigo} className="bg-white border border-gray-100 rounded-2xl p-3 flex flex-items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs text-gray-800 font-extrabold leading-snug line-clamp-2">{item.descripcion}</div>
-                          <div className="text-[9px] font-semibold text-green-600 uppercase tracking-wide mt-0.5">{item.categoria}</div>
-                          <div className="text-xs font-black text-gray-900 mt-1">{fmt(item.precio_unitario)}</div>
+                          <div className="text-sm text-gray-900 font-extrabold leading-snug line-clamp-2">{item.descripcion}</div>
+                          <div className="text-xs font-bold text-green-700 uppercase tracking-wide mt-0.5">{item.categoria}</div>
+                          <div className="text-sm font-black text-gray-900 mt-1">{fmt(item.precio_unitario)}</div>
                         </div>
                         <div className="flex flex-col items-end gap-1.5 shrink-0">
                           <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-lg p-0.5">
@@ -149,7 +149,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                               <Plus size={10} className="text-gray-500" />
                             </button>
                           </div>
-                          <div className="text-[10px] font-bold text-gray-400">{fmt(item.precio_unitario * item.cantidad)}</div>
+                          <div className="text-xs font-extrabold text-gray-400">{fmt(item.precio_unitario * item.cantidad)}</div>
                         </div>
                       </div>
                     ))}
@@ -164,17 +164,17 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
         {items.length > 0 && (
           <div className="p-5 border-t border-gray-100 bg-white shrink-0 space-y-4">
             <div className="space-y-2.5">
-              <div className="flex justify-between text-xs font-bold text-gray-400 px-1">
+              <div className="flex justify-between text-sm font-bold text-gray-500 px-1">
                 <span>Subtotal ({nItems} productos)</span>
-                <span>{fmt(total)}</span>
+                <span className="font-extrabold text-gray-800">{fmt(total)}</span>
               </div>
               
               {/* Recargo por parada adicional */}
               <RecargoEnvioBadge nTiendas={nTiendas} costoTotalEnvio={costoEnvio} />
 
-              <div className="flex justify-between text-sm font-extrabold text-gray-900 border-t border-gray-100 pt-3 px-1">
+              <div className="flex justify-between text-base font-black text-gray-900 border-t border-gray-100 pt-3 px-1">
                 <span>Total consolidado</span>
-                <span className="text-green-700 text-base">{fmt(granTotal)}</span>
+                <span className="text-green-700 text-lg font-black">{fmt(granTotal)}</span>
               </div>
             </div>
 
@@ -182,13 +182,13 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               <Link
                 href="/checkout"
                 onClick={onClose}
-                className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-xl transition text-sm active:scale-[0.96] shadow-lg shadow-green-600/10"
+                className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl transition text-base active:scale-[0.96] shadow-lg shadow-green-600/10 cursor-pointer"
               >
                 Confirmar pedido <ArrowRight size={16} />
               </Link>
               <button
                 onClick={onClose}
-                className="w-full py-2.5 text-center text-xs font-semibold text-gray-400 hover:text-green-700 transition"
+                className="w-full py-2.5 text-center text-xs font-bold text-gray-400 hover:text-green-700 transition cursor-pointer"
               >
                 ← Seguir comprando
               </button>

@@ -1005,13 +1005,13 @@ export default function CheckoutPage() {
         </div>
 
         {/* Resumen */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3.5">
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Resumen</div>
-          <div className="space-y-1">
+        <div className="bg-white border border-gray-100 rounded-2xl p-4.5 space-y-4 shadow-xs">
+          <div className="text-xs font-black text-gray-400 uppercase tracking-wider">Resumen de compra</div>
+          <div className="space-y-2 max-h-48 overflow-y-auto divide-y divide-gray-50 pr-1">
             {items.map(i => (
-              <div key={i.codigo} className="flex justify-between text-xs text-gray-300">
-                <span className="truncate flex-1">{i.descripcion} ×{i.cantidad}</span>
-                <span className="ml-2 shrink-0">{fmt(i.precio_unitario * i.cantidad)}</span>
+              <div key={i.codigo} className="flex justify-between text-xs text-gray-700 pt-2 first:pt-0">
+                <span className="truncate flex-1 font-medium">{i.descripcion} <span className="text-gray-400 font-bold ml-1">×{i.cantidad}</span></span>
+                <span className="ml-2 shrink-0 font-bold text-gray-900">{fmt(i.precio_unitario * i.cantidad)}</span>
               </div>
             ))}
           </div>
@@ -1021,9 +1021,9 @@ export default function CheckoutPage() {
             <RecargoEnvioBadge nTiendas={nTiendas} costoTotalEnvio={costoEnvio} />
           )}
 
-          <div className="flex justify-between font-bold text-white border-t border-gray-800 pt-2.5">
+          <div className="flex justify-between font-black text-sm text-gray-900 border-t border-gray-100 pt-3">
             <span>{metodoEntrega === 'domicilio' ? 'Total consolidado' : 'Total a pagar'}</span>
-            <span className="text-green-400">{fmt(granTotal)}</span>
+            <span className="text-green-700 text-base font-black">{fmt(granTotal)}</span>
           </div>
         </div>
 
