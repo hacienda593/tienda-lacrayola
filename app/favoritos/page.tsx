@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
-import { ShoppingCart, Share2, Trash2, Search, QrCode, X, Plus, Minus, History, Check, Loader2, Sparkles, AlertCircle, ShoppingBag } from 'lucide-react'
+import { ShoppingCart, Share2, Trash2, Search, QrCode, X, Plus, Minus, History, Check, Loader2, Sparkles, AlertCircle, ClipboardList, Edit3, Save } from 'lucide-react'
 import Link from 'next/link'
 import { getFavoritos, toggleFavorito, ItemFavorito, serializarFavoritos } from '@/lib/favoritos'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
@@ -11,11 +11,27 @@ import { CAT_EMOJI } from '@/lib/types'
 
 function fmt(n: number) { return '$' + n.toFixed(2) }
 
+interface ListaCompras {
+  id: string
+  nombre: string
+  notas: string
+  items: ItemFavorito[]
+  created_at: string
+}
+
 export default function FavoritosPage() {
   const { user } = useAuth()
   
-  // ── Estados Principales de la Lista ──
-  const [lista, setLista] = useState<ItemFavorito[]>([])
+  // ── Estados Múltiples Listas ──
+  const [lists, setLists] = useState<ListaCompras[]>([])
+  const [activeListId, setActiveListId] = useState<string>('general')
+  const [isCreatingList, setIsCreatingList] = useState(false)
+  const [newListName, setNewListName] = useState('')
+  const [isRenamingList, setIsRenamingList] = useState(false)
+  const [renameValue, setRenameValue] = useState('')
+  const [activeListNotes, setActiveListNotes] = useState('')
+
+  // ── Estados de Interacción de Items ──
   const [checkedCodes, setCheckedCodes] = useState<Set<string>>(new Set())
   const [cartItems, setCartItems] = useState<any[]>([])
   const [copiado, setCopiado] = useState(false)
@@ -40,11 +56,42 @@ export default function FavoritosPage() {
   const [cargandoHistorico, setCargandoHistorico] = useState(false)
   const [showHistorico, setShowHistorico] = useState(false)
 
-  // ── 1. Sincronización Inicial y Eventos ──
+  // ── 1. Inicialización de Listas ──
   useEffect(() => {
-    setLista(getFavoritos())
-    setCartItems(getCarrito())
+    let savedLists: ListaCompras[] = []
+    let activeId = 'general'
     
+    try {
+      const rawLists = localStorage.getItem('lc_shopping_lists')
+      if (rawLists) {
+        savedLists = JSON.parse(rawLists)
+      }
+      
+      const rawActiveId = localStorage.getItem('lc_active_list_id')
+      if (rawActiveId) {
+        activeId = rawActiveId
+      }
+    } catch (e) {
+      console.error(e)
+    }
+
+    // Inicializar por defecto si está vacío
+    if (savedLists.length === 0) {
+      savedLists = [
+        {
+          id: 'general',
+          nombre: 'Lista General',
+          notas: '',
+          items: getFavoritos(), // Migrar favoritos existentes
+          created_at: new Date().toISOString()
+        }
+      ]
+    }
+    
+    setLists(savedLists)
+    setActiveListId(activeId)
+    setCartItems(getCarrito())
+
     // Cargar códigos tachados de localStorage
     try {
       const savedChecked = localStorage.getItem('lc_checked_items')
@@ -53,20 +100,135 @@ export default function FavoritosPage() {
       console.error(e)
     }
 
-    const syncFavoritos = () => setLista(getFavoritos())
     const syncCarrito = () => setCartItems(getCarrito())
-
-    window.addEventListener('favoritos-update', syncFavoritos)
     window.addEventListener('carrito-update', syncCarrito)
 
     return () => {
-      window.removeEventListener('favoritos-update', syncFavoritos)
       window.removeEventListener('carrito-update', syncCarrito)
     }
   }, [])
 
-  // ── 2. Acciones sobre la Lista ──
-  const toggleChecked = (codigo: string) => {
+  // Sincronizar las notas de la lista activa al cambiar de lista
+  useEffect(() => {
+    const activeList = lists.find(l => l.id === activeListId)
+    if (activeList) {
+      setActiveListNotes(activeList.notas)
+    }
+  }, [activeListId, lists])
+
+  // ── 2. Guardar en Storage & Sincronizar con el Catálogo (lc_favoritos) ──
+  const updateListsStateAndStorage = (newLists: ListaCompras[], nextActiveId: string = activeListId) => {
+    setLists(newLists)
+    localStorage.setItem('lc_shopping_lists', JSON.stringify(newLists))
+    
+    // Sincronizar la lista activa con 'lc_favoritos' (legado) para que el catálogo de productos refleje el estado correcto
+    const activeList = newLists.find(l => l.id === nextActiveId)
+    if (activeList) {
+      localStorage.setItem('lc_favoritos', JSON.stringify(activeList.items))
+      window.dispatchEvent(new Event('favoritos-update'))
+    }
+  }
+
+  // Escuchar cuando el usuario hace clic en el botón de agregar a la lista desde otras páginas (Home / Catálogo)
+  useEffect(() => {
+    const handleFavoritosUpdate = () => {
+      const legacyItems = getFavoritos()
+      setLists(prevLists => {
+        const nextLists = prevLists.map(l => {
+          if (l.id === activeListId) {
+            return { ...l, items: legacyItems }
+          }
+          return l
+        })
+        localStorage.setItem('lc_shopping_lists', JSON.stringify(nextLists))
+        return nextLists
+      })
+    }
+
+    window.addEventListener('favoritos-update', handleFavoritosUpdate)
+    return () => window.removeEventListener('favoritos-update', handleFavoritosUpdate)
+  }, [activeListId])
+
+  // Cambiar de lista activa
+  const handleSwitchList = (id: string) => {
+    setActiveListId(id)
+    localStorage.setItem('lc_active_list_id', id)
+    
+    // Sincronizar de inmediato
+    const activeList = lists.find(l => l.id === id)
+    if (activeList) {
+      localStorage.setItem('lc_favoritos', JSON.stringify(activeList.items))
+      window.dispatchEvent(new Event('favoritos-update'))
+    }
+  }
+
+  // ── 3. Creación y Renombrado de Listas ──
+  const handleCreateList = () => {
+    if (!newListName.trim()) return
+    const newListId = 'list_' + Math.random().toString(36).substr(2, 9)
+    const newLists: ListaCompras[] = [
+      ...lists,
+      {
+        id: newListId,
+        nombre: newListName.trim(),
+        notas: '',
+        items: [],
+        created_at: new Date().toISOString()
+      }
+    ]
+    updateListsStateAndStorage(newLists, newListId)
+    setActiveListId(newListId)
+    localStorage.setItem('lc_active_list_id', newListId)
+    
+    setNewListName('')
+    setIsCreatingList(false)
+  }
+
+  const handleRenameList = () => {
+    if (!renameValue.trim()) return
+    const newLists = lists.map(l => {
+      if (l.id === activeListId) {
+        return { ...l, nombre: renameValue.trim() }
+      }
+      return l
+    })
+    updateListsStateAndStorage(newLists)
+    setIsRenamingList(false)
+  }
+
+  const handleDeleteList = (idToDelete: string) => {
+    if (lists.length <= 1) return
+    const confirmDelete = window.confirm('¿Seguro que deseas eliminar esta lista de compras y todos sus productos?')
+    if (!confirmDelete) return
+
+    const newLists = lists.filter(l => l.id !== idToDelete)
+    let nextActiveId = activeListId
+    if (activeListId === idToDelete) {
+      nextActiveId = newLists[0].id
+    }
+    
+    updateListsStateAndStorage(newLists, nextActiveId)
+    setActiveListId(nextActiveId)
+    localStorage.setItem('lc_active_list_id', nextActiveId)
+  }
+
+  const handleNotesChange = (val: string) => {
+    setActiveListNotes(val)
+    const newLists = lists.map(l => {
+      if (l.id === activeListId) {
+        return { ...l, notas: val }
+      }
+      return l
+    })
+    setLists(newLists)
+    localStorage.setItem('lc_shopping_lists', JSON.stringify(newLists))
+  }
+
+  // ── 4. Acciones sobre la Lista Activa ──
+  const activeList = lists.find(l => l.id === activeListId) || { id: 'general', nombre: 'Lista General', notas: '', items: [] }
+  const activeItems = activeList.items
+
+  const handleCheckedToggle = (codigo: string) => {
     setCheckedCodes(prev => {
       const next = new Set(prev)
       if (next.has(codigo)) {
@@ -80,8 +242,16 @@ export default function FavoritosPage() {
   }
 
   function quitar(prod: ItemFavorito) {
-    toggleFavorito({ codigo: prod.codigo, descripcion: prod.descripcion, categoria: prod.categoria, precio_publico: prod.precio_unitario })
-    // Si se quita de la lista, quitar también del estado de tachado
+    const updatedItems = activeItems.filter(f => f.codigo !== prod.codigo)
+    const newLists = lists.map(l => {
+      if (l.id === activeListId) {
+        return { ...l, items: updatedItems }
+      }
+      return l
+    })
+    updateListsStateAndStorage(newLists)
+    
+    // Quitar del tachado
     setCheckedCodes(prev => {
       if (prev.has(prod.codigo)) {
         const next = new Set(prev)
@@ -115,14 +285,14 @@ export default function FavoritosPage() {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(25)
     }
-    lista.forEach(p => agregarItem({ codigo: p.codigo, descripcion: p.descripcion, categoria: p.categoria, precio_publico: p.precio_unitario }))
-    const todos = new Set(lista.map(p => p.codigo))
+    activeItems.forEach(p => agregarItem({ codigo: p.codigo, descripcion: p.descripcion, categoria: p.categoria, precio_publico: p.precio_unitario }))
+    const todos = new Set(activeItems.map(p => p.codigo))
     setAgregados(todos)
     setTimeout(() => setAgregados(new Set()), 1500)
   }
 
   function compartir() {
-    const ids = serializarFavoritos()
+    const ids = activeItems.map(f => f.codigo).join(',')
     const url = `${window.location.origin}/favoritos?lista=${encodeURIComponent(ids)}`
     navigator.clipboard.writeText(url).then(() => {
       setCopiado(true)
@@ -130,7 +300,7 @@ export default function FavoritosPage() {
     })
   }
 
-  // ── 3. Buscador por Nombre Autocomplete ──
+  // ── 5. Buscador por Nombre Autocomplete ──
   useEffect(() => {
     if (searchQuery.trim().length < 2) {
       setSuggestions([])
@@ -151,17 +321,31 @@ export default function FavoritosPage() {
   }, [searchQuery])
 
   function handleSelectSuggestion(prod: any) {
-    toggleFavorito({
-      codigo: prod.codigo,
-      descripcion: prod.descripcion,
-      categoria: prod.categoria,
-      precio_publico: prod.precio_publico
-    })
+    const yaExiste = activeItems.some(f => f.codigo === prod.codigo)
+    if (!yaExiste) {
+      const updatedItems = [
+        {
+          codigo: prod.codigo,
+          descripcion: prod.descripcion,
+          categoria: prod.categoria,
+          precio_unitario: prod.precio_publico,
+          agregadoEn: new Date().toISOString()
+        },
+        ...activeItems
+      ]
+      const newLists = lists.map(l => {
+        if (l.id === activeListId) {
+          return { ...l, items: updatedItems }
+        }
+        return l
+      })
+      updateListsStateAndStorage(newLists)
+    }
     setSearchQuery('')
     setSuggestions([])
   }
 
-  // ── 4. Lógica de Escáner de Código de Barras ──
+  // ── 6. Lógica de Escáner de Código de Barras ──
   const startScanning = async () => {
     setIsScanning(true)
     setErrorMsg('')
@@ -203,12 +387,26 @@ export default function FavoritosPage() {
 
     setIsSearching(false)
     if (data) {
-      toggleFavorito({
-        codigo: data.codigo,
-        descripcion: data.descripcion,
-        categoria: data.categoria,
-        precio_publico: data.precio_publico
-      })
+      const yaExiste = activeItems.some(f => f.codigo === data.codigo)
+      if (!yaExiste) {
+        const updatedItems = [
+          {
+            codigo: data.codigo,
+            descripcion: data.descripcion,
+            categoria: data.categoria,
+            precio_unitario: data.precio_publico,
+            agregadoEn: new Date().toISOString()
+          },
+          ...activeItems
+        ]
+        const newLists = lists.map(l => {
+          if (l.id === activeListId) {
+            return { ...l, items: updatedItems }
+          }
+          return l
+        })
+        updateListsStateAndStorage(newLists)
+      }
       stopScanning()
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate([80, 40, 80])
@@ -273,14 +471,27 @@ export default function FavoritosPage() {
 
     setIsSearching(false)
     if (data && data.length > 0) {
-      // Tomar uno al azar
       const randomProd = data[Math.floor(Math.random() * data.length)]
-      toggleFavorito({
-        codigo: randomProd.codigo,
-        descripcion: randomProd.descripcion,
-        categoria: randomProd.categoria,
-        precio_publico: randomProd.precio_publico
-      })
+      const yaExiste = activeItems.some(f => f.codigo === randomProd.codigo)
+      if (!yaExiste) {
+        const updatedItems = [
+          {
+            codigo: randomProd.codigo,
+            descripcion: randomProd.descripcion,
+            categoria: randomProd.categoria,
+            precio_unitario: randomProd.precio_publico,
+            agregadoEn: new Date().toISOString()
+          },
+          ...activeItems
+        ]
+        const newLists = lists.map(l => {
+          if (l.id === activeListId) {
+            return { ...l, items: updatedItems }
+          }
+          return l
+        })
+        updateListsStateAndStorage(newLists)
+      }
       stopScanning()
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate(60)
@@ -288,7 +499,7 @@ export default function FavoritosPage() {
     }
   }
 
-  // ── 5. Cargar Compras Históricas ──
+  // ── 7. Cargar Compras Históricas ──
   useEffect(() => {
     if (!showHistorico) return
 
@@ -317,7 +528,6 @@ export default function FavoritosPage() {
         items = locales.flatMap(p => p.items)
       }
 
-      // De-duplicar por código y buscar categoría faltante
       const map = new Map()
       items.forEach(it => {
         if (it.codigo) {
@@ -325,7 +535,7 @@ export default function FavoritosPage() {
             codigo: it.codigo,
             descripcion: it.descripcion,
             precio_unitario: it.precio_unitario,
-            categoria: 'Abarrotes' // Categoría por defecto si no existe
+            categoria: 'Abarrotes'
           })
         }
       })
@@ -337,25 +547,26 @@ export default function FavoritosPage() {
     cargarHistorico()
   }, [showHistorico, user])
 
-  // Ordenar lista: artículos sin tachar primero, tachados al final
-  const sortedLista = [...lista].sort((a, b) => {
+  // Ordenar lista activa: artículos sin tachar primero, tachados al final
+  const sortedLista = [...activeItems].sort((a, b) => {
     const aChecked = checkedCodes.has(a.codigo) ? 1 : 0
     const bChecked = checkedCodes.has(b.codigo) ? 1 : 0
     return aChecked - bChecked
   })
 
-  const totalLista = lista.reduce((s, p) => s + p.precio_unitario, 0)
+  const totalLista = activeItems.reduce((s, p) => s + p.precio_unitario, 0)
 
   return (
     <div className="max-w-lg mx-auto px-4 py-5 space-y-4 pb-24">
-      {/* Encabezado */}
+      {/* ── ENCABEZADO Y COMPARTIR ── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-black text-gray-900 flex items-center gap-1.5">
-            <span>🛒</span> Lista de compras
+            <ClipboardList size={22} className="text-green-600" />
+            <span>Lista de compras</span>
           </h1>
           <p className="text-xs text-gray-400">
-            {lista.length} artículo{lista.length !== 1 ? 's' : ''} en tu lista
+            Gestiona tus listas y agrégalas al súper
           </p>
         </div>
         <button
@@ -365,6 +576,120 @@ export default function FavoritosPage() {
           <Share2 size={13} />
           {copiado ? '¡Copiado!' : 'Compartir lista'}
         </button>
+      </div>
+
+      {/* ── SELECTOR DE MÚLTIPLES LISTAS (TABS) ── */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">Mis Listas</span>
+          {!isCreatingList && (
+            <button
+              onClick={() => setIsCreatingList(true)}
+              className="text-xs font-bold text-green-600 hover:text-green-700 flex items-center gap-1 cursor-pointer"
+            >
+              <Plus size={12} /> Nueva Lista
+            </button>
+          )}
+        </div>
+
+        {/* Input para crear nueva lista inline */}
+        {isCreatingList && (
+          <div className="bg-white border border-green-100 rounded-xl p-3 flex gap-2 items-center shadow-xs">
+            <input
+              type="text"
+              placeholder="Nombre de la lista (ej. Asado, Farmacia...)"
+              value={newListName}
+              onChange={e => setNewListName(e.target.value)}
+              className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-green-600"
+              onKeyDown={e => e.key === 'Enter' && handleCreateList()}
+            />
+            <button
+              onClick={handleCreateList}
+              className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition"
+            >
+              Crear
+            </button>
+            <button
+              onClick={() => setIsCreatingList(false)}
+              className="text-gray-400 hover:text-gray-600 text-xs p-1.5"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* Listado de pestañas horizontales */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {lists.map(l => (
+            <button
+              key={l.id}
+              onClick={() => handleSwitchList(l.id)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap border shrink-0 transition flex items-center gap-1.5 active:scale-95 cursor-pointer
+                ${l.id === activeListId
+                  ? 'bg-green-600 text-white border-green-700 shadow-sm'
+                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+            >
+              <span>📁 {l.nombre}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${l.id === activeListId ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                {l.items.length}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── DETALLES DE LA LISTA ACTIVA (NOTAS / RENOMBRAR / ELIMINAR) ── */}
+      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
+        <div className="flex items-center justify-between gap-4">
+          {isRenamingList ? (
+            <div className="flex gap-2 items-center flex-1">
+              <input
+                type="text"
+                value={renameValue}
+                onChange={e => setRenameValue(e.target.value)}
+                className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1 text-sm font-bold focus:outline-none"
+              />
+              <button onClick={handleRenameList} className="text-green-600 p-1 hover:text-green-700 cursor-pointer">
+                <Save size={16} />
+              </button>
+              <button onClick={() => setIsRenamingList(false)} className="text-gray-400 p-1 cursor-pointer">
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="font-extrabold text-gray-800 truncate">{activeList.nombre}</span>
+              <button
+                onClick={() => { setRenameValue(activeList.nombre); setIsRenamingList(true); }}
+                className="text-gray-300 hover:text-gray-500 transition p-0.5 cursor-pointer"
+                title="Renombrar lista"
+              >
+                <Edit3 size={12} />
+              </button>
+            </div>
+          )}
+
+          {/* Botón eliminar (Solo si hay más de 1 lista) */}
+          {lists.length > 1 && (
+            <button
+              onClick={() => handleDeleteList(activeListId)}
+              className="text-gray-300 hover:text-red-500 transition text-xs flex items-center gap-1 shrink-0 p-1 cursor-pointer"
+            >
+              <Trash2 size={13} /> Eliminar Lista
+            </button>
+          )}
+        </div>
+
+        {/* Textarea para Notas */}
+        <div>
+          <textarea
+            placeholder="Notas de esta lista (ej. Comprar la marca Tuti, traer suelto...)"
+            value={activeListNotes}
+            onChange={e => handleNotesChange(e.target.value)}
+            rows={2}
+            className="w-full text-xs bg-gray-50/50 hover:bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-gray-600 placeholder-gray-400 focus:outline-none focus:border-green-600 focus:bg-white transition resize-none"
+          />
+        </div>
       </div>
 
       {/* ── SECCIÓN AÑADIR PRODUCTO ── */}
@@ -392,7 +717,7 @@ export default function FavoritosPage() {
                   <button
                     key={s.codigo}
                     onClick={() => handleSelectSuggestion(s)}
-                    className="w-full text-left px-4 py-3 hover:bg-green-50/50 flex items-center justify-between text-xs font-medium text-gray-800 transition"
+                    className="w-full text-left px-4 py-3 hover:bg-green-50/50 flex items-center justify-between text-xs font-medium text-gray-800 transition cursor-pointer"
                   >
                     <span className="truncate pr-2">{s.descripcion}</span>
                     <span className="font-bold text-green-700 shrink-0">{fmt(s.precio_publico)}</span>
@@ -437,7 +762,7 @@ export default function FavoritosPage() {
             ) : (
               <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
                 {historico.map(h => {
-                  const yaEnLista = lista.some(x => x.codigo === h.codigo)
+                  const yaEnLista = activeItems.some(x => x.codigo === h.codigo)
                   return (
                     <button
                       key={h.codigo}
@@ -459,12 +784,12 @@ export default function FavoritosPage() {
         )}
       </div>
 
-      {/* ── LISTADO PRINCIPAL DE LA LISTA DE COMPRAS ── */}
-      {lista.length === 0 ? (
+      {/* ── LISTADO PRINCIPAL DE LA LISTA DE COMPRAS ACTIVA ── */}
+      {activeItems.length === 0 ? (
         <div className="bg-white border border-gray-100 rounded-3xl p-10 flex flex-col items-center gap-4 text-center shadow-xs">
           <div className="w-16 h-16 rounded-2xl bg-green-50 flex items-center justify-center text-3xl">📝</div>
-          <h2 className="text-base font-extrabold text-gray-800">Tu lista está vacía</h2>
-          <p className="text-xs text-gray-400 max-w-xs leading-relaxed">Escanea un código de barras de un contenedor vacío o escribe nombres de productos para armar tu lista de compras para el súper.</p>
+          <h2 className="text-base font-extrabold text-gray-800">Esta lista está vacía</h2>
+          <p className="text-xs text-gray-400 max-w-xs leading-relaxed">Escanea códigos de barras de contenedores vacíos o busca productos por nombre para llenar tu lista <strong>"{activeList.nombre}"</strong>.</p>
           <Link href="/productos"
             className="bg-green-600 hover:bg-green-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition shadow-sm">
             Explorar catálogo
@@ -486,7 +811,7 @@ export default function FavoritosPage() {
               >
                 {/* 1. Casilla de Verificación (Tachar) */}
                 <button
-                  onClick={() => toggleChecked(prod.codigo)}
+                  onClick={() => handleCheckedToggle(prod.codigo)}
                   className={`w-5 h-5 rounded-full flex items-center justify-center border transition shrink-0 cursor-pointer
                     ${isChecked 
                       ? 'bg-green-600 border-green-600 text-white' 
@@ -501,7 +826,7 @@ export default function FavoritosPage() {
                 </div>
 
                 {/* Información */}
-                <div className="flex-1 min-w-0" onClick={() => toggleChecked(prod.codigo)}>
+                <div className="flex-1 min-w-0" onClick={() => handleCheckedToggle(prod.codigo)}>
                   <div className={`text-xs font-bold text-gray-800 leading-snug truncate cursor-pointer
                     ${isChecked ? 'line-through text-gray-400' : ''}`}>
                     {prod.descripcion}
@@ -529,14 +854,14 @@ export default function FavoritosPage() {
                     <div className="flex items-center bg-green-600 text-white rounded-lg overflow-hidden h-[30px] shadow-sm select-none border border-green-700">
                       <button
                         onClick={() => handleCambiarCantidad(prod.codigo, cantEnCarrito - 1)}
-                        className="px-2.5 h-full hover:bg-green-700 active:scale-90 transition flex items-center justify-center font-bold"
+                        className="px-2.5 h-full hover:bg-green-700 active:scale-90 transition flex items-center justify-center font-bold cursor-pointer"
                       >
                         <Minus size={9} />
                       </button>
                       <span className="text-[11px] font-black w-5 text-center">{cantEnCarrito}</span>
                       <button
                         onClick={() => handleCambiarCantidad(prod.codigo, cantEnCarrito + 1)}
-                        className="px-2.5 h-full hover:bg-green-700 active:scale-90 transition flex items-center justify-center font-bold"
+                        className="px-2.5 h-full hover:bg-green-700 active:scale-90 transition flex items-center justify-center font-bold cursor-pointer"
                       >
                         <Plus size={9} />
                       </button>
@@ -559,7 +884,7 @@ export default function FavoritosPage() {
       )}
 
       {/* ── TOTAL ESTIMADO Y BOTÓN DE ACCIÓN ── */}
-      {lista.length > 0 && (
+      {activeItems.length > 0 && (
         <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
           <div>
             <div className="text-[10px] text-gray-400 uppercase font-bold">Total estimado</div>
@@ -664,4 +989,3 @@ export default function FavoritosPage() {
     </div>
   )
 }
-

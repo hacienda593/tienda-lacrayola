@@ -8,7 +8,7 @@ import { getPuntos, agregarPuntosFijos } from '@/lib/puntos'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import {
-  LogOut, User, Trophy, Heart,
+  LogOut, User, Trophy, ClipboardList,
   Package, Phone, ChevronRight, Loader2, CheckCircle, Shield,
   MapPin, Trash2, Edit, Plus, X,
   Calendar, Gift, Sparkles,
@@ -716,10 +716,10 @@ function PanelRegistrado() {
           <ChevronRight size={14} className="text-gray-300" />
         </Link>
         <Link href="/favoritos" className="flex items-center gap-3 px-5 py-4 hover:bg-gray-50 transition">
-          <Heart size={17} className="text-red-400" />
+          <ClipboardList size={17} className="text-green-600" />
           <div className="flex-1">
-            <div className="text-sm font-medium text-gray-800">Mis favoritos</div>
-            <div className="text-xs text-gray-400">{numFavs} producto{numFavs !== 1 ? 's' : ''} guardados</div>
+            <div className="text-sm font-medium text-gray-800">Mi lista de compras</div>
+            <div className="text-xs text-gray-400">{numFavs} artículo{numFavs !== 1 ? 's' : ''} en tus listas</div>
           </div>
           <ChevronRight size={14} className="text-gray-300" />
         </Link>

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useRef, useMemo } from 'react'
 import Link from 'next/link'
-import { X, ShoppingCart, Heart, Check, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react'
+import { X, ShoppingCart, ClipboardList, Check, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react'
 import { Producto, CAT_EMOJI } from '@/lib/types'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
@@ -256,10 +256,11 @@ export default function QuickViewDrawer({ producto, prevProducto, nextProducto, 
           <button
             onClick={handleToggleFav}
             className={`absolute bottom-3 right-3 w-8.5 h-8.5 rounded-full flex items-center justify-center shadow-md transition ${
-              fav ? 'bg-red-500 text-white' : 'bg-white/95 text-gray-300 hover:text-red-400'
+              fav ? 'bg-green-600 text-white' : 'bg-white/95 text-gray-400 hover:text-green-600'
             }`}
+            title={fav ? "Quitar de la lista" : "Añadir a la lista de compras"}
           >
-            <Heart size={14} className={fav ? 'fill-white' : ''} />
+            <ClipboardList size={14} />
           </button>
 
           {/* Agotado / Pocas unidades Badge */}

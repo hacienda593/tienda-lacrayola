@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useSearchParams, useRouter } from 'next/navigation'
-import { Home, Store, ShoppingCart, Heart, Menu, LayoutGrid, Sparkles, ArrowLeft } from 'lucide-react'
+import { Home, Store, ShoppingCart, ClipboardList, Menu, LayoutGrid, Sparkles, ArrowLeft } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { getCarrito } from '@/lib/carrito'
 import { supabase } from '@/lib/supabase'
@@ -112,7 +112,7 @@ function NavBarMobileInner() {
             className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100
               ${pathname === '/favoritos' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
           >
-            <Heart size={20} className={pathname === '/favoritos' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
+            <ClipboardList size={20} className={pathname === '/favoritos' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
             <span className="text-[9px] font-bold">Lista</span>
           </Link>
 
@@ -165,7 +165,7 @@ function NavBarMobileInner() {
           className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100
             ${pathname === '/favoritos' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
         >
-          <Heart size={20} className={pathname === '/favoritos' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
+          <ClipboardList size={20} className={pathname === '/favoritos' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
           <span className="text-[9px] font-bold">Lista</span>
         </Link>
 

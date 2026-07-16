@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams, useSearchParams, usePathname } from 'next/navigation'
 import {
   X, User, Tag, Settings, HelpCircle,
-  ChevronRight, Search, Heart, Package,
+  ChevronRight, Search, ClipboardList, Package,
   MessageCircle, Star, Trophy, Loader2, ShoppingCart, Printer, Smartphone
 } from 'lucide-react'
 import { getPuntos, progresoNivel } from '@/lib/puntos'
@@ -269,7 +269,7 @@ export default function MenuDrawer({ open, onClose }: Props) {
               </div>
 
               <ItemMenu icon={<Package size={18} />} label="Mis pedidos"      sub="Historial y recompra"     onClick={() => navegar('/pedidos')} />
-              <ItemMenu icon={<Heart size={18} />}   label="Mis favoritos"     sub="Lista de deseos"          onClick={() => navegar('/favoritos')} />
+              <ItemMenu icon={<ClipboardList size={18} />}   label="Lista de compras"     sub="Planificador de súper"          onClick={() => navegar('/favoritos')} />
               <ItemMenu icon={<ShoppingCart size={18} />} label="Comprar de nuevo" sub="Tus artículos frecuentes" onClick={() => navegar('/productos?frecuentes=true')} />
               <ItemMenu 
                 icon={<Printer size={18} />} 

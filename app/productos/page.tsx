@@ -7,7 +7,7 @@ import { customSearch } from '@/lib/search'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto, CAT_EMOJI } from '@/lib/types'
-import { Search, X, ShoppingCart, Plus, Minus, Heart, ArrowUpDown, Share2, ChevronRight } from 'lucide-react'
+import { Search, X, ShoppingCart, Plus, Minus, ClipboardList, ArrowUpDown, Share2, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { getPerfil } from '@/lib/perfil'
 import QuickViewDrawer from '@/components/QuickViewDrawer'
@@ -125,8 +125,10 @@ function BtnFavorito({ prod }: { prod: Producto }) {
   return (
     <button onClick={toggle}
       className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition z-10
-        ${fav ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-300 hover:text-red-400'}`}>
-      <Heart size={13} className={fav ? 'fill-white' : ''} />
+        ${fav ? 'bg-green-600 text-white' : 'bg-white/90 text-gray-400 hover:text-green-600'}`}
+      title={fav ? "Quitar de la lista" : "Añadir a la lista de compras"}
+    >
+      <ClipboardList size={13} />
     </button>
   )
 }

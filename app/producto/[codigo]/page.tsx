@@ -6,7 +6,7 @@ import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto, CAT_EMOJI } from '@/lib/types'
 import {
-  ArrowLeft, Heart, ShoppingCart, Plus, Minus,
+  ArrowLeft, ClipboardList, ShoppingCart, Plus, Minus,
   Package, Tag, Barcode, CheckCircle, Share2,
 } from 'lucide-react'
 
@@ -255,8 +255,10 @@ export default function ProductoPage() {
         {/* Acciones flotantes */}
         <div className="absolute top-3 left-3 flex gap-2">
           <button onClick={toggleFav}
-            className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md transition ${fav ? 'bg-red-500 text-white' : 'bg-white text-gray-400 hover:text-red-400'}`}>
-            <Heart size={16} className={fav ? 'fill-white' : ''} />
+            className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md transition ${fav ? 'bg-green-600 text-white' : 'bg-white text-gray-400 hover:text-green-600'}`}
+            title={fav ? "Quitar de la lista" : "Añadir a la lista de compras"}
+          >
+            <ClipboardList size={16} />
           </button>
           <button onClick={compartir}
             className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md text-gray-400 hover:text-green-600 transition">

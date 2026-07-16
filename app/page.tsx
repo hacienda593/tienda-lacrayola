@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ChevronRight, ShoppingCart, Truck, Shield, Clock, Heart, ChevronLeft, Minus, Plus } from 'lucide-react'
+import { ChevronRight, ShoppingCart, Truck, Shield, Clock, ClipboardList, ChevronLeft, Minus, Plus } from 'lucide-react'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto } from '@/lib/types'
@@ -222,8 +222,10 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
         )}
         <button onClick={toggleFav}
           className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm z-10 transition
-            ${fav ? 'bg-red-500 text-white' : 'bg-white/90 text-gray-300 hover:text-red-400'}`}>
-          <Heart size={13} className={fav ? 'fill-white' : ''} />
+            ${fav ? 'bg-green-600 text-white' : 'bg-white/90 text-gray-400 hover:text-green-600'}`}
+          title={fav ? "Quitar de la lista" : "Añadir a la lista de compras"}
+        >
+          <ClipboardList size={13} />
         </button>
         {p.stock > 0 && p.stock < 5 && (
           <span className="absolute top-2 left-2 text-[9px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded-full z-10">
