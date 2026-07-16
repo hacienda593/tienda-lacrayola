@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+@theme {
+  --color-green-50: #fff5eb;
+  --color-green-100: #ffedd5;
+  --color-green-200: #fed7aa;
+  --color-green-600: #f97316;
+  --color-green-700: #ea580c;
+  --color-green-800: #c2410c;
+}
+
 * { box-sizing: border-box; }
 
 body {

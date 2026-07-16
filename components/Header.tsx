@@ -174,10 +174,10 @@ export default function Header() {
             <img
               src="/logo-tienlo.png"
               alt="Tienlo Logo"
-              className="h-9 w-auto object-contain bg-white rounded-lg p-0.5"
+              className="h-9 md:h-11 w-auto object-contain bg-white rounded-lg p-0.5"
             />
             <div className="hidden md:flex items-center gap-2 pl-2 border-l border-gray-200">
-              <span className="text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-md">
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
                 Una marca de La Crayola
               </span>
             </div>

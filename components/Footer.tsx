@@ -7,7 +7,7 @@ export default function Footer() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-white font-extrabold text-xl">Tienlo</span>
-            <span className="text-[10px] text-green-400 font-bold bg-green-950/50 border border-green-800 px-2 py-0.5 rounded-md">
+            <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/50 border border-emerald-800 px-2 py-0.5 rounded-md">
               por La Crayola
             </span>
           </div>
