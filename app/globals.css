@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-green-50: #fff5eb;
-  --color-green-100: #ffedd5;
-  --color-green-200: #fed7aa;
-  --color-green-600: #f97316;
-  --color-green-700: #ea580c;
-  --color-green-800: #c2410c;
+  --color-green-50: #fff6f5;
+  --color-green-100: #ffe3e0;
+  --color-green-200: #ffc2bb;
+  --color-green-600: #e0533c; /* Coral Red - Tienlo primary */
+  --color-green-700: #c23e2a; /* Darker Coral - Header / buttons */
+  --color-green-800: #9e2b1b;
 }
 
 * { box-sizing: border-box; }

@@ -92,6 +92,7 @@ function NavBarMobileInner() {
   }
 
   // 5. Definir la botonera líquida según el contexto
+  // 5. Definir la botonera líquida según el contexto
   if (esTienda) {
     // ── Contexto Tienda Aliada (o búsqueda dentro de tienda): Enfoque en recolección rápida, favoritos y pasillos dinámicos ──
     const nombreCorto = getNombreCorto(tiendaNombre)
@@ -99,26 +100,20 @@ function NavBarMobileInner() {
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/85 backdrop-blur-xl border-t border-gray-200/50 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl will-change-transform">
         <div className="flex h-16 items-center px-2">
           
-          {/* Botón 1: Inicio o Atrás dinámico */}
-          {hasActiveFilter ? (
-            <button
-              onClick={handleVolver}
-              className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-600 active:scale-95 transition-transform duration-100 cursor-pointer"
-            >
-              <ArrowLeft size={20} className="stroke-[2.2] text-green-600" />
-              <span className="text-[9px] font-extrabold text-green-600">Atrás</span>
-            </button>
-          ) : (
-            <Link href="/" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100">
-              <Home size={20} className="stroke-[1.8]" />
-              <span className="text-[9px] font-bold">Inicio</span>
-            </Link>
-          )}
+          {/* Botón 1: Inicio */}
+          <Link href="/" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100">
+            <Home size={20} className="stroke-[1.8]" />
+            <span className="text-[9px] font-bold">Inicio</span>
+          </Link>
 
-          {/* Botón 2: Favoritos */}
-          <Link href="/favoritos" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100">
-            <Heart size={20} className="stroke-[1.8]" />
-            <span className="text-[9px] font-bold">Favoritos</span>
+          {/* Botón 2: Lista */}
+          <Link 
+            href="/favoritos" 
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100
+              ${pathname === '/favoritos' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
+          >
+            <Heart size={20} className={pathname === '/favoritos' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
+            <span className="text-[9px] font-bold">Lista</span>
           </Link>
 
           {/* Botón 3: PASILLOS (CENTRAL HERO FLOTANTE CON NOMBRE DE TIENDA) */}
@@ -135,23 +130,14 @@ function NavBarMobileInner() {
           </div>
 
           {/* Botón 4: Comercios */}
-          <Link href="/tiendas" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100">
-            <Store size={20} className="stroke-[1.8]" />
+          <Link 
+            href="/tiendas" 
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100
+              ${pathname === '/tiendas' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
+          >
+            <Store size={20} className={pathname === '/tiendas' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
             <span className="text-[9px] font-bold">Comercios</span>
           </Link>
-
-          {/* Botón 5: Carrito */}
-          <button onClick={openCart} className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100 relative cursor-pointer">
-            <div className="relative">
-              <ShoppingCart size={20} className="stroke-[1.8]" />
-              {n > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[8px] font-black rounded-full min-w-[15px] h-3.5 flex items-center justify-center px-0.5">
-                  {n > 99 ? '99+' : n}
-                </span>
-              )}
-            </div>
-            <span className="text-[9px] font-bold">Carrito</span>
-          </button>
 
         </div>
       </nav>
@@ -173,14 +159,14 @@ function NavBarMobileInner() {
           <span className="text-[9px] font-bold">Inicio</span>
         </Link>
 
-        {/* Botón 2: Favoritos */}
+        {/* Botón 2: Lista */}
         <Link 
           href="/favoritos" 
           className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100
             ${pathname === '/favoritos' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
         >
           <Heart size={20} className={pathname === '/favoritos' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
-          <span className="text-[9px] font-bold">Favoritos</span>
+          <span className="text-[9px] font-bold">Lista</span>
         </Link>
 
         {/* Botón 3: TIENDAS (CENTRAL HERO FLOTANTE GLOBAL) */}
@@ -201,23 +187,6 @@ function NavBarMobileInner() {
         >
           <LayoutGrid size={20} className="stroke-[1.8]" />
           <span className="text-[9px] font-bold">Pasillos</span>
-        </button>
-
-        {/* Botón 5: Carrito */}
-        <button 
-          onClick={openCart}
-          className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 relative cursor-pointer
-            ${pathname === '/carrito' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
-        >
-          <div className="relative">
-            <ShoppingCart size={20} className={pathname === '/carrito' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
-            {n > 0 && (
-              <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[8px] font-black rounded-full min-w-[15px] h-3.5 flex items-center justify-center px-0.5">
-                {n > 99 ? '99+' : n}
-              </span>
-            )}
-          </div>
-          <span className="text-[9px] font-bold">Carrito</span>
         </button>
 
       </div>
