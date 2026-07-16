@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-green-50: #f8fafc;
-  --color-green-100: #f1f5f9;
-  --color-green-200: #e2e8f0;
-  --color-green-600: #1b365d; /* Sapphire Navy - Primary buttons and actions */
-  --color-green-700: #0f172a; /* Midnight Slate - Header, footer and strong accents */
-  --color-green-800: #020617;
+  --color-green-50: #f0fdf4;
+  --color-green-100: #dcfce7;
+  --color-green-200: #bbf7d0;
+  --color-green-600: #16a34a; /* Original brand green */
+  --color-green-700: #15803d; /* Original dark header green */
+  --color-green-800: #166534;
 }
 
 * { box-sizing: border-box; }
