@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useSearchParams, useRouter } from 'next/navigation'
-import { Home, Store, ShoppingCart, ClipboardList, Menu, LayoutGrid, Sparkles, ArrowLeft } from 'lucide-react'
+import { Home, Store, ShoppingCart, ClipboardList, Menu, LayoutGrid, Sparkles, ArrowLeft, Package } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { getCarrito } from '@/lib/carrito'
 import { supabase } from '@/lib/supabase'
@@ -139,6 +139,16 @@ function NavBarMobileInner() {
             <span className="text-[9px] font-bold">Comercios</span>
           </Link>
 
+          {/* Botón 5: Pedidos */}
+          <Link 
+            href="/pedidos" 
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100
+              ${pathname === '/pedidos' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
+          >
+            <Package size={20} className={pathname === '/pedidos' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
+            <span className="text-[9px] font-bold">Pedidos</span>
+          </Link>
+
         </div>
       </nav>
     )
@@ -188,6 +198,16 @@ function NavBarMobileInner() {
           <LayoutGrid size={20} className="stroke-[1.8]" />
           <span className="text-[9px] font-bold">Pasillos</span>
         </button>
+
+        {/* Botón 5: Pedidos */}
+        <Link 
+          href="/pedidos" 
+          className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100
+            ${pathname === '/pedidos' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
+        >
+          <Package size={20} className={pathname === '/pedidos' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
+          <span className="text-[9px] font-bold">Pedidos</span>
+        </Link>
 
       </div>
     </nav>
