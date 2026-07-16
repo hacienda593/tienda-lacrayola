@@ -246,22 +246,22 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
             {cantidad === 0 ? (
               <button onClick={addCart}
                 className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1 active:scale-[0.96] transition-transform duration-75 cursor-pointer
-                  ${ok ? 'bg-orange-500 text-white shadow-sm' : 'bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-500 hover:text-white hover:border-orange-500 shadow-sm'}`}>
+                  ${ok ? 'bg-green-600 text-white shadow-sm' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-green-600 shadow-sm'}`}>
                 <ShoppingCart size={12} />
                 {ok ? '¡Ok!' : 'Agregar'}
               </button>
             ) : (
-              <div className="flex items-center justify-between bg-orange-500 rounded-lg overflow-hidden h-[30px] w-[80px] shadow-sm">
+              <div className="flex items-center justify-between bg-green-600 rounded-lg overflow-hidden h-[30px] w-[80px] shadow-sm">
                 <button 
                   onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad - 1); }}
-                  className="px-2 h-full text-white hover:bg-orange-600 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center cursor-pointer"
+                  className="px-2 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center cursor-pointer"
                 >
                   <Minus size={10} />
                 </button>
                 <span className="text-white text-xs font-black select-none">{cantidad}</span>
                 <button 
                   onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad + 1); }}
-                  className="px-2 h-full text-white hover:bg-orange-600 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center cursor-pointer"
+                  className="px-2 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center cursor-pointer"
                 >
                   <Plus size={10} />
                 </button>
@@ -299,7 +299,7 @@ function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
   if (cantidad === 0) {
     return (
       <button onClick={add}
-        className="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 active:scale-[0.96] transition-transform duration-75 shrink-0 cursor-pointer bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-500 hover:text-white hover:border-transparent">
+        className="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 active:scale-[0.96] transition-transform duration-75 shrink-0 cursor-pointer bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent">
         <ShoppingCart size={11} />
         Agregar
       </button>
@@ -307,17 +307,17 @@ function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
   }
 
   return (
-    <div className="flex items-center bg-orange-500 text-white rounded-lg overflow-hidden h-[28px] shrink-0 border border-orange-600">
+    <div className="flex items-center bg-green-600 text-white rounded-lg overflow-hidden h-[28px] shrink-0 border border-green-700">
       <button 
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(prod.codigo, cantidad - 1); }}
-        className="px-2 h-full flex items-center justify-center hover:bg-orange-600 active:scale-[0.96] transition-transform duration-75 cursor-pointer"
+        className="px-2 h-full flex items-center justify-center hover:bg-green-700 active:scale-[0.96] transition-transform duration-75 cursor-pointer"
       >
         <Minus size={9} />
       </button>
       <span className="px-1 text-[11px] font-extrabold select-none min-w-[14px] text-center">{cantidad}</span>
       <button 
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(prod.codigo, cantidad + 1); }}
-        className="px-2 h-full flex items-center justify-center hover:bg-orange-600 active:scale-[0.96] transition-transform duration-75 cursor-pointer"
+        className="px-2 h-full flex items-center justify-center hover:bg-green-700 active:scale-[0.96] transition-transform duration-75 cursor-pointer"
       >
         <Plus size={9} />
       </button>

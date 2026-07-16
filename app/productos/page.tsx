@@ -211,7 +211,7 @@ function ProductCard({ p, badge, onSelect, tiendasMap }: { p: Producto; badge?: 
               }
               agregarItem(p)
             }}
-            className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-90 transition z-20 cursor-pointer border border-white/60"
+            className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-90 transition z-20 cursor-pointer border border-white/60"
             aria-label="Agregar al carrito"
           >
             <Plus size={16} className="stroke-[3]" />
