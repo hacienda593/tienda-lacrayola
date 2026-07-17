@@ -809,17 +809,17 @@ function TiendaContent() {
         <div className="flex-1 min-w-0 space-y-4">
           {/* ── Barra de Categorías Móvil (Estilo Pinduoduo: Scroll + Rejilla Desplegable) ── */}
           {cats.length > 0 && (
-            <div className="md:hidden relative border-b border-gray-100 pb-3">
+            <div className="md:hidden relative border-b border-gray-100 pb-2">
               <div className="flex items-center justify-between gap-2 relative">
                 {/* Contenedor del Scroll Horizontal */}
                 <div className="flex-1 overflow-x-auto scrollbar-hide pr-10">
-                  <div className="flex gap-2 whitespace-nowrap text-xs font-bold items-center">
+                  <div className="flex gap-4.5 whitespace-nowrap text-xs font-bold items-center py-1">
                     <button
                       onClick={() => updateFiltersUrl({ cat: '', sub: '', marca: '' })}
-                      className={`px-3 py-1.5 rounded-full transition-all border shrink-0 cursor-pointer active:scale-95
+                      className={`pb-1.5 transition-all relative shrink-0 cursor-pointer
                         ${!cat 
-                          ? 'bg-green-600 text-white border-green-700 shadow-sm' 
-                          : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-55'}`}
+                          ? 'text-green-700 font-extrabold border-b-2 border-green-600' 
+                          : 'text-gray-500 hover:text-gray-700'}`}
                     >
                       🏪 Todos
                     </button>
@@ -829,13 +829,12 @@ function TiendaContent() {
                         <button
                           key={c}
                           onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
-                          className={`px-3 py-1.5 rounded-full transition-all border shrink-0 cursor-pointer active:scale-95 flex items-center gap-1
+                          className={`pb-1.5 transition-all relative shrink-0 cursor-pointer
                             ${esActivo 
-                              ? 'bg-green-600 text-white border-green-700 shadow-sm' 
-                              : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-55'}`}
+                              ? 'text-green-700 font-extrabold border-b-2 border-green-600' 
+                              : 'text-gray-500 hover:text-gray-700'}`}
                         >
-                          <span>{CAT_EMOJI[c] || '📦'}</span>
-                          <span>{c}</span>
+                          {c}
                         </button>
                       )
                     })}
@@ -857,34 +856,50 @@ function TiendaContent() {
                 </div>
               </div>
 
-              {/* Persiana Overlay de Rejilla de Categorías (Pinduoduo Grid) */}
+              {/* Persiana Overlay de Rejilla de Categorías (Pinduoduo 5-Column Grid) */}
               {localCatOpen && (
-                <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl p-4.5 z-30 animate-in slide-in-from-top-4 fade-in duration-200 space-y-3">
+                <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl p-4 z-30 animate-in slide-in-from-top-4 fade-in duration-200 space-y-3">
                   <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Pasillos del Local</div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-5 gap-y-4 gap-x-1.5 justify-items-center">
+                    {/* Todos */}
                     <button
                       onClick={() => { updateFiltersUrl({ cat: '', sub: '', marca: '' }); setLocalCatOpen(false) }}
-                      className={`p-2.5 rounded-xl border transition text-left flex flex-col justify-between h-[68px] active:scale-95 cursor-pointer
-                        ${!cat 
-                          ? 'bg-green-50 border-green-200 text-green-700 font-extrabold' 
-                          : 'bg-gray-50 border-gray-100 text-gray-600 hover:bg-gray-100'}`}
+                      className="flex flex-col items-center group relative transition active:scale-95 duration-100 cursor-pointer"
                     >
-                      <span className="text-base">🏪</span>
-                      <span className="text-[10px] font-extrabold truncate w-full">Todos</span>
+                      <div className={`w-11 h-11 rounded-full flex items-center justify-center text-xl shadow-xs border transition
+                        ${!cat 
+                          ? 'bg-green-50 border-green-200 text-green-700 shadow-sm' 
+                          : 'bg-gray-50 border-gray-100 text-gray-600 hover:bg-white'}`}
+                      >
+                        🏪
+                      </div>
+                      <span className={`text-[9px] font-extrabold text-center mt-1.5 leading-tight line-clamp-2 max-w-[64px]
+                        ${!cat ? 'text-green-700' : 'text-gray-600'}`}
+                      >
+                        Todos
+                      </span>
                     </button>
+                    {/* Categorías */}
                     {cats.map(([c, count]) => {
                       const esActivo = cat === c
                       return (
                         <button
                           key={c}
                           onClick={() => { updateFiltersUrl({ cat: c, sub: '', marca: '' }); setLocalCatOpen(false) }}
-                          className={`p-2.5 rounded-xl border transition text-left flex flex-col justify-between h-[68px] active:scale-95 cursor-pointer
-                            ${esActivo 
-                              ? 'bg-green-50 border-green-200 text-green-700 font-extrabold' 
-                              : 'bg-gray-50 border-gray-100 text-gray-600 hover:bg-gray-100'}`}
+                          className="flex flex-col items-center group relative transition active:scale-95 duration-100 cursor-pointer"
                         >
-                          <span className="text-base">{CAT_EMOJI[c] || '📦'}</span>
-                          <span className="text-[10px] font-extrabold truncate w-full">{c}</span>
+                          <div className={`w-11 h-11 rounded-full flex items-center justify-center text-xl shadow-xs border transition
+                            ${esActivo 
+                              ? 'bg-green-50 border-green-200 text-green-700 shadow-sm' 
+                              : 'bg-gray-50 border-gray-100 text-gray-600 hover:bg-white'}`}
+                          >
+                            {CAT_EMOJI[c] || '📦'}
+                          </div>
+                          <span className={`text-[9px] font-extrabold text-center mt-1.5 leading-tight line-clamp-2 max-w-[64px]
+                            ${esActivo ? 'text-green-700' : 'text-gray-600'}`}
+                          >
+                            {c}
+                          </span>
                         </button>
                       )
                     })}
