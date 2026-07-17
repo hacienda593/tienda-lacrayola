@@ -337,6 +337,42 @@ function ImagenProducto({ src, categoria, alt, descripcion }: { src?: string | n
   )
 }
 
+function obtenerEmojiSubcategoria(nombreSub: string, categoria: string): string {
+  const sub = nombreSub.toLowerCase();
+  if (sub.includes('cuaderno') || sub.includes('carpeta')) return '📓';
+  if (sub.includes('lapiz') || sub.includes('esfero') || sub.includes('pluma') || sub.includes('boligrafo') || sub.includes('marcador') || sub.includes('color')) return '✏️';
+  if (sub.includes('mochila') || sub.includes('bolso')) return '🎒';
+  if (sub.includes('regla') || sub.includes('escuadra')) return '📐';
+  if (sub.includes('goma') || sub.includes('silicona') || sub.includes('pega') || sub.includes('grapadora')) return '🧪';
+  if (sub.includes('pintura') || sub.includes('oleo') || sub.includes('tempera') || sub.includes('acrilico') || sub.includes('pincel') || sub.includes('acuarela')) return '🎨';
+  if (sub.includes('fomix') || sub.includes('cartulina') || sub.includes('papel')) return '📄';
+  if (sub.includes('cinta')) return '🎀';
+  if (sub.includes('escarcha')) return '✨';
+  if (sub.includes('limpiapipas')) return '🧶';
+  if (sub.includes('libro') || sub.includes('novela') || sub.includes('cuento') || sub.includes('lectura')) return '📖';
+  if (sub.includes('peluche') || sub.includes('juguete')) return '🧸';
+  if (sub.includes('regalo') || sub.includes('fiesta')) return '🎁';
+  if (sub.includes('aceite')) return '🛢️';
+  if (sub.includes('arroz')) return '🍚';
+  if (sub.includes('atun') || sub.includes('pescado')) return '🐟';
+  if (sub.includes('fideo') || sub.includes('pasta')) return '🍝';
+  if (sub.includes('grano') || sub.includes('semilla') || sub.includes('lenteja') || sub.includes('frejol')) return '🫘';
+  if (sub.includes('harina')) return '🌾';
+  if (sub.includes('cafe')) return '☕';
+  if (sub.includes('azucar') || sub.includes('dulce') || sub.includes('caramelo') || sub.includes('chocolate')) return '🍬';
+  if (sub.includes('snack') || sub.includes('papas') || sub.includes('mani') || sub.includes('galleta')) return '🍿';
+  if (sub.includes('agua') || sub.includes('gaseosa') || sub.includes('cola') || sub.includes('jugo') || sub.includes('bebida')) return '🥤';
+  if (sub.includes('detergente') || sub.includes('suavizante') || sub.includes('cloro') || sub.includes('jabon') || sub.includes('desinfectante')) return '🧹';
+  if (sub.includes('shampoo') || sub.includes('crema') || sub.includes('desodorante') || sub.includes('dental')) return '🧴';
+  if (sub.includes('leche') || sub.includes('yogurt') || sub.includes('queso') || sub.includes('mantequilla')) return '🥛';
+  if (sub.includes('huevo')) return '🥚';
+  if (sub.includes('pollo') || sub.includes('carne') || sub.includes('embutido') || sub.includes('jamon') || sub.includes('salchicha')) return '🥩';
+  if (sub.includes('pan ') || sub.includes('panaderia') || sub.includes('torta') || sub.includes('cake')) return '🍞';
+  if (sub.includes('audifono') || sub.includes('parlante') || sub.includes('cargador') || sub.includes('cable') || sub.includes('teclado')) return '💻';
+  if (sub.includes('medicina') || sub.includes('pastilla') || sub.includes('salud')) return '💊';
+  return '📦';
+}
+
 function TiendaContent() {
   const { id }  = useParams<{ id: string }>()
   const router  = useRouter()
@@ -575,14 +611,17 @@ function TiendaContent() {
   }, [base, cat])
 
   // Marcas dinamicas
+  // Marcas dinamicas contextuales al pasillo y la subcategoria activa (estilo sub-subcategorias)
   const marcas = useMemo(() => {
     const map = new Map<string, number>()
-    const pool = cat ? base.filter(p => p.stock > 0 && p.categoria === cat) : base.filter(p => p.stock > 0)
+    let pool = base.filter(p => p.stock > 0)
+    if (cat) pool = pool.filter(p => p.categoria === cat)
+    if (sub) pool = pool.filter(p => p.subcategoria === sub)
     pool.forEach(p => {
       if (p.marca) map.set(p.marca, (map.get(p.marca) ?? 0) + 1)
     })
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
-  }, [base, cat])
+  }, [base, cat, sub])
 
   // Efecto para scroll infinito automático (sentinel)
   useEffect(() => {
@@ -854,29 +893,73 @@ function TiendaContent() {
             </div>
           )}
 
-          {/* Barra Horizontal de Subcategorías (Navegación horizontal tipo Tipti) */}
-          {cat && subcats.length > 0 && (
-            <div className="w-full overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-hide">
-              <div className="flex gap-4 border-b border-gray-100 whitespace-nowrap text-xs font-bold">
-                <button
-                  onClick={() => updateFiltersUrl({ sub: '' })}
-                  className={`pb-2.5 transition-all relative ${!sub ? 'text-green-700 border-b-2 border-green-700 font-extrabold' : 'text-gray-500'}`}
-                >
-                  Todos los productos
-                </button>
+          {/* ── Subcategorías Rejilla de 5 Columnas (Antes de mostrar productos - Estilo Pinduoduo) ── */}
+          {cat && !sub && subcats.length > 0 && (
+            <div className="w-full bg-white border border-gray-100/50 rounded-2xl p-4.5 shadow-xs mb-4.5 animate-in fade-in slide-in-from-top-4 duration-200">
+              <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-3">Subcategorías del Pasillo</div>
+              <div className="grid grid-cols-5 gap-y-4 gap-x-1.5 justify-items-center">
                 {subcats.map(([s, count]) => {
-                  const esActiva = sub === s
+                  const emoji = obtenerEmojiSubcategoria(s, cat)
                   return (
                     <button
                       key={s}
                       onClick={() => updateFiltersUrl({ sub: s })}
-                      className={`pb-2.5 transition-all relative ${esActiva ? 'text-green-700 border-b-2 border-green-700 font-extrabold' : 'text-gray-500'}`}
+                      className="flex flex-col items-center group relative transition active:scale-95 duration-100 cursor-pointer"
                     >
-                      {s} ({count})
+                      <div className="w-11 h-11 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-xl shadow-xs hover:bg-white group-hover:border-green-200 transition">
+                        {emoji}
+                      </div>
+                      <span className="text-[9px] font-extrabold text-gray-600 text-center mt-1.5 leading-tight line-clamp-2 max-w-[64px] group-hover:text-green-700">
+                        {s}
+                      </span>
                     </button>
                   )
                 })}
               </div>
+            </div>
+          )}
+
+          {/* ── Sub-subcategorías / Marcas en Horizontal (Una vez elegida la subcategoría - Estilo Pinduoduo) ── */}
+          {cat && sub && (
+            <div className="w-full flex flex-col gap-2 mb-4 animate-in fade-in duration-200">
+              <button
+                onClick={() => updateFiltersUrl({ sub: '', marca: '' })}
+                className="self-start text-[10px] font-extrabold text-green-600 flex items-center gap-1 hover:underline cursor-pointer bg-transparent border-none p-0"
+              >
+                ← Volver a pasillo {cat} (Ver subcategorías)
+              </button>
+
+              {/* Barra Horizontal de Marcas */}
+              {marcas.length > 0 && (
+                <div className="w-full overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide border-b border-gray-100">
+                  <div className="flex gap-4.5 whitespace-nowrap text-xs font-bold items-center py-1">
+                    <button
+                      onClick={() => updateFiltersUrl({ marca: '' })}
+                      className={`pb-2.5 transition-all relative shrink-0 cursor-pointer
+                        ${!marca 
+                          ? 'text-green-700 font-extrabold border-b-2 border-green-700' 
+                          : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                      🏷️ Todo {sub}
+                    </button>
+                    {marcas.map(([m, count]) => {
+                      const esActiva = marca === m
+                      return (
+                        <button
+                          key={m}
+                          onClick={() => updateFiltersUrl({ marca: esActiva ? '' : m })}
+                          className={`pb-2.5 transition-all relative shrink-0 cursor-pointer
+                            ${esActiva 
+                              ? 'text-green-700 font-extrabold border-b-2 border-green-700' 
+                              : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                          {m}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
