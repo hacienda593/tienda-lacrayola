@@ -107,6 +107,20 @@ export default function CheckoutPage() {
   const [identificacion, setIdentificacion] = useState('')
   const [razonSocial, setRazonSocial] = useState('')
   const [correoFactura, setCorreoFactura] = useState('')
+  const [items, setItems] = useState<ItemCarrito[]>([])
+  const [cargandoCarrito, setCargandoCarrito] = useState(true)
+
+  useEffect(() => {
+    setItems(getCarrito())
+    setCargandoCarrito(false)
+  }, [])
+
+  // Redirigir si el carrito está vacío (seguro para SSR)
+  useEffect(() => {
+    if (!cargandoCarrito && items.length === 0 && !pedidoCompletado) {
+      router.replace('/carrito')
+    }
+  }, [cargandoCarrito, items, pedidoCompletado, router])
 
   const [verMapa, setVerMapa] = useState(false)
   const [direcciones, setDirecciones] = useState<any[]>([])
@@ -335,7 +349,6 @@ export default function CheckoutPage() {
     }
   }, [geo, verMapa])
 
-  const items = getCarrito()
   const total = totalCarrito(items)
   const nTiendas = obtenerTiendasUnicas(items).length || (items.length > 0 ? 1 : 0)
 
@@ -554,8 +567,16 @@ export default function CheckoutPage() {
     setTimeout(() => router.push(`/pedido/${resultado.pedidoId}`), 1800)
   }
 
+  if (cargandoCarrito) {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-20 flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-10 h-10 animate-spin text-green-600" />
+        <p className="text-sm font-bold text-gray-500">Cargando tu pedido...</p>
+      </div>
+    )
+  }
+
   if (items.length === 0 && !pedidoCompletado) {
-    router.replace('/carrito')
     return null
   }
 
