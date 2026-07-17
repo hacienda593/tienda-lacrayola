@@ -32,6 +32,14 @@ function TopBar() {
       })
   }, [activeTId])
 
+  const compartirActual = () => {
+    if (typeof window === 'undefined') return
+    const url = window.location.href
+    navigator.clipboard.writeText(url)
+    const texto = `Te comparto la tienda ${tiendaNombre || 'aliada'} en línea: ${url}`
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank')
+  }
+
   if (esTienda) {
     return (
       <div className="bg-green-700 text-white text-[11px] md:text-xs text-center py-1.5 px-4 font-medium flex items-center justify-center gap-2 animate-fade-in select-none">
@@ -40,6 +48,14 @@ function TopBar() {
         <Link href="/" className="underline hover:text-green-200 transition font-bold flex items-center gap-0.5">
           🏠 Ir al Inicio
         </Link>
+        <span className="opacity-40">·</span>
+        <button
+          onClick={compartirActual}
+          className="underline hover:text-green-200 transition font-bold flex items-center gap-0.5 cursor-pointer bg-transparent border-none text-white p-0"
+          title="Compartir tienda"
+        >
+          🔗 Compartir
+        </button>
       </div>
     )
   }
