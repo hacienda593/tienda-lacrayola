@@ -56,6 +56,10 @@ export default function FavoritosPage() {
   const [cargandoHistorico, setCargandoHistorico] = useState(false)
   const [showHistorico, setShowHistorico] = useState(false)
 
+  // ── Estados de Importación de Lista Compartida ──
+  const [importData, setImportData] = useState<{ n: string; o: string; i: any[] } | null>(null)
+  const [mostrarImportModal, setMostrarImportModal] = useState(false)
+
   // ── 1. Inicialización de Listas ──
   useEffect(() => {
     let savedLists: ListaCompras[] = []
@@ -115,6 +119,25 @@ export default function FavoritosPage() {
       setActiveListNotes(activeList.notas)
     }
   }, [activeListId, lists])
+
+  // ── Importación de Lista Compartida al Cargar ──
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const importListVal = params.get('importList')
+    if (importListVal) {
+      try {
+        const decodedStr = decodeURIComponent(escape(atob(importListVal)))
+        const parsed = JSON.parse(decodedStr)
+        if (parsed && parsed.n && Array.isArray(parsed.i)) {
+          setImportData(parsed)
+          setMostrarImportModal(true)
+        }
+      } catch (e) {
+        console.error("Error al decodificar la lista importada:", e)
+      }
+    }
+  }, [])
 
   // ── 2. Guardar en Storage & Sincronizar con el Catálogo (lc_favoritos) ──
   const updateListsStateAndStorage = (newLists: ListaCompras[], nextActiveId: string = activeListId) => {
@@ -292,12 +315,79 @@ export default function FavoritosPage() {
   }
 
   function compartir() {
-    const ids = activeItems.map(f => f.codigo).join(',')
-    const url = `${window.location.origin}/favoritos?lista=${encodeURIComponent(ids)}`
-    navigator.clipboard.writeText(url).then(() => {
-      setCopiado(true)
-      setTimeout(() => setCopiado(false), 2000)
-    })
+    try {
+      const shareData = {
+        n: activeList.nombre,
+        o: activeList.notas || '',
+        i: activeList.items.map(item => ({
+          c: item.codigo,
+          d: item.descripcion,
+          cat: item.categoria,
+          p: item.precio_unitario
+        }))
+      }
+      const base64Str = btoa(unescape(encodeURIComponent(JSON.stringify(shareData))))
+      const url = `${window.location.origin}/favoritos?importList=${base64Str}`
+      
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+          setCopiado(true)
+          setTimeout(() => setCopiado(false), 2000)
+        })
+      }
+      
+      const text = `Te comparto mi lista de compras "${activeList.nombre}" en Tienlo. Abre el link para ver los artículos o agregar los tuyos: ${url}`
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`
+      window.open(whatsappUrl, '_blank')
+    } catch (e) {
+      console.error("Error al compartir la lista:", e)
+      alert("No se pudo generar el enlace para compartir.")
+    }
+  }
+
+  const handleImportConfirm = () => {
+    if (!importData) return
+    const newListId = 'list_' + Math.random().toString(36).substr(2, 9)
+    
+    const parsedItems: ItemFavorito[] = importData.i.map((item: any) => ({
+      codigo: item.c,
+      descripcion: item.d,
+      categoria: item.cat || 'General',
+      precio_unitario: item.p || 0,
+      agregadoEn: new Date().toISOString()
+    }))
+
+    const newLists: ListaCompras[] = [
+      ...lists,
+      {
+        id: newListId,
+        nombre: `${importData.n} (Importada)`,
+        notas: importData.o || '',
+        items: parsedItems,
+        created_at: new Date().toISOString()
+      }
+    ]
+
+    updateListsStateAndStorage(newLists, newListId)
+    setActiveListId(newListId)
+    localStorage.setItem('lc_active_list_id', newListId)
+
+    const newUrl = window.location.pathname
+    window.history.replaceState({}, '', newUrl)
+
+    setImportData(null)
+    setMostrarImportModal(false)
+    
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([100, 50, 100])
+    }
+  }
+
+  const handleImportCancel = () => {
+    const newUrl = window.location.pathname
+    window.history.replaceState({}, '', newUrl)
+    setImportData(null)
+    setMostrarImportModal(false)
   }
 
   // ── 5. Buscador por Nombre Autocomplete ──
@@ -983,6 +1073,50 @@ export default function FavoritosPage() {
               <Sparkles size={13} className="text-orange-500" />
               Simular escaneo de prueba (ej. Tuti)
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL DE IMPORTACIÓN DE LISTA COMPARTIDA ── */}
+      {mostrarImportModal && importData && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-gray-100 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600 shrink-0">
+                <Share2 size={20} />
+              </div>
+              <div>
+                <h3 className="font-black text-gray-900 text-base">Importar Lista</h3>
+                <p className="text-[10px] text-gray-400">Recibida desde WhatsApp</p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-3.5 space-y-2">
+              <div className="text-sm font-extrabold text-gray-800">{importData.n}</div>
+              {importData.o && (
+                <div className="text-xs text-gray-500 bg-white p-2 rounded-lg border border-gray-100 italic">
+                  "{importData.o}"
+                </div>
+              )}
+              <div className="text-xs text-gray-400 font-bold flex items-center gap-1.5 mt-2">
+                <span>📦</span> {importData.i.length} productos detectados
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleImportCancel}
+                className="flex-1 border border-gray-200 text-gray-500 font-bold py-3 rounded-xl text-xs hover:bg-gray-50 transition active:scale-95 cursor-pointer"
+              >
+                Ignorar
+              </button>
+              <button
+                onClick={handleImportConfirm}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl text-xs transition active:scale-95 cursor-pointer flex items-center justify-center gap-1"
+              >
+                <Check size={14} /> Importar Lista
+              </button>
+            </div>
           </div>
         </div>
       )}
