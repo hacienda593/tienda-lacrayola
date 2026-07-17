@@ -1,13 +1,14 @@
 'use client'
 import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { ShoppingCart, Search, LayoutGrid, X, Home, ChevronDown, ChevronUp } from 'lucide-react'
+import { ShoppingCart, Search, LayoutGrid, X, Home, ChevronDown, ChevronUp, Camera } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { getCarrito } from '@/lib/carrito'
 import { supabase } from '@/lib/supabase'
 import MenuDrawer from '@/components/MenuDrawer'
 import CategoriasPanel from '@/components/CategoriasPanel'
 import CartDrawer from '@/components/CartDrawer'
+import BarcodeScannerModal from '@/components/BarcodeScannerModal'
 
 function TopBar() {
   const pathname = usePathname()
@@ -246,6 +247,30 @@ function HeaderSearch() {
   const searchParams = useSearchParams()
   const [q, setQ] = useState('')
   const [tiendaNombre, setTiendaNombre] = useState('')
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
+
+  const handleScanSuccess = async (barcode: string) => {
+    setIsScannerOpen(false)
+    if (!barcode) return
+
+    try {
+      const { data } = await supabase
+        .from('ol_productos')
+        .select('codigo')
+        .eq('codigo', barcode)
+        .limit(1)
+        .maybeSingle()
+
+      if (data) {
+        router.push(`/producto/${barcode}`)
+      } else {
+        router.push(`/productos?q=${encodeURIComponent(barcode)}`)
+      }
+    } catch (e) {
+      console.error(e)
+      router.push(`/productos?q=${encodeURIComponent(barcode)}`)
+    }
+  }
 
   // 1. Detectar si estamos en una tienda
   const activeTId = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
@@ -319,6 +344,7 @@ function HeaderSearch() {
   }
 
   const nombreTiendaCorto = getNombreCorto(tiendaNombre)
+  const prPadding = 'pr-10'
 
   return (
     <form onSubmit={buscar} className="flex-1 max-w-xl">
@@ -328,9 +354,9 @@ function HeaderSearch() {
           value={q}
           onChange={e => manejarEscribir(e.target.value)}
           placeholder={esTienda ? `Buscar en ${nombreTiendaCorto || 'la tienda'}...` : "Buscar productos, marcas, categorías..."}
-          className="w-full bg-gray-100 border border-gray-200 rounded-xl pl-9 pr-8 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition"
+          className={`w-full bg-gray-100 border border-gray-200 rounded-xl pl-9 ${prPadding} py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition`}
         />
-        {q && (
+        {q ? (
           <button
             type="button"
             onClick={limpiar}
@@ -338,8 +364,23 @@ function HeaderSearch() {
           >
             <X size={14} />
           </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsScannerOpen(true)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600 active:scale-90 transition cursor-pointer border-none bg-transparent"
+            title="Escanear código de barras"
+          >
+            <Camera size={15} />
+          </button>
         )}
       </div>
+
+      <BarcodeScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanSuccess={handleScanSuccess}
+      />
     </form>
   )
 }
