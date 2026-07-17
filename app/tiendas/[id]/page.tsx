@@ -1019,7 +1019,12 @@ function TiendaContent() {
                 return (
                   <div key={s} className="space-y-2.5 animate-fade-in">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-extrabold text-gray-900 text-sm">{s}</h3>
+                      <button
+                        onClick={() => updateFiltersUrl({ sub: s })}
+                        className="font-extrabold text-orange-600 text-sm hover:underline cursor-pointer text-left capitalize"
+                      >
+                        {s}
+                      </button>
                       <button
                         onClick={() => updateFiltersUrl({ sub: s })}
                         className="text-xs text-green-700 font-bold flex items-center gap-0.5 hover:underline"
@@ -1071,10 +1076,13 @@ function TiendaContent() {
                 return (
                   <div key={c} className="space-y-2.5 animate-fade-in">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-extrabold text-gray-900 text-sm flex items-center gap-1.5">
+                      <button
+                        onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
+                        className="font-extrabold text-orange-600 text-sm flex items-center gap-1.5 hover:underline cursor-pointer text-left"
+                      >
                         <span>{CAT_EMOJI[c] || '📦'}</span>
                         <span>{c}</span>
-                      </h3>
+                      </button>
                       <button
                         onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
                         className="text-xs text-green-700 font-bold flex items-center gap-0.5 hover:underline"
