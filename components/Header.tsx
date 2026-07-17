@@ -9,6 +9,48 @@ import MenuDrawer from '@/components/MenuDrawer'
 import CategoriasPanel from '@/components/CategoriasPanel'
 import CartDrawer from '@/components/CartDrawer'
 
+function TopBar() {
+  const pathname = usePathname()
+  const [tiendaNombre, setTiendaNombre] = useState('')
+
+  const activeTId = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
+    ? pathname.split('/')[2]
+    : ''
+  const esTienda = !!activeTId
+
+  useEffect(() => {
+    if (!activeTId) {
+      setTiendaNombre('')
+      return
+    }
+    supabase.from('ol_tiendas')
+      .select('nombre')
+      .eq('id', activeTId)
+      .single()
+      .then(({ data }) => {
+        if (data) setTiendaNombre(data.nombre)
+      })
+  }, [activeTId])
+
+  if (esTienda) {
+    return (
+      <div className="bg-green-700 text-white text-[11px] md:text-xs text-center py-1.5 px-4 font-medium flex items-center justify-center gap-2 animate-fade-in select-none">
+        <span>🏪 Comprando en <strong className="font-extrabold text-green-100">{tiendaNombre || 'la tienda'}</strong></span>
+        <span className="opacity-40">·</span>
+        <Link href="/" className="underline hover:text-green-200 transition font-bold flex items-center gap-0.5">
+          🏠 Ir al Inicio
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-green-700 text-white text-[11px] md:text-xs text-center py-1.5 px-4 font-medium select-none">
+      🚚 Envíos a domicilio en Los Bancos · Respaldado por La Crayola
+    </div>
+  )
+}
+
 function HeaderSearch() {
   const router = useRouter()
   const pathname = usePathname()
@@ -151,9 +193,7 @@ export default function Header() {
 
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         {/* Top bar */}
-        <div className="bg-green-700 text-white text-[11px] md:text-xs text-center py-1.5 px-4 font-medium">
-          🚚 Envíos a domicilio en Los Bancos · Respaldado por La Crayola
-        </div>
+        <TopBar />
 
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
           {/* Hamburguesa */}
