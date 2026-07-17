@@ -373,6 +373,26 @@ function obtenerEmojiSubcategoria(nombreSub: string, categoria: string): string 
   return '📦';
 }
 
+const SUBCAT_IMAGES: Record<string, string> = {
+  'Aceites': '/images/subcats/aceites.png',
+  'Granos': '/images/subcats/granos.png',
+  'Fideos': '/images/subcats/fideos.png',
+  'Leche': '/images/subcats/leche.png',
+  'Queso': '/images/subcats/queso.png',
+  'Huevos': '/images/subcats/huevos.png',
+  'Pollo': '/images/subcats/pollo.png',
+  'Embutidos': '/images/subcats/embutidos.png',
+  'Panadería': '/images/subcats/panaderia.png',
+  'Galletas': '/images/subcats/galletas.png',
+  'Snacks': '/images/subcats/snacks.png',
+  'Detergentes': '/images/subcats/detergentes.png',
+  'Papel': '/images/subcats/papel.png',
+  'Bebé': '/images/subcats/bebe.png',
+  'Cuadernos': '/images/subcats/cuadernos.png',
+  'Mochilas': '/images/subcats/mochilas.png',
+  'Lápices': '/images/subcats/lapices.png'
+}
+
 function TiendaContent() {
   const { id }  = useParams<{ id: string }>()
   const router  = useRouter()
@@ -607,7 +627,8 @@ function TiendaContent() {
     base.filter(p => p.stock > 0 && p.categoria === cat).forEach(p => {
       if (p.subcategoria) map.set(p.subcategoria, (map.get(p.subcategoria) ?? 0) + 1)
     })
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
+    // Ordenar alfabéticamente (A-Z) para consistencia y predicibilidad en móvil
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], 'es', { sensitivity: 'base' }))
   }, [base, cat])
 
   // Marcas dinamicas
@@ -898,16 +919,32 @@ function TiendaContent() {
             <div className="w-full bg-white border border-gray-100/50 rounded-2xl p-4.5 shadow-xs mb-4.5 animate-in fade-in slide-in-from-top-4 duration-200">
               <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-3">Subcategorías del Pasillo</div>
               <div className="grid grid-cols-5 gap-y-4 gap-x-1.5 justify-items-center">
-                {subcats.map(([s, count]) => {
+                {[...subcats].sort((a,b) => a[0].localeCompare(b[0])).map(([s, count]) => {
                   const emoji = obtenerEmojiSubcategoria(s, cat)
+                  const imgSrc = SUBCAT_IMAGES[s]
                   return (
                     <button
                       key={s}
                       onClick={() => updateFiltersUrl({ sub: s })}
                       className="flex flex-col items-center group relative transition active:scale-95 duration-100 cursor-pointer"
                     >
-                      <div className="w-11 h-11 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-xl shadow-xs hover:bg-white group-hover:border-green-200 transition">
-                        {emoji}
+                      <div className="w-11 h-11 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-xl shadow-xs hover:bg-white group-hover:border-green-200 overflow-hidden transition relative">
+                        {imgSrc ? (
+                          <img 
+                            src={imgSrc} 
+                            alt={s} 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const parent = e.currentTarget.parentElement;
+                              if (parent) {
+                                parent.innerText = emoji;
+                              }
+                            }} 
+                          />
+                        ) : (
+                          emoji
+                        )}
                       </div>
                       <span className="text-[9px] font-extrabold text-gray-600 text-center mt-1.5 leading-tight line-clamp-2 max-w-[64px] group-hover:text-green-700">
                         {s}
