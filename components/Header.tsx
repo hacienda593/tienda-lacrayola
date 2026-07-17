@@ -204,7 +204,7 @@ export default function Header() {
         </div>
 
         {/* Barra inferior del header */}
-        <div className="border-t border-gray-100 bg-white">
+        <div className="border-t border-gray-100 bg-white hidden md:block">
           <div className="max-w-5xl mx-auto px-4">
             <div className="flex items-center gap-1 py-1.5">
 

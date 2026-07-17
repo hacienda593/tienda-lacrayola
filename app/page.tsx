@@ -325,10 +325,10 @@ function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
   )
 }
 
-// ── Home ───────────────────────────────────────────────────────────
 const CAT_TIENDA: Record<string, string> = {
   supermercado: '🛒', farmacia: '💊', libreria: '📚',
-  abarrotes: '🥬', tecnologia: '💻', otros: '🏪',
+  abarrotes: '🥬', tecnologia: '💻', frecuentes: '🔄',
+  impresion: '🖨️', recargas: '📱', otros: '🏪',
 }
 
 export default function Home() {
@@ -402,7 +402,16 @@ export default function Home() {
       .select('id,nombre,categoria,logo_url')
       .eq('activa', true)
       .order('orden')
-      .then(({ data }) => { if (data) setTiendas(data) })
+      .then(({ data }) => {
+        if (data) {
+          const virtualStores = [
+            { id: 'frecuentes-virtual', nombre: 'Productos Frecuentes', categoria: 'frecuentes', logo_url: null },
+            { id: 'impresion-virtual', nombre: 'Centro de Impresión', categoria: 'impresion', logo_url: null },
+            { id: 'recargas-virtual', nombre: 'Recargas y Planillas', categoria: 'recargas', logo_url: null }
+          ]
+          setTiendas([...data, ...virtualStores])
+        }
+      })
   }, [])
 
   // Cargar productos frecuentes
@@ -540,18 +549,26 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              {tiendas.map(t => (
-                <Link key={t.id} href={`/tiendas/${t.id}`}
-                  className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col items-center gap-2 text-center group">
-                  <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
-                    {t.logo_url
-                      ? <img src={t.logo_url} alt={t.nombre} className="w-9 h-9 object-contain" />
-                      : (CAT_TIENDA[t.categoria ?? 'otros'] ?? '🏪')
-                    }
-                  </div>
-                  <span className="text-xs font-bold text-gray-700 leading-tight">{t.nombre}</span>
-                </Link>
-              ))}
+              {tiendas.map(t => {
+                const getHref = (id: string) => {
+                  if (id === 'frecuentes-virtual') return '/productos?frecuentes=true'
+                  if (id === 'impresion-virtual') return '/impresion'
+                  if (id === 'recargas-virtual') return '/recargas'
+                  return `/tiendas/${id}`
+                }
+                return (
+                  <Link key={t.id} href={getHref(t.id)}
+                    className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col items-center gap-2 text-center group">
+                    <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
+                      {t.logo_url
+                        ? <img src={t.logo_url} alt={t.nombre} className="w-9 h-9 object-contain" />
+                        : (CAT_TIENDA[t.categoria ?? 'otros'] ?? '🏪')
+                      }
+                    </div>
+                    <span className="text-xs font-bold text-gray-700 leading-tight">{t.nombre}</span>
+                  </Link>
+                )
+              })}
               {/* Ver todas */}
               <Link href="/tiendas"
                 className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-4 flex flex-col items-center gap-2 text-center hover:bg-green-50 hover:border-green-200 transition group">

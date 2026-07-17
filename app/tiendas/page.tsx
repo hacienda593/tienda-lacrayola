@@ -30,17 +30,39 @@ function TiendasContent() {
       .order('orden')
       .then(({ data }) => {
         const list = (data ?? []) as OlTienda[]
-        const recargasTienda: OlTienda = {
-          id: 'recargas-servicios',
-          nombre: 'Recargas y Servicios Básicos',
-          descripcion: 'Recarga saldo, combos de Claro/Movistar/Tuenti y paga tus planillas de Luz, Agua e Internet.',
-          categoria: 'tecnologia',
-          logo_url: null,
-          activa: true,
-          orden: 99,
-          direccion: 'Servicio en Línea (WhatsApp)'
-        }
-        setTiendas([...list, recargasTienda])
+        const virtuales: OlTienda[] = [
+          {
+            id: 'frecuentes-servicios',
+            nombre: 'Productos Frecuentes',
+            descripcion: 'Tus productos más comprados y favoritos para agregarlos al carrito al instante.',
+            categoria: 'otros',
+            logo_url: null,
+            activa: true,
+            orden: 97,
+            direccion: 'Tu Historial'
+          },
+          {
+            id: 'impresion-servicios',
+            nombre: 'Centro de Impresiones',
+            descripcion: 'Sube tus documentos, PDF y tareas escolares para entrega a domicilio express.',
+            categoria: 'libreria',
+            logo_url: null,
+            activa: true,
+            orden: 98,
+            direccion: 'Servicio Express'
+          },
+          {
+            id: 'recargas-servicios',
+            nombre: 'Recargas y Servicios Básicos',
+            descripcion: 'Recarga combos Claro/Movistar/Tuenti y paga tus planillas de Luz, Agua e Internet.',
+            categoria: 'tecnologia',
+            logo_url: null,
+            activa: true,
+            orden: 99,
+            direccion: 'Servicio en Línea (WhatsApp)'
+          }
+        ]
+        setTiendas([...list, ...virtuales])
         setCargando(false)
       })
   }, [])
@@ -95,6 +117,10 @@ function TiendasContent() {
                     onClick={() => {
                       if (tienda.id === 'recargas-servicios') {
                         router.push('/recargas')
+                      } else if (tienda.id === 'impresion-servicios') {
+                        router.push('/impresion')
+                      } else if (tienda.id === 'frecuentes-servicios') {
+                        router.push('/productos?frecuentes=true')
                       } else {
                         router.push(`/tiendas/${tienda.id}`)
                       }
@@ -107,7 +133,11 @@ function TiendasContent() {
                         ? <img src={tienda.logo_url} alt={tienda.nombre} className="w-10 h-10 object-contain" />
                         : tienda.id === 'recargas-servicios'
                           ? '📱'
-                          : cfg.emoji
+                          : tienda.id === 'impresion-servicios'
+                            ? '🖨️'
+                            : tienda.id === 'frecuentes-servicios'
+                              ? '🔄'
+                              : cfg.emoji
                       }
                     </div>
 
