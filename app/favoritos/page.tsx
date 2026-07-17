@@ -398,17 +398,64 @@ export default function FavoritosPage() {
     }
     setIsSearching(true)
     const delayDebounce = setTimeout(async () => {
-      const { data } = await supabase
+      // 1. Intentar Búsqueda de Texto Completo (FTS)
+      let { data, error } = await supabase
         .from('ol_productos')
         .select('codigo, descripcion, categoria, precio_publico')
-        .ilike('descripcion', `%${searchQuery}%`)
+        .textSearch('descripcion', searchQuery.trim(), {
+          config: 'spanish',
+          type: 'websearch'
+        })
         .limit(6)
+      
+      // 2. Fallback a coincidencia ilike por palabras clave si no hay resultados
+      if (error || !data || data.length === 0) {
+        const words = searchQuery.trim().split(/\s+/).filter(w => w.length > 1)
+        if (words.length > 0) {
+          let query = supabase.from('ol_productos').select('codigo, descripcion, categoria, precio_publico')
+          words.forEach(w => {
+            query = query.ilike('descripcion', `%${w}%`)
+          })
+          const { data: fallbackData } = await query.limit(6)
+          if (fallbackData) data = fallbackData
+        }
+      }
+      
       if (data) setSuggestions(data)
       setIsSearching(false)
     }, 250)
 
     return () => clearTimeout(delayDebounce)
   }, [searchQuery])
+
+  const handleAddCustomItem = (name: string) => {
+    if (!name) return
+    const customCode = 'manual_' + Math.random().toString(36).substr(2, 9)
+    const yaExiste = activeItems.some(f => f.descripcion.toLowerCase() === name.toLowerCase())
+    
+    if (!yaExiste) {
+      const updatedItems = [
+        {
+          codigo: customCode,
+          descripcion: name,
+          categoria: 'Personalizado',
+          precio_unitario: 0,
+          agregadoEn: new Date().toISOString()
+        },
+        ...activeItems
+      ]
+      const newLists = lists.map(l => {
+        if (l.id === activeListId) {
+          return { ...l, items: updatedItems }
+        }
+        return l
+      })
+      updateListsStateAndStorage(newLists)
+    }
+    
+    setSearchQuery('')
+    setSuggestions([])
+  }
 
   function handleSelectSuggestion(prod: any) {
     const yaExiste = activeItems.some(f => f.codigo === prod.codigo)
@@ -800,19 +847,51 @@ export default function FavoritosPage() {
               <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-green-600" />
             )}
             
-            {/* Sugerencias desplegables */}
-            {suggestions.length > 0 && (
-              <div className="absolute left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-lg z-25 max-h-60 overflow-y-auto divide-y divide-gray-50">
-                {suggestions.map(s => (
-                  <button
-                    key={s.codigo}
-                    onClick={() => handleSelectSuggestion(s)}
-                    className="w-full text-left px-4 py-3 hover:bg-green-50/50 flex items-center justify-between text-xs font-medium text-gray-800 transition cursor-pointer"
-                  >
-                    <span className="truncate pr-2">{s.descripcion}</span>
-                    <span className="font-bold text-green-700 shrink-0">{fmt(s.precio_publico)}</span>
-                  </button>
-                ))}
+            {/* Sugerencias desplegables mejoradas (FTS + Personalizados) */}
+            {searchQuery.trim().length >= 2 && (
+              <div className="absolute left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl z-25 max-h-64 overflow-y-auto divide-y divide-gray-50 animate-in fade-in duration-100">
+                {/* 1. Coincidencias del catálogo */}
+                {suggestions.map(s => {
+                  const yaEnLista = activeItems.some(x => x.codigo === s.codigo)
+                  return (
+                    <div
+                      key={s.codigo}
+                      className="px-3.5 py-2.5 hover:bg-gray-50 flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div 
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => handleSelectSuggestion(s)}
+                      >
+                        <div className="font-bold text-gray-800 truncate">{s.descripcion}</div>
+                        <div className="text-[10px] text-gray-400 mt-0.5">{s.categoria} • {fmt(s.precio_publico)}</div>
+                      </div>
+                      
+                      <button
+                        onClick={() => handleSelectSuggestion(s)}
+                        className={`p-1.5 rounded-lg active:scale-95 transition shrink-0 cursor-pointer
+                          ${yaEnLista 
+                            ? 'bg-gray-100 text-gray-400 cursor-default' 
+                            : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
+                        disabled={yaEnLista}
+                        title={yaEnLista ? "Ya en la lista" : "Añadir a la lista"}
+                      >
+                        {yaEnLista ? <Check size={14} /> : <Plus size={14} />}
+                      </button>
+                    </div>
+                  )
+                })}
+
+                {/* 2. Banner de artículo personalizado */}
+                <button
+                  onClick={() => handleAddCustomItem(searchQuery.trim())}
+                  className="w-full text-left px-3.5 py-3 bg-orange-50/50 hover:bg-orange-50 text-xs font-bold text-orange-700 flex items-center gap-2 transition cursor-pointer"
+                >
+                  <span className="text-sm">📝</span>
+                  <span className="truncate flex-1 text-left">
+                    Agregar <strong className="underline">"{searchQuery.trim()}"</strong> como personalizado
+                  </span>
+                  <Plus size={14} className="shrink-0 text-orange-600" />
+                </button>
               </div>
             )}
           </div>
@@ -912,7 +991,7 @@ export default function FavoritosPage() {
 
                 {/* Emoji Categoría */}
                 <div className="w-9 h-9 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center text-lg shrink-0">
-                  {CAT_EMOJI[prod.categoria] || '🛒'}
+                  {prod.categoria === 'Personalizado' ? '📝' : (CAT_EMOJI[prod.categoria] || '🛒')}
                 </div>
 
                 {/* Información */}
