@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState, useMemo, useRef, Suspense } from 'react'
+import React, { useEffect, useState, useMemo, useRef, useCallback, Suspense } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
@@ -7,7 +7,7 @@ import { OlTienda, Producto, CAT_EMOJI } from '@/lib/types'
 import { customSearch } from '@/lib/search'
 import {
   ArrowLeft, Search, ShoppingCart, Plus, Minus,
-  Loader2, X, ChevronRight, Store
+  Loader2, X, Store
 } from 'lucide-react'
 
 function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
@@ -220,9 +220,17 @@ function TiendaBuscarContent() {
   const [cargando, setCargando] = useState(true)
 
   const [q, setQ] = useState('')
+  const [buscando, setBuscando] = useState(false) // modo búsqueda activo
   const [cat, setCat] = useState('')
   const [sub, setSub] = useState('')
   const [visibles, setVisibles] = useState(40)
+
+  // Refs para swipe horizontal y auto-scroll de tabs
+  const tabsRef = useRef<HTMLDivElement>(null)
+  const swipeAreaRef = useRef<HTMLDivElement>(null)
+  const touchStartX = useRef(0)
+  const touchStartY = useRef(0)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   // SKU Bottom Sheet States
   interface Variacion {
@@ -381,6 +389,10 @@ function TiendaBuscarContent() {
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], 'es', { sensitivity: 'base' }))
   }, [base, activeCat])
 
+  // Lista ordenada de tabs: ['', ...subcats] donde '' = 'Todo'
+  const allSubs = useMemo(() => ['', ...subcats.map(([s]) => s)], [subcats])
+  const activeSubIndex = allSubs.indexOf(sub === '' ? '' : sub)
+
   const filtrados = useMemo(() => {
     let pool = q.length >= 2
       ? customSearch(base, q)
@@ -388,10 +400,49 @@ function TiendaBuscarContent() {
     
     if (q.length < 2) {
       if (activeCat) pool = pool.filter(p => p.categoria === activeCat)
-      if (sub && sub !== 'TODO_PASILLO') pool = pool.filter(p => p.subcategoria === sub)
+      if (sub) pool = pool.filter(p => p.subcategoria === sub)
     }
     return pool
   }, [base, q, activeCat, sub])
+
+  // Auto-scroll del tab activo al centro del strip
+  const scrollTabToView = useCallback((idx: number) => {
+    if (!tabsRef.current) return
+    const tabs = tabsRef.current.querySelectorAll('[data-tab]')
+    const el = tabs[idx] as HTMLElement | undefined
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    }
+  }, [])
+
+  // Cambiar subcategoría y auto-scroll al tab
+  function cambiarSub(nuevaSub: string, idx: number) {
+    setSub(nuevaSub)
+    setVisibles(40)
+    setTimeout(() => scrollTabToView(idx), 60)
+  }
+
+  // Handlers de swipe horizontal en el área de productos
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  function onTouchEnd(e: React.TouchEvent) {
+    if (q.length >= 2) return // en modo búsqueda no hay swipe
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+    // Solo swipe horizontal (dx mayor que dy en valor absoluto, y dx > 40px)
+    if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx) * 0.8) return
+    const currentIdx = activeSubIndex < 0 ? 0 : activeSubIndex
+    if (dx < 0 && currentIdx < allSubs.length - 1) {
+      // Deslizar izquierda → siguiente subcategoría
+      cambiarSub(allSubs[currentIdx + 1], currentIdx + 1)
+    } else if (dx > 0 && currentIdx > 0) {
+      // Deslizar derecha → subcategoría anterior
+      cambiarSub(allSubs[currentIdx - 1], currentIdx - 1)
+    }
+  }
 
   if (cargando) {
     return (
@@ -412,40 +463,115 @@ function TiendaBuscarContent() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto flex flex-col h-[calc(100dvh-64px)] overflow-hidden bg-white select-none">
-      {/* ── Cabecera Especial Móvil (Buscador tipo Taobao con Flecha Volver) ── */}
-      <div className="flex items-center gap-3.5 px-4 py-3 border-b border-gray-100 bg-white shrink-0">
-        <button 
-          onClick={() => router.push(`/tiendas/${id}`)}
-          className="p-1.5 hover:bg-gray-50 rounded-xl transition shrink-0 active:scale-95 duration-100 border-none bg-transparent cursor-pointer flex items-center justify-center"
-        >
-          <ArrowLeft size={20} className="text-gray-600" />
-        </button>
-        <div className="flex-1 relative">
-          <input
-            value={q}
-            onChange={e => {
-              setQ(e.target.value)
-              if (sub) setSub('')
-            }}
-            placeholder={`Buscar en ${tienda.nombre || 'esta tienda'}...`}
-            className="w-full bg-gray-100 border border-transparent rounded-xl pl-9 pr-8 py-2 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition"
-          />
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          {q && (
-            <button 
-              onClick={() => setQ('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer border-none bg-transparent flex items-center justify-center"
+    <div className="max-w-5xl mx-auto flex flex-col h-[calc(100dvh)] overflow-hidden bg-white select-none">
+
+      {/* ── HEADER DINÁMICO estilo Tipti ── */}
+      <div className="shrink-0 bg-white border-b border-gray-100">
+
+        {buscando ? (
+          /* Modo búsqueda: barra de búsqueda expandida */
+          <div className="flex items-center gap-2 px-3 py-2.5">
+            <button
+              onClick={() => { setBuscando(false); setQ(''); setSub('') }}
+              className="p-1.5 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition"
             >
+              <ArrowLeft size={20} className="text-gray-700" />
+            </button>
+            <div className="flex-1 relative">
+              <input
+                ref={inputRef}
+                value={q}
+                onChange={e => setQ(e.target.value)}
+                placeholder={`Buscar en ${tienda.nombre || 'esta tienda'}...`}
+                autoFocus
+                className="w-full bg-gray-100 border border-transparent rounded-xl pl-3 pr-8 py-2 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition"
+              />
+              {q && (
+                <button
+                  onClick={() => setQ('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 border-none bg-transparent cursor-pointer"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Modo navegación: ← NombreCategoria · 🔍 🛒 */
+          <div className="flex items-center gap-1 px-2 py-2.5">
+            <button
+              onClick={() => router.push(`/tiendas/${id}`)}
+              className="p-1.5 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition"
+            >
+              <ArrowLeft size={20} className="text-gray-700" />
+            </button>
+            <h1 className="flex-1 text-sm font-extrabold text-gray-800 text-center truncate px-1">
+              {activeCat || tienda.nombre}
+            </h1>
+            <button
+              onClick={() => setBuscando(true)}
+              className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-gray-600 hover:text-green-600"
+            >
+              <Search size={19} />
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new Event('open-cart-global'))}
+              className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-gray-600 hover:text-green-600"
+            >
+              <ShoppingCart size={19} />
+            </button>
+          </div>
+        )}
+
+        {/* ── Segunda fila: tabs de subcategorías estilo Tipti ── */}
+        {!buscando && q.length < 2 && subcats.length > 0 && (
+          <div
+            ref={tabsRef}
+            className="overflow-x-auto scrollbar-hide flex border-t border-gray-100"
+          >
+            {/* Tab Todo */}
+            <button
+              data-tab
+              onClick={() => cambiarSub('', 0)}
+              className={`shrink-0 px-4 py-2.5 text-[11px] font-extrabold relative whitespace-nowrap border-none bg-transparent cursor-pointer transition-colors
+                ${sub === '' ? 'text-green-600' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Todos los productos
+              {sub === '' && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-green-600 rounded-t-full" />}
+            </button>
+
+            {subcats.map(([s], idx) => (
+              <button
+                key={s}
+                data-tab
+                onClick={() => cambiarSub(s, idx + 1)}
+                className={`shrink-0 px-4 py-2.5 text-[11px] font-extrabold relative whitespace-nowrap border-none bg-transparent cursor-pointer transition-colors
+                  ${sub === s ? 'text-green-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                {s}
+                {sub === s && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-green-600 rounded-t-full" />}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Resultados de búsqueda texto */}
+        {q.length >= 2 && (
+          <div className="px-3 py-2 flex items-center gap-2 border-t border-gray-100">
+            <Search size={12} className="text-green-600 shrink-0" />
+            <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider flex-1">
+              {filtrados.length} resultado{filtrados.length !== 1 ? 's' : ''} para &quot;{q}&quot;
+            </span>
+            <button onClick={() => { setQ(''); setBuscando(false) }} className="text-gray-400 hover:text-gray-600 border-none bg-transparent cursor-pointer">
               <X size={13} />
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
         {/* ── Columna Izquierda: Categorías (Sidebar) ── */}
-        <aside className="w-[72px] shrink-0 h-full bg-gray-50 border-r border-gray-100 overflow-y-auto flex flex-col select-none">
+        <aside className="w-[68px] shrink-0 h-full bg-gray-50 border-r border-gray-100 overflow-y-auto flex flex-col select-none">
           {cats.map(([c]) => {
             const esActiva = activeCat === c
             return (
@@ -455,6 +581,7 @@ function TiendaBuscarContent() {
                   setCat(c)
                   setSub('')
                   setQ('')
+                  setBuscando(false)
                   setVisibles(40)
                 }}
                 className={`py-3.5 px-1 border-l-[3px] cursor-pointer relative active:bg-gray-100 flex flex-col items-center gap-1 transition-all border-none bg-transparent
@@ -463,98 +590,48 @@ function TiendaBuscarContent() {
                     : 'border-l-transparent text-gray-500'}`}
               >
                 <span className="text-[18px] leading-none">{CAT_EMOJI[c] || '📦'}</span>
-                <span className={`text-[8px] leading-tight font-bold break-words text-center max-w-[60px] ${esActiva ? 'text-green-700' : 'text-gray-500'}`}>{c}</span>
+                <span className={`text-[8px] leading-tight font-bold break-words text-center max-w-[58px] ${esActiva ? 'text-green-700' : 'text-gray-500'}`}>{c}</span>
                 {esActiva && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-green-600 rounded-l-md" />}
               </button>
             )
           })}
         </aside>
 
-        {/* ── Columna Derecha: Subcategorías (horizontal) + Productos (grid 2 col) ── */}
-        <div className="flex-1 h-full flex flex-col min-w-0 overflow-hidden bg-white">
-
-          {/* Barra horizontal de subcategorías — scroll horizontal con el pulgar */}
-          {(!q || q.length < 2) ? (
-            <div className="shrink-0 border-b border-gray-100 bg-white">
-              <div className="overflow-x-auto scrollbar-hide flex gap-1.5 px-2 py-2">
-                {/* Chip Todo */}
-                <button
-                  onClick={() => { setSub(''); setVisibles(40) }}
-                  className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-extrabold transition-all border cursor-pointer
-                    ${sub === ''
-                      ? 'bg-green-600 text-white border-green-600 shadow-sm'
-                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
-                >
-                  <span>{CAT_EMOJI[activeCat] || '📦'}</span>
-                  <span>Todo</span>
-                </button>
-
-                {subcats.map(([s]) => {
-                  const emoji = obtenerEmojiSubcategoria(s, activeCat)
-                  const activa = sub === s
-                  return (
-                    <button
-                      key={s}
-                      onClick={() => { setSub(s); setVisibles(40) }}
-                      className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-extrabold transition-all border cursor-pointer
-                        ${activa
-                          ? 'bg-green-600 text-white border-green-600 shadow-sm'
-                          : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
-                    >
-                      <span>{emoji}</span>
-                      <span className="whitespace-nowrap max-w-[90px] truncate">{s}</span>
-                    </button>
-                  )
-                })}
-              </div>
+        {/* ── Columna Derecha: Productos con swipe entre subcategorías ── */}
+        <div
+          ref={swipeAreaRef}
+          className="flex-1 h-full overflow-y-auto overscroll-y-contain p-2 pb-24"
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+        >
+          {filtrados.length === 0 ? (
+            <div className="text-center py-16 text-gray-400 text-xs italic">
+              {q.length >= 2
+                ? 'No se encontraron productos'
+                : 'Sin productos en este pasillo'}
             </div>
           ) : (
-            /* Cuando hay búsqueda por texto: chip de resultados */
-            <div className="shrink-0 border-b border-gray-100 bg-white px-3 py-2 flex items-center gap-2">
-              <Search size={12} className="text-green-600 shrink-0" />
-              <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">
-                {filtrados.length} resultado{filtrados.length !== 1 ? 's' : ''} &quot;{q}&quot;
-              </span>
-              <button
-                onClick={() => setQ('')}
-                className="ml-auto text-gray-400 hover:text-gray-600 border-none bg-transparent cursor-pointer flex items-center"
-              >
-                <X size={13} />
-              </button>
-            </div>
-          )}
-
-          {/* Grid de productos — scroll vertical con el pulgar */}
-          <div className="flex-1 overflow-y-auto overscroll-y-contain p-2 pb-24">
-            {filtrados.length === 0 ? (
-              <div className="text-center py-16 text-gray-400 text-xs italic">
-                {q.length >= 2
-                  ? 'No se encontraron productos'
-                  : 'Sin productos en este pasillo'}
+            <>
+              <div className="grid grid-cols-2 gap-1.5">
+                {filtrados.slice(0, visibles).map(p => (
+                  <TiendaVerticalProductCard
+                    key={p.codigo}
+                    p={p}
+                    tienda={tienda}
+                    onSelect={(prod) => router.push(`/producto/${encodeURIComponent(prod.codigo)}`)}
+                  />
+                ))}
               </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {filtrados.slice(0, visibles).map(p => (
-                    <TiendaVerticalProductCard
-                      key={p.codigo}
-                      p={p}
-                      tienda={tienda}
-                      onSelect={(prod) => router.push(`/producto/${encodeURIComponent(prod.codigo)}`)}
-                    />
-                  ))}
-                </div>
-                {filtrados.length > visibles && (
-                  <button
-                    onClick={() => setVisibles(v => v + 40)}
-                    className="w-full mt-4 py-2.5 rounded-xl border border-green-200 text-green-700 text-[11px] font-extrabold hover:bg-green-50 transition cursor-pointer bg-transparent"
-                  >
-                    Ver más ({filtrados.length - visibles} restantes)
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+              {filtrados.length > visibles && (
+                <button
+                  onClick={() => setVisibles(v => v + 40)}
+                  className="w-full mt-4 py-2.5 rounded-xl border border-green-200 text-green-700 text-[11px] font-extrabold hover:bg-green-50 transition cursor-pointer bg-transparent"
+                >
+                  Ver más ({filtrados.length - visibles} restantes)
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
 
