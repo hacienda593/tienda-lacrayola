@@ -444,8 +444,8 @@ function TiendaBuscarContent() {
       </div>
 
       <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
-        {/* ── Columna Izquierda: Pasillos (Sidebar Categorías) ── */}
-        <aside className="w-20 shrink-0 h-full bg-gray-50 border-r border-gray-100 overflow-y-auto flex flex-col select-none">
+        {/* ── Columna Izquierda: Categorías (Sidebar) ── */}
+        <aside className="w-[72px] shrink-0 h-full bg-gray-50 border-r border-gray-100 overflow-y-auto flex flex-col select-none">
           {cats.map(([c]) => {
             const esActiva = activeCat === c
             return (
@@ -455,113 +455,86 @@ function TiendaBuscarContent() {
                   setCat(c)
                   setSub('')
                   setQ('')
+                  setVisibles(40)
                 }}
-                className={`py-4 px-1 border-l-4 cursor-pointer relative active:bg-gray-100 flex flex-col items-center gap-1.5 transition-all border-none bg-transparent
-                  ${esActiva 
-                    ? 'bg-white border-l-green-600 font-extrabold text-green-700 shadow-xs' 
-                    : 'border-l-transparent text-gray-500 font-medium'}`}
+                className={`py-3.5 px-1 border-l-[3px] cursor-pointer relative active:bg-gray-100 flex flex-col items-center gap-1 transition-all border-none bg-transparent
+                  ${esActiva
+                    ? 'bg-white border-l-green-600 text-green-700'
+                    : 'border-l-transparent text-gray-500'}`}
               >
-                <span className="text-base">{CAT_EMOJI[c] || '📦'}</span>
-                <span className="text-[9px] leading-tight font-extrabold break-words text-center max-w-[72px]">{c}</span>
-                {esActiva && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-green-600 rounded-l-md" />}
+                <span className="text-[18px] leading-none">{CAT_EMOJI[c] || '📦'}</span>
+                <span className={`text-[8px] leading-tight font-bold break-words text-center max-w-[60px] ${esActiva ? 'text-green-700' : 'text-gray-500'}`}>{c}</span>
+                {esActiva && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-green-600 rounded-l-md" />}
               </button>
             )
           })}
         </aside>
 
-        {/* ── Columna Derecha: Subcategorías o Resultados ── */}
-        <div className="flex-1 h-full overflow-y-auto overscroll-y-contain bg-white p-3 flex flex-col min-w-0">
-          
-          {q.length >= 2 ? (
-            /* Resultados de búsqueda escrita */
-            <div className="flex flex-col flex-1">
-              <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-3">Resultados de Búsqueda ({filtrados.length})</div>
-              {filtrados.length === 0 ? (
-                <div className="text-center py-16 text-gray-400 text-xs italic">
-                  No se encontraron productos coincidentes
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-1.5 pb-20">
-                  {filtrados.slice(0, visibles).map(p => (
-                    <TiendaVerticalProductCard
-                      key={p.codigo}
-                      p={p}
-                      tienda={tienda}
-                      onSelect={(prod) => router.push(`/producto/${encodeURIComponent(prod.codigo)}`)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : !sub ? (
-            /* Nivel 1: Subcategorías (Burbujas circulares) */
-            <div className="flex flex-col flex-1 animate-fade-in">
-              {/* Banner Ver Todo el Pasillo */}
-              <button
-                onClick={() => setSub('TODO_PASILLO')}
-                className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-xl flex items-center justify-between hover:opacity-90 transition shrink-0 shadow-sm mb-4 cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-base shadow-sm">
-                    <span className="text-white font-extrabold">{CAT_EMOJI[activeCat] || '📦'}</span>
-                  </div>
-                  <div className="text-left">
-                    <div className="font-extrabold text-[11px] text-green-800">Ver todo {activeCat}</div>
-                    <div className="text-[9px] text-green-600/80">Explorar pasillo completo</div>
-                  </div>
-                </div>
-                <ChevronRight size={13} className="text-green-700" />
-              </button>
+        {/* ── Columna Derecha: Subcategorías (horizontal) + Productos (grid 2 col) ── */}
+        <div className="flex-1 h-full flex flex-col min-w-0 overflow-hidden bg-white">
 
-              <div className="pt-1 pb-2 shrink-0">
-                <h3 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Subcategorías</h3>
+          {/* Barra horizontal de subcategorías — scroll horizontal con el pulgar */}
+          {(!q || q.length < 2) ? (
+            <div className="shrink-0 border-b border-gray-100 bg-white">
+              <div className="overflow-x-auto scrollbar-hide flex gap-1.5 px-2 py-2">
+                {/* Chip Todo */}
+                <button
+                  onClick={() => { setSub(''); setVisibles(40) }}
+                  className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-extrabold transition-all border cursor-pointer
+                    ${sub === ''
+                      ? 'bg-green-600 text-white border-green-600 shadow-sm'
+                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+                >
+                  <span>{CAT_EMOJI[activeCat] || '📦'}</span>
+                  <span>Todo</span>
+                </button>
+
+                {subcats.map(([s]) => {
+                  const emoji = obtenerEmojiSubcategoria(s, activeCat)
+                  const activa = sub === s
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => { setSub(s); setVisibles(40) }}
+                      className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-extrabold transition-all border cursor-pointer
+                        ${activa
+                          ? 'bg-green-600 text-white border-green-600 shadow-sm'
+                          : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+                    >
+                      <span>{emoji}</span>
+                      <span className="whitespace-nowrap max-w-[90px] truncate">{s}</span>
+                    </button>
+                  )
+                })}
               </div>
-
-              {subcats.length === 0 ? (
-                <p className="text-[11px] text-gray-400 italic text-center py-8">Sin subcategorías en este pasillo</p>
-              ) : (
-                <div className="grid grid-cols-3 gap-y-4 gap-x-2">
-                  {subcats.map(([s]) => {
-                    const emoji = obtenerEmojiSubcategoria(s, activeCat)
-                    return (
-                      <button
-                        key={s}
-                        onClick={() => setSub(s)}
-                        className="flex flex-col items-center group relative transition active:scale-95 duration-100 cursor-pointer border-none bg-transparent"
-                      >
-                        <div className="w-14 h-14 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-2xl shadow-sm hover:bg-white hover:scale-105 transition-all">
-                          <span>{emoji}</span>
-                        </div>
-                        <span className="text-[9px] font-extrabold text-gray-600 text-center mt-1.5 leading-tight line-clamp-2 max-w-[72px]">
-                          {s}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
             </div>
           ) : (
-            /* Nivel 2: Productos de la subcategoría seleccionada */
-            <div className="flex flex-col flex-1 animate-fade-in">
-              <div className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 shadow-xs mb-3">
-                <span className="text-xs font-black text-green-700">
-                  {sub === 'TODO_PASILLO' ? `Todo ${activeCat}` : `Pasillo: ${sub}`}
-                </span>
-                <button
-                  onClick={() => setSub('')}
-                  className="text-xs text-green-600 font-extrabold flex items-center gap-0.5 hover:underline cursor-pointer border-none bg-transparent"
-                >
-                  ← Volver
-                </button>
-              </div>
+            /* Cuando hay búsqueda por texto: chip de resultados */
+            <div className="shrink-0 border-b border-gray-100 bg-white px-3 py-2 flex items-center gap-2">
+              <Search size={12} className="text-green-600 shrink-0" />
+              <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">
+                {filtrados.length} resultado{filtrados.length !== 1 ? 's' : ''} &quot;{q}&quot;
+              </span>
+              <button
+                onClick={() => setQ('')}
+                className="ml-auto text-gray-400 hover:text-gray-600 border-none bg-transparent cursor-pointer flex items-center"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )}
 
-              {filtrados.length === 0 ? (
-                <div className="text-center py-12 text-gray-400 text-xs italic">
-                  No hay productos disponibles con este filtro
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-1.5 pb-20">
+          {/* Grid de productos — scroll vertical con el pulgar */}
+          <div className="flex-1 overflow-y-auto overscroll-y-contain p-2 pb-24">
+            {filtrados.length === 0 ? (
+              <div className="text-center py-16 text-gray-400 text-xs italic">
+                {q.length >= 2
+                  ? 'No se encontraron productos'
+                  : 'Sin productos en este pasillo'}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-1.5">
                   {filtrados.slice(0, visibles).map(p => (
                     <TiendaVerticalProductCard
                       key={p.codigo}
@@ -571,9 +544,17 @@ function TiendaBuscarContent() {
                     />
                   ))}
                 </div>
-              )}
-            </div>
-          )}
+                {filtrados.length > visibles && (
+                  <button
+                    onClick={() => setVisibles(v => v + 40)}
+                    className="w-full mt-4 py-2.5 rounded-xl border border-green-200 text-green-700 text-[11px] font-extrabold hover:bg-green-50 transition cursor-pointer bg-transparent"
+                  >
+                    Ver más ({filtrados.length - visibles} restantes)
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
