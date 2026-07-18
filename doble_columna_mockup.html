@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tienlo — Demo Compra Directa con Variantes Activas (Estilo Taobao)</title>
+  <!-- Tailwind CSS CDN para renderizado rápido del prototipo de alta fidelidad -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Outfit -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: radial-gradient(circle at 50% 50%, #f4fbf7 0%, #e2f5ec 100%);
+    }
+    /* Estilizar barras de scroll minimalistas */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    /* Animaciones */
+    @keyframes laser-move {
+      0% { transform: translateY(-30px); opacity: 0.8; }
+      50% { transform: translateY(30px); opacity: 1; }
+      100% { transform: translateY(-30px); opacity: 0.8; }
+    }
+    .animate-laser {
+      animation: laser-move 2.5s ease-in-out infinite;
+    }
+    
+    /* Animación de vuelo al carrito */
+    @keyframes fly-to-cart {
+      0% { transform: translate(0, 0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--tx), var(--ty)) scale(0.2); opacity: 0.4; }
+    }
+    .item-fly {
+      position: absolute;
+      z-index: 150;
+      pointer-events: none;
+      animation: fly-to-cart 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 overflow-hidden select-none">
+
+  <!-- MARCO DE TELÉFONO DE ALTA GAMA -->
+  <div class="relative w-[375px] h-[780px] bg-white rounded-[45px] shadow-[0_25px_60px_-15px_rgba(22,163,74,0.25)] border-[10px] border-slate-900 overflow-hidden flex flex-col">
+    
+    <!-- Barra de Estado Móvil (Status Bar) -->
+    <div class="h-9 bg-slate-900 text-white px-7 flex items-center justify-between text-[11px] font-bold select-none shrink-0 z-50">
+      <span>16:20</span>
+      <!-- Notch del Altavoz/Cámara -->
+      <div class="w-24 h-4 bg-slate-900 rounded-b-xl absolute top-0 left-1/2 -translate-x-1/2"></div>
+      <div class="flex items-center gap-1.5">
+        <i data-lucide="signal" class="w-3 h-3"></i>
+        <i data-lucide="wifi" class="w-3 h-3"></i>
+        <i data-lucide="battery" class="w-4 h-4"></i>
+      </div>
+    </div>
+
+    <!-- CABECERA DE LA TIENDA -->
+    <div class="bg-gradient-to-b from-green-50 to-white border-b border-slate-100 p-4 pb-2.5 shrink-0 relative">
+      <div class="flex items-center gap-3">
+        <!-- Volver -->
+        <button class="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-700 active:scale-95 transition">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        </button>
+        <!-- Logo -->
+        <div class="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center text-white font-extrabold text-base shadow-sm shrink-0">
+          Tuti
+        </div>
+        <!-- Info -->
+        <div class="min-w-0 flex-1">
+          <h2 class="font-extrabold text-slate-800 text-[14px] leading-tight flex items-center gap-1">
+            Supermercado Tuti 
+            <span class="bg-green-100 text-green-700 text-[8px] font-black px-1 py-0.5 rounded uppercase">Aliado</span>
+          </h2>
+          <p class="text-[10px] text-slate-400 truncate">Catálogo de 14 Pasillos · Los Bancos</p>
+        </div>
+        <!-- Compartir -->
+        <button class="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 active:scale-95 transition">
+          <i data-lucide="share-2" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- BUSCADOR EXCLUSIVO EN TIENDA -->
+      <div class="mt-3 relative flex items-center gap-2">
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input 
+            type="text" 
+            placeholder="Buscar en Tuti..." 
+            class="w-full bg-slate-100 border border-transparent rounded-xl pl-8 pr-12 py-2 text-[11px] text-slate-700 focus:outline-none focus:bg-white focus:border-green-500 transition"
+          />
+          <!-- Icono Cámara de Escáner -->
+          <button onclick="activarEscaneoSimulado()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-green-600 active:scale-90 transition">
+            <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SISTEMA DE DOBLE COLUMNA CON SCROLL INDEPENDIENTE -->
+    <div class="flex-1 flex overflow-hidden relative">
+      
+      <!-- COLUMNA IZQUIERDA: 14 Categorías (Menú Deslizable vertical independiente) -->
+      <div class="w-[85px] bg-slate-50 border-r border-slate-100 overflow-y-auto shrink-0 select-none">
+        <div id="sidebar-categories" class="flex flex-col text-center">
+          <!-- Generado Dinámicamente por JS -->
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA: Subcategorías + Lista de Productos (Scrollable) -->
+      <div class="flex-1 bg-white flex flex-col overflow-hidden">
+        
+        <!-- Pestaña de Subcategorías (Burbujas al tope) -->
+        <div class="p-3 pb-1 border-b border-slate-50 shrink-0">
+          <div id="subcat-bubble-list" class="flex gap-3 overflow-x-auto pb-1.5 scrollbar-thin">
+            <!-- Generado Dinámicamente por JS -->
+          </div>
+        </div>
+
+        <!-- Barra de Ordenación Rápida -->
+        <div class="px-3 py-1.5 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between text-[10px] font-bold text-slate-500 shrink-0">
+          <div class="flex gap-3">
+            <button class="text-green-600 flex items-center gap-0.5">
+              Recomendados <i data-lucide="chevron-down" class="w-2.5 h-2.5"></i>
+            </button>
+            <button class="hover:text-slate-800" onclick="ordenarPorVentas()">
+              Más Vendidos 🔥
+            </button>
+            <button class="hover:text-slate-800">Precio</button>
+          </div>
+          <span class="text-slate-400" id="item-count">Cargando...</span>
+        </div>
+
+        <!-- Catálogo de Productos Reales de la Categoría -->
+        <div id="product-list" class="flex-1 overflow-y-auto p-3 space-y-2.5 bg-slate-50/30">
+          <!-- Generado Dinámicamente por JS -->
+        </div>
+
+      </div>
+
+      <!-- INTERFAZ COMPRA DIRECTA DESDE EL MURO (SKU Bottom Sheet) - ESTILO TAOBAO -->
+      <div id="sku-bottom-sheet" class="absolute inset-x-0 bottom-0 bg-white rounded-t-[30px] border-t border-slate-100 shadow-[0_-10px_30px_rgba(0,0,0,0.15)] z-[90] transform translate-y-full transition-transform duration-300 ease-out p-5 flex flex-col font-sans select-none">
+        
+        <!-- Línea decorativa del tirador -->
+        <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 cursor-pointer" onclick="closeSkuSheet()"></div>
+        
+        <!-- Info Básica del Producto a elegir -->
+        <div class="flex gap-4">
+          <!-- Contenedor de la foto que cambiará dinámicamente -->
+          <div class="w-16 h-16 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-4xl shadow-inner shrink-0 transition-all duration-200" id="sku-prod-img">🥛</div>
+          <div class="flex-1 min-w-0 flex flex-col justify-between">
+            <h3 class="font-extrabold text-slate-800 text-[14px]" id="sku-prod-name">Leche Entera Tuti 1L</h3>
+            <div>
+              <span class="text-slate-400 text-[10px] block" id="sku-prod-sales">1.4k unidades vendidas</span>
+              <!-- El precio cambiará dinámicamente -->
+              <span class="font-black text-green-700 text-[18px] transition-all duration-150" id="sku-prod-price">$0.85</span>
+            </div>
+          </div>
+          <button onclick="closeSkuSheet()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+
+        <!-- Selector de Variaciones / Opciones (SKUs) -->
+        <div class="mt-5">
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2">Selecciona variedad:</label>
+          <div class="flex flex-wrap gap-2" id="sku-options-container">
+            <!-- Variaciones Dinámicas -->
+          </div>
+        </div>
+
+        <!-- Selector de Cantidad -->
+        <div class="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+          <span class="text-[11px] font-bold text-slate-500">Cantidad a comprar:</span>
+          <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-1 shrink-0">
+            <button onclick="updateSkuQty(-1)" class="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-700 font-extrabold active:scale-90 transition text-sm">-</button>
+            <span class="text-xs font-black text-slate-800 min-w-[16px] text-center" id="sku-qty-display">1</span>
+            <button onclick="updateSkuQty(1)" class="w-7 h-7 rounded-lg bg-green-600 flex items-center justify-center text-white font-extrabold active:scale-90 transition text-sm">+</button>
+          </div>
+        </div>
+
+        <!-- Botón de Confirmar Compra Directa -->
+        <button id="sku-confirm-btn" class="mt-6 w-full py-3 bg-green-600 hover:bg-green-700 text-white font-extrabold text-xs rounded-2xl shadow-md active:scale-[0.98] transition cursor-pointer border-none flex items-center justify-center gap-2">
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i> Confirmar y Agregar
+        </button>
+      </div>
+
+      <!-- FONDO OSCURO PARA EL BOTTOM SHEET -->
+      <div id="sku-backdrop" class="absolute inset-0 bg-black/40 z-[80] opacity-0 pointer-events-none transition-opacity duration-300" onclick="closeSkuSheet()"></div>
+
+    </div>
+
+    <!-- PIE DE NAVEGACIÓN MÓVIL (Bottom Navigation) -->
+    <div class="h-14 border-t border-slate-100 bg-white/95 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-30 relative font-sans">
+      <button class="flex flex-col items-center justify-center text-slate-400 hover:text-green-600 active:scale-95 transition">
+        <i data-lucide="home" class="w-4 h-4"></i>
+        <span class="text-[9px] mt-0.5 font-bold">Inicio</span>
+      </button>
+      <button class="flex flex-col items-center justify-center text-green-600 active:scale-95 transition relative">
+        <i data-lucide="layout-grid" class="w-4 h-4"></i>
+        <span class="text-[9px] mt-0.5 font-bold">Categorías</span>
+      </button>
+      <!-- Icono del Carrito (Destino de la animación de vuelo) -->
+      <button id="nav-cart-btn" class="flex flex-col items-center justify-center text-slate-400 hover:text-green-600 active:scale-95 transition relative">
+        <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+        <span class="text-[9px] mt-0.5 font-bold">Carrito</span>
+        <span id="cart-badge" class="absolute -top-1.5 -right-1.5 bg-orange-600 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center hidden font-sans">0</span>
+      </button>
+      <button class="flex flex-col items-center justify-center text-slate-400 hover:text-green-600 active:scale-95 transition">
+        <i data-lucide="user" class="w-4 h-4"></i>
+        <span class="text-[9px] mt-0.5 font-bold">Mi Cuenta</span>
+      </button>
+    </div>
+
+    <!-- MODAL DE ESCÁNER SIMULADO -->
+    <div id="simulated-scanner" class="absolute inset-0 bg-slate-950 z-[100] flex flex-col justify-between hidden font-sans">
+      <div class="px-5 py-4 flex items-center justify-between text-white bg-gradient-to-b from-black/60 to-transparent">
+        <span class="text-xs font-bold flex items-center gap-1.5"><i data-lucide="scan-line" class="w-4 h-4 text-green-400"></i> Escaneo Simulado</span>
+        <button onclick="desactivarEscaneoSimulado()" class="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+      </div>
+      <!-- Feed de Cámara Falso -->
+      <div class="flex-1 flex flex-col items-center justify-center relative bg-slate-900">
+        <div class="w-[200px] h-[100px] border-2 border-dashed border-green-500 rounded-lg relative overflow-hidden flex items-center justify-center shadow-[0_0_0_9999px_rgba(0,0,0,0.6)]">
+          <div class="absolute inset-x-0 h-[2px] bg-red-500 shadow-md animate-laser"></div>
+          <span class="text-white/40 text-[9px] font-bold tracking-wider">APUNTAR AQUÍ</span>
+        </div>
+        <p class="text-slate-400 text-[10px] mt-4 px-4 py-1.5 bg-black/40 rounded-full">Coloca un código de barras de Tuti frente al visor</p>
+        
+        <!-- Botones de Códigos Demo -->
+        <div class="absolute bottom-5 inset-x-0 px-6 flex flex-col items-center gap-2">
+          <span class="text-white/40 text-[9px] font-extrabold uppercase">Selecciona un código de barras de prueba:</span>
+          <div class="flex flex-col gap-1.5 w-full">
+            <div class="flex gap-2 justify-center">
+              <button onclick="simularLecturaBarcode('7702111842045')" class="px-3 py-1 bg-white hover:bg-slate-100 text-slate-800 text-[9px] font-bold rounded-lg transition active:scale-95">🥛 Leche Entera</button>
+              <button onclick="simularLecturaBarcode('7861000123456')" class="px-3 py-1 bg-white hover:bg-slate-100 text-slate-800 text-[9px] font-bold rounded-lg transition active:scale-95">🌻 Aceite Girasol</button>
+            </div>
+            <div class="flex gap-2 justify-center">
+              <button onclick="simularLecturaBarcode('7861000400010')" class="px-3 py-1 bg-white hover:bg-slate-100 text-slate-800 text-[9px] font-bold rounded-lg transition active:scale-95">🍌 Plátano Seda</button>
+              <button onclick="simularLecturaBarcode('7861000300010')" class="px-3 py-1 bg-white hover:bg-slate-100 text-slate-800 text-[9px] font-bold rounded-lg transition active:scale-95">🍞 Pan de Molde</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="py-6 flex flex-col items-center text-slate-600 text-[9px] uppercase tracking-widest font-black">Tienlo Scan Tech</div>
+    </div>
+
+    <!-- MODAL DE NOTA EXITOSA DEL ESCANEO -->
+    <div id="scan-success-popup" class="absolute bottom-20 inset-x-4 bg-slate-900/95 backdrop-blur-md border border-slate-800 text-white rounded-2xl p-4 shadow-xl z-[110] flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+      <div class="w-9 h-9 rounded-xl bg-green-500/20 border border-green-500/40 flex items-center justify-center text-green-400"><i data-lucide="check" class="w-4 h-4"></i></div>
+      <div class="flex-1 min-w-0">
+        <h4 class="font-extrabold text-[12px] text-green-400 leading-tight">Producto Identificado</h4>
+        <p id="scan-success-prodname" class="text-[10px] text-slate-300 truncate">Leche Entera 1L</p>
+      </div>
+      <i data-lucide="arrow-right" class="w-4 h-4 text-green-400"></i>
+    </div>
+
+  </div>
+
+  <!-- PANEL DE EXPLICACIÓN Y DOCUMENTACIÓN A LA DERECHA -->
+  <div class="hidden lg:flex flex-col max-w-sm ml-12 bg-white rounded-3xl p-6 shadow-xl border border-slate-100 max-h-[780px] overflow-y-auto">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600"><i data-lucide="shopping-bag" class="w-4 h-4"></i></div>
+      <h1 class="font-extrabold text-slate-800 text-lg">Cambio de Foto y Precio en Vivo</h1>
+    </div>
+    
+    <p class="text-slate-500 text-xs leading-relaxed mt-4">
+      Esta actualización de la demo simula la conexión de la base de datos real con **múltiples SKUs**.
+    </p>
+
+    <h3 class="font-bold text-slate-700 text-xs mt-6 uppercase tracking-wider">Compruébalo tú mismo:</h3>
+    <ul class="text-slate-600 text-xs space-y-4 mt-3">
+      <li class="flex gap-2">
+        <span class="w-4.5 h-4.5 bg-green-100 text-green-700 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0">1</span>
+        <div>
+          <strong class="text-slate-800">Elige un Producto con Variedades:</strong>
+          <span class="block text-slate-500 mt-0.5">Haz clic en <span class="text-green-600 font-bold">Agregar</span> en la <strong>Leche</strong> o en el <strong>Aceite de Girasol</strong> para levantar el Bottom Sheet.</span>
+        </div>
+      </li>
+      <li class="flex gap-2">
+        <span class="w-4.5 h-4.5 bg-green-100 text-green-700 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0">2</span>
+        <div>
+          <strong class="text-slate-800">Interactúa con las Variedades:</strong>
+          <span class="block text-slate-500 mt-0.5">En el panel inferior, cambia entre las opciones. Por ejemplo en el Aceite, toca **Oliva**:
+            <span class="block text-orange-600 font-bold mt-1">📸 ¡La foto cambia al instante a Oliva 🫒 y el precio sube a $3.80!</span>
+            Si tocas **Soya**, la foto cambia a 🌾 y el precio baja a $1.95.
+          </span>
+        </div>
+      </li>
+      <li class="flex gap-2">
+        <span class="w-4.5 h-4.5 bg-green-100 text-green-700 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0">3</span>
+        <div>
+          <strong class="text-slate-800">Vuelo Sincronizado:</strong>
+          <span class="block text-slate-500 mt-0.5">Al presionar confirmar, el emoji específico de la variedad que seleccionaste (por ejemplo, el de oliva `🫒`) será el que vuele hacia el carrito.</span>
+        </div>
+      </li>
+    </ul>
+
+    <div class="mt-8 pt-6 border-t border-slate-100 bg-slate-50/50 p-4 rounded-2xl flex flex-col gap-1 text-[11px] text-slate-400">
+      <div class="font-bold text-slate-600">Por qué es indispensable comercialmente:</div>
+      <div>· Evita que el cliente compre por error la variedad equivocada.</div>
+      <div>· Le da certeza visual inmediata del precio final.</div>
+      <div>· Eleva la sensación de "App Premium" interactiva y viva.</div>
+    </div>
+  </div>
+
+  <!-- SCRIPT DE DATOS Y LÓGICA INTERACTIVA -->
+  <script>
+    // Datos simulados de pasillos
+    const PASILLOS = [
+      { id: "lacteos", nombre: "Lácteos", emoji: "🥛" },
+      { id: "bebidas", nombre: "Bebidas", emoji: "🥤" },
+      { id: "abarrotes", nombre: "Abarrotes", emoji: "🍚" },
+      { id: "carnes", nombre: "Carnes/Emb.", emoji: "🥩" },
+      { id: "panaderia", nombre: "Panadería", emoji: "🍞" },
+      { id: "frutas", nombre: "Frutas/Verd.", emoji: "🍎" },
+      { id: "congelados", nombre: "Congelados", emoji: "❄️" },
+      { id: "snacks", nombre: "Snacks/Dulces", emoji: "🍿" },
+      { id: "cuidado", nombre: "Cuidado P.", emoji: "🧴" },
+      { id: "limpieza", nombre: "Limpieza", emoji: "🧹" },
+      { id: "mascotas", nombre: "Mascotas", emoji: "🐶" },
+      { id: "farmacia", nombre: "Farmacia", emoji: "💊" },
+      { id: "ferreteria", font: "Ferretería", emoji: "🔧", nombre: "Ferretería" },
+      { id: "hogar", nombre: "Hogar", emoji: "🏠" }
+    ];
+
+    const SUBCATEGORIAS = {
+      lacteos: [
+        { id: "leche", nombre: "Leches", emoji: "🥛" },
+        { id: "queso", nombre: "Quesos", emoji: "🧀" },
+        { id: "yogur", nombre: "Yogures", emoji: "🥤" }
+      ],
+      bebidas: [
+        { id: "gaseosa", nombre: "Gaseosas", emoji: "🥤" },
+        { id: "agua", nombre: "Aguas", emoji: "💧" },
+        { id: "jugo", nombre: "Jugos", emoji: "🧃" }
+      ],
+      abarrotes: [
+        { id: "arroz", nombre: "Granos", emoji: "🌾" },
+        { id: "pasta", nombre: "Fideos", emoji: "🍝" },
+        { id: "aceite", nombre: "Aceites", emoji: "🛢️" }
+      ],
+      carnes: [
+        { id: "res", nombre: "Carne Res", emoji: "🥩" },
+        { id: "pollo", nombre: "Pollo/Aves", emoji: "🍗" },
+        { id: "jamon", nombre: "Jamones", emoji: "🥓" }
+      ],
+      panaderia: [
+        { id: "pan_molde", nombre: "Pan Molde", emoji: "🍞" },
+        { id: "tostadas", nombre: "Tostadas", emoji: "🥖" },
+        { id: "pasteles", nombre: "Pasteles", emoji: "🍰" }
+      ],
+      frutas: [
+        { id: "frutas_frescas", nombre: "Frutas", emoji: "🍌" },
+        { id: "verduras", nombre: "Verduras", emoji: "🥬" }
+      ]
+    };
+
+    // PRODUCTOS CON VARIACIONES CONFIGURADAS COMO SKUS INDEPENDIENTES (CON FOTO Y PRECIO PROPIOS)
+    const PRODUCTOS = [
+      // Lácteos
+      { 
+        codigo: "7702111842045", 
+        pasillo: "lacteos", 
+        subcat: "leche", 
+        nombre: "Leche Larga Vida Tuti 1L", 
+        precio: 0.85, 
+        ventas: 1420, 
+        imagen: "🥛",
+        variaciones: [
+          { nombre: "Entera", precio: 0.85, imagen: "🥛" },
+          { nombre: "Semidescremada", precio: 0.90, imagen: "🍼" },
+          { nombre: "Deslactosada", precio: 0.95, imagen: "🥛✨" }
+        ] 
+      },
+      { 
+        codigo: "7861000100010", 
+        pasillo: "lacteos", 
+        subcat: "queso", 
+        nombre: "Queso Mozzarella Tuti", 
+        precio: 2.40, 
+        ventas: 640, 
+        imagen: "🧀",
+        variaciones: [
+          { nombre: "Normal 500g", precio: 2.40, imagen: "🧀" },
+          { nombre: "Bajo en Sal 500g", precio: 2.65, imagen: "🧀🌿" }
+        ]
+      },
+      { 
+        codigo: "7861000100020", 
+        pasillo: "lacteos", 
+        subcat: "yogur", 
+        nombre: "Yogur de Fresa Tuti 1L", 
+        precio: 1.35, 
+        ventas: 740, 
+        imagen: "🥤",
+        variaciones: [
+          { nombre: "Fresa", precio: 1.35, imagen: "🥤🍓" },
+          { nombre: "Durazno", precio: 1.35, imagen: "🥤🍑" },
+          { nombre: "Mora", precio: 1.40, imagen: "🥤🍇" }
+        ]
+      },
+      
+      // Bebidas
+      { 
+        codigo: "7861000123001", 
+        pasillo: "bebidas", 
+        subcat: "gaseosa", 
+        nombre: "Gaseosa Cola Tuti 3L", 
+        precio: 1.50, 
+        ventas: 2150, 
+        imagen: "🥤",
+        variaciones: [
+          { nombre: "Original", precio: 1.50, imagen: "🥤" },
+          { nombre: "Zero Azúcar", precio: 1.60, imagen: "🥤🖤" }
+        ]
+      },
+
+      // Abarrotes
+      { 
+        codigo: "7861000123456", 
+        pasillo: "abarrotes", 
+        subcat: "aceite", 
+        nombre: "Aceite Multiusos Tuti 1L", 
+        precio: 2.25, 
+        ventas: 4210, 
+        imagen: "🌻",
+        variaciones: [
+          { nombre: "Girasol", precio: 2.25, imagen: "🌻" },
+          { nombre: "Oliva", precio: 3.80, imagen: "🫒" },
+          { nombre: "Soya", precio: 1.95, imagen: "🌾" }
+        ]
+      },
+
+      // Frutas
+      { 
+        codigo: "7861000400010", 
+        pasillo: "frutas", 
+        subcat: "frutas_frescas", 
+        nombre: "Plátano Maduro Seda", 
+        precio: 0.60, 
+        ventas: 3100, 
+        imagen: "🍌",
+        variaciones: [
+          { nombre: "Maduro Seda", precio: 0.60, imagen: "🍌" },
+          { nombre: "Verde Maqueño", precio: 0.75, imagen: "🍌🥬" }
+        ]
+      },
+    ];
+
+    let pasilloActivo = "lacteos";
+    let subcatActiva = "todas";
+    let carrito = {};
+
+    // Estados de SKU Bottom Sheet
+    let selectedSkuProduct = null;
+    let selectedSkuOptionIndex = 0;
+    let skuQuantity = 1;
+
+    // Renderizar categorías del menú izquierdo
+    function renderSidebar() {
+      const container = document.getElementById("sidebar-categories");
+      container.innerHTML = PASILLOS.map(p => {
+        const esActiva = p.id === pasilloActivo;
+        return `
+          <button 
+            onclick="setPasillo('${p.id}')"
+            class="py-4 px-2 text-center transition-all border-l-4 cursor-pointer relative active:bg-slate-100 flex flex-col items-center gap-1.5 ${
+              esActiva 
+                ? 'bg-white border-green-600 font-extrabold text-green-700' 
+                : 'border-transparent text-slate-500 font-medium'
+            }"
+          >
+            <span class="text-base">${p.emoji}</span>
+            <span class="text-[10px] leading-tight break-words max-w-[70px]">${p.nombre}</span>
+            ${esActiva ? '<div class="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-green-600 rounded-l-md"></div>' : ''}
+          </button>
+        `;
+      }).join('');
+    }
+
+    // Renderizar subcategorías de burbuja horizontal
+    function renderSubcatBubbles() {
+      const container = document.getElementById("subcat-bubble-list");
+      const list = SUBCATEGORIAS[pasilloActivo] || [];
+      
+      let html = `
+        <button 
+          onclick="setSubcat('todas')"
+          class="px-3.5 py-1 rounded-full text-[10px] font-bold shrink-0 transition active:scale-95 cursor-pointer ${
+            subcatActiva === 'todas'
+              ? 'bg-green-600 text-white shadow-sm shadow-green-600/10'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }"
+        >
+          Todo 🛍️
+        </button>
+      `;
+
+      html += list.map(s => {
+        const esActiva = s.id === subcatActiva;
+        return `
+          <button 
+            onclick="setSubcat('${s.id}')"
+            class="px-3 py-1 rounded-full text-[10px] font-bold shrink-0 transition active:scale-95 cursor-pointer flex items-center gap-1.5 ${
+              esActiva
+                ? 'bg-green-600 text-white shadow-sm shadow-green-600/10'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }"
+          >
+            <span>${s.emoji}</span>
+            <span>${s.nombre}</span>
+          </button>
+        `;
+      }).join('');
+
+      container.innerHTML = html;
+    }
+
+    // Renderizar lista de productos
+    function renderProductList() {
+      const container = document.getElementById("product-list");
+      
+      // Filtrar
+      let filtrados = PRODUCTOS.filter(p => p.pasillo === pasilloActivo);
+      if (subcatActiva !== "todas") {
+        filtrados = filtrados.filter(p => p.subcat === subcatActiva);
+      }
+
+      // Actualizar contador
+      document.getElementById("item-count").textContent = `${filtrados.length} items`;
+
+      if (filtrados.length === 0) {
+        container.innerHTML = `
+          <div class="py-12 text-center text-slate-400 flex flex-col items-center gap-2">
+            <i data-lucide="package-open" class="w-8 h-8 text-slate-300"></i>
+            <span class="text-[11px] font-medium">No hay productos en este pasillo</span>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = filtrados.map(p => {
+        const cant = carrito[p.codigo] || 0;
+        
+        let textoVentas = p.ventas >= 1000 ? `${(p.ventas/1000).toFixed(1)}k` : p.ventas;
+
+        return `
+          <div class="bg-white rounded-2xl p-3 border border-slate-100 flex gap-3 shadow-xs hover:shadow-sm transition relative overflow-hidden">
+            <div class="w-16 h-16 bg-slate-50 rounded-xl flex items-center justify-center text-3xl shadow-inner shrink-0">
+              ${p.imagen}
+            </div>
+
+            <div class="flex-1 min-w-0 flex flex-col justify-between">
+              <div>
+                <h4 class="font-extrabold text-slate-800 text-[12px] leading-tight truncate">${p.nombre}</h4>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="bg-orange-50 text-orange-600 text-[8px] font-black px-1 py-0.5 rounded flex items-center gap-0.5 shrink-0">
+                    🔥 ${textoVentas} vend.
+                  </span>
+                  <span class="text-[9px] text-slate-400 truncate">Código: ${p.codigo.substring(0,8)}</span>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between mt-2.5">
+                <span class="font-black text-slate-800 text-[14px]">$${p.precio.toFixed(2)}</span>
+                
+                <div class="flex items-center">
+                  <!-- Botón de cantidades dinámicas / Abrir SKU en agregar -->
+                  ${cant > 0 ? `
+                    <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg p-0.5">
+                      <button onclick="cambiarCant('${p.codigo}', -1)" class="w-5 h-5 rounded bg-white border border-green-200 flex items-center justify-center text-green-700 font-bold active:scale-90 transition text-xs">-</button>
+                      <span class="text-xs font-black text-green-800 min-w-[12px] text-center">${cant}</span>
+                      <button onclick="openSkuSheet('${p.codigo}')" class="w-5 h-5 rounded bg-green-600 flex items-center justify-center text-white font-bold active:scale-90 transition text-xs">+</button>
+                    </div>
+                  ` : `
+                    <button 
+                      id="btn-add-${p.codigo}"
+                      onclick="openSkuSheet('${p.codigo}')"
+                      class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black rounded-lg active:scale-95 transition cursor-pointer"
+                    >
+                      Agregar
+                    </button>
+                  `}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    // Cambiar pasillo
+    window.setPasillo = function(id) {
+      pasilloActivo = id;
+      subcatActiva = "todas";
+      renderSidebar();
+      renderSubcatBubbles();
+      renderProductList();
+    }
+
+    // Cambiar subcategoría
+    window.setSubcat = function(id) {
+      subcatActiva = id;
+      renderSubcatBubbles();
+      renderProductList();
+    }
+
+    // Cambiar cantidad en carrito
+    window.cambiarCant = function(codigo, delta) {
+      const actual = carrito[codigo] || 0;
+      const nuevo = Math.max(0, actual + delta);
+      if (nuevo === 0) {
+        delete carrito[codigo];
+      } else {
+        carrito[codigo] = nuevo;
+      }
+      renderProductList();
+      actualizarCarritoBadge();
+    }
+
+    // Actualizar globo del carrito
+    function actualizarCarritoBadge() {
+      const badge = document.getElementById("cart-badge");
+      const totalItems = Object.values(carrito).reduce((a,b) => a+b, 0);
+      if (totalItems > 0) {
+        badge.textContent = totalItems;
+        badge.classList.remove("hidden");
+      } else {
+        badge.classList.add("hidden");
+      }
+    }
+
+    // Ordenar productos por volumen de ventas
+    window.ordenarPorVentas = function() {
+      PRODUCTOS.sort((a,b) => b.ventas - a.ventas);
+      renderProductList();
+    }
+
+    // ABRIR BOTTOM SHEET DE SKU (COMPRA DIRECTA DESDE EL MURO)
+    window.openSkuSheet = function(codigo) {
+      const prod = PRODUCTOS.find(p => p.codigo === codigo);
+      if (!prod) return;
+
+      selectedSkuProduct = prod;
+      selectedSkuOptionIndex = 0;
+      skuQuantity = 1;
+
+      // Inyectar datos iniciales en el Bottom Sheet (de la primera variante)
+      const varInicial = prod.variaciones[0];
+      document.getElementById("sku-prod-img").textContent = varInicial.imagen;
+      document.getElementById("sku-prod-name").textContent = prod.nombre;
+      document.getElementById("sku-prod-sales").textContent = `${prod.ventas} unidades vendidas · En Tuti`;
+      document.getElementById("sku-prod-price").textContent = `$${varInicial.precio.toFixed(2)}`;
+      document.getElementById("sku-qty-display").textContent = skuQuantity;
+
+      // Renderizar Opciones de SKU
+      const optionsContainer = document.getElementById("sku-options-container");
+      optionsContainer.innerHTML = prod.variaciones.map((opt, idx) => `
+        <button 
+          onclick="selectSkuOption(${idx})"
+          id="sku-opt-btn-${idx}"
+          class="px-3.5 py-2 rounded-xl text-[10px] font-bold transition-all border cursor-pointer ${
+            idx === selectedSkuOptionIndex 
+              ? 'bg-green-50 border-green-600 text-green-700 font-extrabold shadow-inner' 
+              : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+          }"
+        >
+          ${opt.nombre}
+        </button>
+      `).join('');
+
+      // Configurar acción de confirmación
+      const confirmBtn = document.getElementById("sku-confirm-btn");
+      confirmBtn.onclick = (e) => {
+        confirmAndAddSku(e);
+      };
+
+      // Mostrar Sheet y Backdrop
+      document.getElementById("sku-bottom-sheet").classList.remove("translate-y-full");
+      document.getElementById("sku-backdrop").classList.remove("opacity-0", "pointer-events-none");
+    }
+
+    // Cerrar Bottom Sheet de SKU
+    window.closeSkuSheet = function() {
+      document.getElementById("sku-bottom-sheet").classList.add("translate-y-full");
+      document.getElementById("sku-backdrop").classList.add("opacity-0", "pointer-events-none");
+    }
+
+    // SELECCIONAR OPCIÓN DE VARIACIÓN DE SKU (CAMBIO EN CALIENTE DE FOTO Y PRECIO)
+    window.selectSkuOption = function(idx) {
+      selectedSkuOptionIndex = idx;
+      const prod = selectedSkuProduct;
+      if (!prod) return;
+
+      const varElegida = prod.variaciones[idx];
+
+      // 1. ACTUALIZAR FOTO Y PRECIO EN CALIENTE
+      const imgElement = document.getElementById("sku-prod-img");
+      const priceElement = document.getElementById("sku-prod-price");
+      
+      // Animación de parpadeo suave al cambiar para denotar la actualización
+      imgElement.classList.add("scale-75", "opacity-50");
+      priceElement.classList.add("scale-95", "opacity-50");
+      
+      setTimeout(() => {
+        imgElement.textContent = varElegida.imagen;
+        priceElement.textContent = `$${varElegida.precio.toFixed(2)}`;
+        
+        imgElement.classList.remove("scale-75", "opacity-50");
+        priceElement.classList.remove("scale-95", "opacity-50");
+      }, 120);
+
+      // 2. Refrescar estilos visuales de los botones de opciones
+      prod.variaciones.forEach((_, i) => {
+        const btn = document.getElementById(`sku-opt-btn-${i}`);
+        if (i === idx) {
+          btn.className = "px-3.5 py-2 rounded-xl text-[10px] font-bold transition-all border cursor-pointer bg-green-50 border-green-600 text-green-700 font-extrabold shadow-inner";
+        } else {
+          btn.className = "px-3.5 py-2 rounded-xl text-[10px] font-bold transition-all border cursor-pointer bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100";
+        }
+      });
+    }
+
+    // Cambiar cantidad en Bottom Sheet
+    window.updateSkuQty = function(delta) {
+      skuQuantity = Math.max(1, skuQuantity + delta);
+      document.getElementById("sku-qty-display").textContent = skuQuantity;
+    }
+
+    // CONFIRMAR VARIACIÓN Y AGREGAR (CON ANIMACIÓN DE VUELO DE LA OPCIÓN EXACTA)
+    function confirmAndAddSku(e) {
+      if (!selectedSkuProduct) return;
+      const prod = selectedSkuProduct;
+      const qty = skuQuantity;
+      const varElegida = prod.variaciones[selectedSkuOptionIndex];
+
+      // Guardar en el carrito simulado
+      const actual = carrito[prod.codigo] || 0;
+      carrito[prod.codigo] = actual + qty;
+
+      // Cerrar modal
+      closeSkuSheet();
+
+      // Lanzar animación de vuelo usando el emoji exacto de la variedad (ej: 🫒 en aceite de oliva)
+      triggerFlyAnimation(e.clientX, e.clientY, varElegida.imagen);
+
+      // Sincronizar UI
+      renderProductList();
+      actualizarCarritoBadge();
+    }
+
+    // ANIMACIÓN FÍSICA DE VUELO AL CARRITO
+    function triggerFlyAnimation(startX, startY, iconText) {
+      const cartIcon = document.getElementById("nav-cart-btn");
+      if (!cartIcon) return;
+      const cartRect = cartIcon.getBoundingClientRect();
+      const endX = cartRect.left + cartRect.width / 2;
+      const endY = cartRect.top + cartRect.height / 2;
+
+      // Crear elemento flotante
+      const flyDiv = document.createElement("div");
+      flyDiv.className = "item-fly w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center shadow-lg text-lg font-bold";
+      flyDiv.textContent = iconText;
+      
+      flyDiv.style.left = `${startX - 16}px`;
+      flyDiv.style.top = `${startY - 16}px`;
+
+      const tx = endX - startX;
+      const ty = endY - startY;
+
+      flyDiv.style.setProperty('--tx', `${tx}px`);
+      flyDiv.style.setProperty('--ty', `${ty}px`);
+
+      document.body.appendChild(flyDiv);
+
+      flyDiv.addEventListener("animationend", () => {
+        flyDiv.remove();
+        
+        cartIcon.classList.add("scale-125", "text-orange-600");
+        setTimeout(() => {
+          cartIcon.classList.remove("scale-125", "text-orange-600");
+        }, 300);
+      });
+    }
+
+    // Inicializar pasillo
+    setPasillo("lacteos");
+
+    // LÓGICA DE ESCANEO SIMULADO
+    window.activarEscaneoSimulado = function() {
+      document.getElementById("simulated-scanner").classList.remove("hidden");
+    }
+    window.desactivarEscaneoSimulado = function() {
+      document.getElementById("simulated-scanner").classList.add("hidden");
+    }
+    window.simularLecturaBarcode = function(barcode) {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.frequency.value = 1200;
+        gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        oscillator.start();
+        setTimeout(() => oscillator.stop(), 80);
+      } catch(e){}
+
+      if (navigator.vibrate) navigator.vibrate(80);
+
+      desactivarEscaneoSimulado();
+
+      const prod = PRODUCTOS.find(p => p.codigo === barcode);
+      if (prod) {
+        pasilloActivo = prod.pasillo;
+        subcatActiva = prod.subcat;
+        renderSidebar();
+        renderSubcatBubbles();
+        renderProductList();
+
+        const sidebar = document.getElementById("sidebar-categories");
+        const activeBtn = Array.from(sidebar.children).find(btn => btn.textContent.includes(PASILLOS.find(p => p.id === prod.pasillo).nombre));
+        if (activeBtn) {
+          sidebar.scrollTo({
+            top: activeBtn.offsetTop - sidebar.offsetTop - 100,
+            behavior: "smooth"
+          });
+        }
+
+        const popup = document.getElementById("scan-success-popup");
+        document.getElementById("scan-success-prodname").textContent = `${prod.nombre} — $${prod.precio.toFixed(2)}`;
+        
+        popup.classList.remove("translate-y-20", "opacity-0", "pointer-events-none");
+        popup.classList.add("translate-y-0", "opacity-100");
+
+        setTimeout(() => {
+          popup.classList.remove("translate-y-0", "opacity-100");
+          popup.classList.add("translate-y-20", "opacity-0", "pointer-events-none");
+        }, 3200);
+      }
+    }
+  </script>
+</body>
+</html>
