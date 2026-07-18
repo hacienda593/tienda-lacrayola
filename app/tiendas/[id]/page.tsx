@@ -38,15 +38,17 @@ function TiendaProductCard({ p, tienda, onSelect }: { p: Producto; tienda: OlTie
 
   function agregar(e: React.MouseEvent) {
     e.stopPropagation(); e.preventDefault()
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(15)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('open-sku-selector', {
+        detail: {
+          prod: p,
+          clientX: e.clientX,
+          clientY: e.clientY,
+          tiendaId: tienda.id,
+          tiendaNombre: tienda.nombre
+        }
+      }))
     }
-    agregarItem({
-      ...p,
-      precio_publico: p.precio_publico,
-      tienda_id: tienda.id,
-      tienda_nombre: tienda.nombre
-    }, 1)
   }
 
   return (
@@ -116,15 +118,17 @@ function TiendaVerticalProductCard({ p, tienda, onSelect }: { p: Producto; tiend
 
   function agregar(e: React.MouseEvent) {
     e.stopPropagation(); e.preventDefault()
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(15)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('open-sku-selector', {
+        detail: {
+          prod: p,
+          clientX: e.clientX,
+          clientY: e.clientY,
+          tiendaId: tienda.id,
+          tiendaNombre: tienda.nombre
+        }
+      }))
     }
-    agregarItem({
-      ...p,
-      precio_publico: p.precio_publico,
-      tienda_id: tienda.id,
-      tienda_nombre: tienda.nombre
-    }, 1)
   }
 
   return (
@@ -198,15 +202,17 @@ function BtnAgregar({ prod, tiendaId, tiendaNombre }: { prod: Producto; tiendaId
 
   function agregar(e: React.MouseEvent) {
     e.stopPropagation(); e.preventDefault()
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(15)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('open-sku-selector', {
+        detail: {
+          prod: prod,
+          clientX: e.clientX,
+          clientY: e.clientY,
+          tiendaId: tiendaId,
+          tiendaNombre: tiendaNombre
+        }
+      }))
     }
-    agregarItem({
-      ...prod,
-      precio_publico: prod.precio_publico,
-      tienda_id: tiendaId,
-      tienda_nombre: tiendaNombre
-    }, 1)
   }
 
   function cambiar(e: React.MouseEvent, delta: number) {
@@ -408,6 +414,82 @@ function TiendaContent() {
   const [infoOpen, setInfoOpen] = useState(false)
   const [localCatOpen, setLocalCatOpen] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
+
+  // SKU Bottom Sheet States
+  const [skuProduct, setSkuProduct] = useState<Producto | null>(null)
+  const [skuTiendaId, setSkuTiendaId] = useState('')
+  const [skuTiendaNombre, setSkuTiendaNombre] = useState('')
+  const [skuCoords, setSkuCoords] = useState<{ x: number; y: number } | null>(null)
+  const [skuQty, setSkuQty] = useState(1)
+  const [skuOption, setSkuOption] = useState('')
+
+  // Helper for dynamic variations based on category
+  function obtenerVariaciones(p: Producto): string[] {
+    const c = (p.categoria || '').toLowerCase()
+    const desc = (p.descripcion || '').toLowerCase()
+    if (c.includes('lacte') || c.includes('leche')) {
+      return ['Entera 🥛', 'Deslactosada 🥛', 'Semidescremada 🥛']
+    }
+    if (c.includes('bebida') || c.includes('gaseosa') || desc.includes('cola')) {
+      return ['Sabor Original 🥤', 'Zero Azúcar 🥤', 'Light 🥤']
+    }
+    if (c.includes('aceite')) {
+      return ['Girasol 🌻', 'Oliva 🫒', 'Soya 🌾']
+    }
+    if (c.includes('arroz') || c.includes('grano')) {
+      return ['Normal', 'Integral 🌾', 'Extra Seleccionado 🌾']
+    }
+    if (c.includes('ferre') || c.includes('herra')) {
+      return ['Estándar 🔧', 'Profesional ⚙️']
+    }
+    return ['Estándar', 'Premium ✨']
+  }
+
+  // Flying cart animation
+  const triggerFlyAnimation = (startX: number, startY: number, emojiOrText: string) => {
+    const cartButton = document.getElementById('global-cart-btn')
+    if (!cartButton) return
+    const cartRect = cartButton.getBoundingClientRect()
+    const endX = cartRect.left + cartRect.width / 2
+    const endY = cartRect.top + cartRect.height / 2
+
+    const element = document.createElement('div')
+    element.className = 'fixed z-[9999] pointer-events-none w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold shadow-lg text-lg transition-all duration-700 ease-out'
+    element.innerText = emojiOrText
+    element.style.left = `${startX - 16}px`
+    element.style.top = `${startY - 16}px`
+    document.body.appendChild(element)
+
+    // Force reflow
+    element.getBoundingClientRect()
+
+    element.style.transform = `translate(${endX - startX}px, ${endY - startY}px) scale(0.2)`
+    element.style.opacity = '0.3'
+
+    element.addEventListener('transitionend', () => {
+      element.remove()
+      cartButton.classList.add('scale-110')
+      setTimeout(() => cartButton.classList.remove('scale-110'), 200)
+    })
+  }
+
+  // Escuchar evento para abrir selector de variación / cantidad
+  useEffect(() => {
+    const handleOpenSku = (e: Event) => {
+      const customEvent = e as CustomEvent
+      const { prod, clientX, clientY, tiendaId, tiendaNombre } = customEvent.detail
+      setSkuProduct(prod)
+      setSkuCoords({ x: clientX, y: clientY })
+      setSkuTiendaId(tiendaId)
+      setSkuTiendaNombre(tiendaNombre)
+      setSkuQty(1)
+      
+      const vars = obtenerVariaciones(prod)
+      setSkuOption(vars[0])
+    }
+    window.addEventListener('open-sku-selector', handleOpenSku)
+    return () => window.removeEventListener('open-sku-selector', handleOpenSku)
+  }, [])
 
   // Auto-cerrar el menú desplegable local de categorías al cambiar de pasillo
   useEffect(() => {
@@ -1214,11 +1296,18 @@ function TiendaContent() {
           from { transform: translateX(-100%); }
           to { transform: translateX(0); }
         }
+        @keyframes slideInUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
         .animate-fade-in {
           animation: fadeIn 0.2s ease-out forwards;
         }
         .animate-slide-in-left {
           animation: slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-slide-in-up {
+          animation: slideInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
       `}</style>
 
@@ -1239,6 +1328,115 @@ function TiendaContent() {
           />
         )
       })()}
+
+      {/* Drawer / Bottom Sheet de Variaciones (Estilo Taobao) */}
+      {skuProduct && (
+        <>
+          {/* Backdrop */}
+          <div 
+            onClick={() => setSkuProduct(null)}
+            className="fixed inset-0 bg-black/60 z-[190] animate-fade-in"
+          />
+
+          {/* Bottom Sheet */}
+          <div className="fixed inset-x-0 bottom-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-md w-full bg-white rounded-t-[30px] md:rounded-3xl shadow-2xl z-[200] p-6 animate-slide-in-up md:animate-fade-in flex flex-col font-sans select-none border-t md:border border-gray-100">
+            
+            {/* Tirador para móvil */}
+            <div 
+              onClick={() => setSkuProduct(null)}
+              className="md:hidden w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4 cursor-pointer"
+            />
+            
+            {/* Ficha básica del producto */}
+            <div className="flex gap-4">
+              <div className="w-16 h-16 bg-gray-50 rounded-xl flex items-center justify-center shadow-inner overflow-hidden shrink-0">
+                <ImagenProducto src={skuProduct.imagen_url} categoria={skuProduct.categoria} alt={skuProduct.descripcion} descripcion={skuProduct.descripcion} />
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col justify-between">
+                <h3 className="font-extrabold text-gray-800 text-[13px] leading-snug line-clamp-2">{skuProduct.descripcion}</h3>
+                <div>
+                  <span className="text-[10px] text-gray-400 block">{skuProduct.marca || 'Marca seleccionada'}</span>
+                  <span className="font-black text-green-700 text-base">{fmt(skuProduct.precio_publico)}</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSkuProduct(null)}
+                className="text-gray-400 hover:text-gray-600 shrink-0 self-start p-1"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Variedades */}
+            <div className="mt-5">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block mb-2">Selecciona variedad:</span>
+              <div className="flex flex-wrap gap-2">
+                {obtenerVariaciones(skuProduct).map(opt => {
+                  const esActiva = skuOption === opt
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => setSkuOption(opt)}
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border cursor-pointer
+                        ${esActiva 
+                          ? 'bg-green-50 border-green-600 text-green-700 font-extrabold' 
+                          : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+                    >
+                      {opt}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Cantidades */}
+            <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-4">
+              <span className="text-xs font-bold text-gray-500">Cantidad a agregar:</span>
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-0.5 shrink-0">
+                <button 
+                  onClick={() => setSkuQty(q => Math.max(1, q - 1))}
+                  className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-700 font-extrabold active:scale-90 transition text-xs"
+                >
+                  -
+                </button>
+                <span className="text-xs font-black text-gray-800 min-w-[20px] text-center">{skuQty}</span>
+                <button 
+                  onClick={() => setSkuQty(q => q + 1)}
+                  className="w-7 h-7 rounded-lg bg-green-600 flex items-center justify-center text-white font-extrabold active:scale-90 transition text-xs"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Botón de Confirmación */}
+            <button
+              onClick={() => {
+                // Agregar al carrito
+                agregarItem({
+                  ...skuProduct,
+                  precio_publico: skuProduct.precio_publico,
+                  tienda_id: skuTiendaId,
+                  tienda_nombre: skuTiendaNombre,
+                  descripcion: `${skuProduct.descripcion} [${skuOption}]`
+                }, skuQty)
+
+                // Lanzar animación de vuelo
+                if (skuCoords) {
+                  const emoji = CAT_EMOJI[skuProduct.categoria || ''] || '📦'
+                  triggerFlyAnimation(skuCoords.x, skuCoords.y, emoji)
+                }
+
+                // Cerrar
+                setSkuProduct(null)
+              }}
+              className="mt-6 w-full py-3 bg-green-600 hover:bg-green-700 text-white font-extrabold text-xs rounded-2xl active:scale-[0.98] transition cursor-pointer border-none flex items-center justify-center gap-2 shadow-md"
+            >
+              Confirmar y Agregar
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }

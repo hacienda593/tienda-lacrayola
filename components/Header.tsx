@@ -461,6 +461,7 @@ export default function Header() {
 
           {/* Carrito */}
           <button
+            id="global-cart-btn"
             onClick={() => setCartDrawerOpen(true)}
             className="relative flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3.5 py-2.5 rounded-xl transition shrink-0 active:scale-[0.96] cursor-pointer"
           >
