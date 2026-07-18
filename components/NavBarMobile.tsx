@@ -100,7 +100,7 @@ function NavBarMobileInner() {
   // 5. Definir la botonera líquida según el contexto
   if (esTienda) {
     // ── Contexto Tienda Aliada: Navegación interna (Inicio, Buscar/Lupa, Pasillos Central, Lista, Comercios) ──
-    const hasAislesActive = mounted && searchParams?.get('view') === 'pasillos'
+    const hasAislesActive = mounted && (searchParams?.get('view') === 'pasillos' || pathname.endsWith('/buscar'))
     const nombreCorto = getNombreCorto(tiendaNombre)
 
     return (
@@ -119,7 +119,7 @@ function NavBarMobileInner() {
 
           {/* Botón 2: Buscar / Pasillos (Lupa - Activa doble columna) */}
           <button 
-            onClick={() => router.push(`/tiendas/${activeTId}?view=pasillos`)}
+            onClick={() => router.push(`/tiendas/${activeTId}/buscar`)}
             className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent
               ${hasAislesActive ? 'text-green-600 font-extrabold' : 'text-gray-400 hover:text-green-600'}`}
           >

@@ -86,7 +86,7 @@ function HeaderStoreCategories() {
   const [localCatOpen, setLocalCatOpen] = useState(false)
   const cat = searchParams?.get('cat') || ''
 
-  if (mounted && searchParams?.get('view') === 'pasillos') return null
+  if (mounted && (searchParams?.get('view') === 'pasillos' || pathname.endsWith('/buscar'))) return null
 
   useEffect(() => {
     setLocalCatOpen(false)

@@ -810,11 +810,7 @@ function TiendaContent() {
 
 
   return (
-    <div className={`max-w-5xl mx-auto md:px-4 md:py-5 md:space-y-5 md:h-auto flex flex-col md:overflow-visible bg-white md:bg-transparent
-      ${esBusquedaOMovilPasillo 
-        ? 'h-[calc(100dvh-105px)] overflow-hidden' 
-        : 'h-auto overflow-y-auto px-4 py-3.5 space-y-5'}`}
-    >
+    <div className="max-w-5xl mx-auto px-4 py-3.5 space-y-5 md:px-4 md:py-5 md:space-y-5 md:h-auto flex flex-col md:overflow-visible bg-white md:bg-transparent">
 
       {/* Header tienda (Solo visible en desktop) */}
       <div className="hidden md:flex sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 py-3.5 -mx-4 px-4 items-center justify-between gap-3 shadow-sm md:shadow-none md:border-none md:relative md:top-auto md:z-auto md:bg-transparent md:py-0 md:mx-0 md:px-0">
@@ -900,146 +896,103 @@ function TiendaContent() {
 
       <div className="flex-1 flex flex-row md:gap-6 md:items-start overflow-hidden">
         {/* ── SIDEBAR pasillos (móvil y desktop) ── */}
-        <aside className={`md:w-52 shrink-0 h-full md:h-auto bg-gray-50 md:bg-white border-r md:border border-gray-100 md:rounded-2xl p-0 md:p-4 md:shadow-sm overflow-y-auto flex flex-col select-none
-          ${esBusquedaOMovilPasillo ? 'w-20' : 'hidden md:flex'}`}
-        >
-          {/* MÓVIL: Sidebar vertical de pasillos */}
-          <div className="md:hidden flex flex-col text-center">
-            {/* Todos / Inicio (Oculto en modo doble columna móvil) */}
-            {!esBusquedaOMovilPasillo && (
-              <button
-                onClick={() => updateFiltersUrl({ cat: '', sub: '', marca: '' })}
-                className={`py-3.5 px-1 border-l-4 cursor-pointer relative active:bg-gray-100 flex flex-col items-center gap-1.5 transition-all
-                  ${!cat 
-                    ? 'bg-white border-green-600 font-extrabold text-green-700 shadow-xs' 
-                    : 'border-transparent text-gray-500 font-medium'}`}
-              >
-                <span className="text-base">🏪</span>
-                <span className="text-[9px] leading-tight font-extrabold">Todos</span>
-                {!cat && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-green-600 rounded-l-md" />}
-              </button>
-            )}
-
-            {/* Lista de Categorías de la Tienda */}
-            {cats.map(([c, count]) => {
-              const esActiva = activeCat === c
-              return (
-                <button
-                  key={c}
-                  onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
-                  className={`py-3.5 px-1 border-l-4 cursor-pointer relative active:bg-gray-100 flex flex-col items-center gap-1.5 transition-all
-                    ${esActiva 
-                      ? 'bg-white border-green-600 font-extrabold text-green-700 shadow-xs' 
-                      : 'border-transparent text-gray-500 font-medium'}`}
-                >
-                  <span className="text-base">{CAT_EMOJI[c] || '📦'}</span>
-                  <span className="text-[9px] leading-tight font-extrabold break-words max-w-[72px]">{c}</span>
-                  {esActiva && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-green-600 rounded-l-md" />}
-                </button>
-              )
-            })}
-          </div>
-
+        <aside className="hidden md:flex md:w-52 shrink-0 h-full md:h-auto bg-gray-50 md:bg-white border-r md:border border-gray-100 md:rounded-2xl p-4 md:shadow-sm overflow-y-auto flex flex-col select-none">
           {/* DESKTOP: El aside tradicional */}
-          <div className="hidden md:block space-y-5">
-          {!cat ? (
-            // Nivel 1: Lista de Categorías
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Selecciona un Pasillo</p>
-              {cats.map(([c, count]) => (
-                <button
-                  key={c}
-                  onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
-                  className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-green-700 transition flex items-center justify-between border border-transparent hover:border-green-100"
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="text-sm">{CAT_EMOJI[c] || '📦'}</span>
-                    <span className="truncate max-w-[100px]">{c}</span>
-                  </span>
-                  <span className="text-[9px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold">{count}</span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            // Nivel 2: Subcategorías y Marcas de la categoría seleccionada
-            <div className="space-y-5">
-              {/* Botón Volver */}
-              <button
-                onClick={() => updateFiltersUrl({ cat: '', sub: '', marca: '' })}
-                className="w-full py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5"
-              >
-                ← Todos los pasillos
-              </button>
-
-              {/* Pasillo Activo */}
-              <div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Pasillo seleccionado</span>
-                <div className="text-xs font-black text-green-700 bg-green-50 border border-green-100 rounded-xl px-3 py-2 flex items-center gap-2">
-                  <span>{CAT_EMOJI[cat] || '📦'}</span>
-                  <span className="truncate">{cat}</span>
-                </div>
+          <div className="space-y-5">
+            {!cat ? (
+              // Nivel 1: Lista de Categorías
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Selecciona un Pasillo</p>
+                {cats.map(([c, count]) => (
+                  <button
+                    key={c}
+                    onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
+                    className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-green-700 transition flex items-center justify-between border border-transparent hover:border-green-100"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="text-sm">{CAT_EMOJI[c] || '📦'}</span>
+                      <span className="truncate max-w-[100px]">{c}</span>
+                    </span>
+                    <span className="text-[9px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold">{count}</span>
+                  </button>
+                ))}
               </div>
+            ) : (
+              // Nivel 2: Subcategorías y Marcas de la categoría seleccionada
+              <div className="space-y-5">
+                {/* Botón Volver */}
+                <button
+                  onClick={() => updateFiltersUrl({ cat: '', sub: '', marca: '' })}
+                  className="w-full py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5"
+                >
+                  ← Todos los pasillos
+                </button>
 
-              {/* Lista de Subcategorías (si hay) */}
-              {subcats.length > 0 && (
+                {/* Pasillo Activo */}
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Subcategorías</p>
-                  <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
-                    {subcats.map(([s, count]) => {
-                      const esActiva = sub === s
-                      return (
-                        <button
-                          key={s}
-                          onClick={() => updateFiltersUrl({ sub: esActiva ? '' : s })}
-                          className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-between border
-                            ${esActiva 
-                              ? 'bg-teal-50 border-teal-200 text-teal-700' 
-                              : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
-                        >
-                          <span className="truncate max-w-[100px]">🛍️ {s}</span>
-                          <span className="text-[9px] font-bold text-gray-400">({count})</span>
-                        </button>
-                      )
-                    })}
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Pasillo seleccionado</span>
+                  <div className="text-xs font-black text-green-700 bg-green-50 border border-green-100 rounded-xl px-3 py-2 flex items-center gap-2">
+                    <span>{CAT_EMOJI[cat] || '📦'}</span>
+                    <span className="truncate">{cat}</span>
                   </div>
                 </div>
-              )}
 
-              {/* Lista de Marcas (si hay) */}
-              {marcas.length > 0 && (
-                <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Marcas</p>
-                  <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
-                    {marcas.map(([m, count]) => {
-                      const esActiva = marca === m
-                      return (
-                        <button
-                          key={m}
-                          onClick={() => updateFiltersUrl({ marca: esActiva ? '' : m })}
-                          className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-between border
-                            ${esActiva 
-                              ? 'bg-purple-50 border-purple-200 text-purple-700' 
-                              : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
-                        >
-                          <span className="truncate max-w-[100px]">🏷️ {m}</span>
-                          <span className="text-[9px] font-bold text-gray-400">({count})</span>
-                        </button>
-                      )
-                    })}
+                {/* Lista de Subcategorías (si hay) */}
+                {subcats.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Subcategorías</p>
+                    <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+                      {subcats.map(([s, count]) => {
+                        const esActiva = sub === s
+                        return (
+                          <button
+                            key={s}
+                            onClick={() => updateFiltersUrl({ sub: esActiva ? '' : s })}
+                            className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-between border
+                              ${esActiva 
+                                ? 'bg-teal-50 border-teal-200 text-teal-700' 
+                                : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
+                          >
+                            <span className="truncate max-w-[100px]">🛍️ {s}</span>
+                            <span className="text-[9px] font-bold text-gray-400">({count})</span>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+
+                {/* Lista de Marcas (si hay) */}
+                {marcas.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Marcas</p>
+                    <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
+                      {marcas.map(([m, count]) => {
+                        const esActiva = marca === m
+                        return (
+                          <button
+                            key={m}
+                            onClick={() => updateFiltersUrl({ marca: esActiva ? '' : m })}
+                            className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-between border
+                              ${esActiva 
+                                ? 'bg-purple-50 border-purple-200 text-purple-700' 
+                                : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
+                          >
+                            <span className="truncate max-w-[100px]">🏷️ {m}</span>
+                            <span className="text-[9px] font-bold text-gray-400">({count})</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </aside>
 
         {/* ── COLUMNA DERECHA / CONTENIDO PRINCIPAL ── */}
-        <div className={`flex-1 min-w-0 bg-white md:bg-transparent
-          ${esBusquedaOMovilPasillo 
-            ? 'h-full overflow-hidden flex flex-col' 
-            : 'h-auto overflow-visible block'}`}
-        >
+        <div className="flex-1 min-w-0 bg-white md:bg-transparent">
           
           {/* Subcategorías horizontal (Burbujas en el tope derecho) - SOLO MÓVIL */}
           {cat && subcats.length > 0 && (
@@ -1218,95 +1171,7 @@ function TiendaContent() {
           <p className="text-xs text-gray-400">{filtrados.length} productos disponibles</p>
 
           {/* Grid productos / Rows de Subcategorías / Rows de Categorías */}
-          {esBusquedaOMovilPasillo ? (
-            /* MODO DOBLE COLUMNA TIPO TAOBAO / CATEGORIASPANEL */
-            <div className="flex-grow flex flex-col min-h-0 bg-white">
-              {!sub ? (
-                /* Nivel 1: Mostrar Banner de Ver Todo y las Burbujas de Subcategorías (Estilo CategoriasPanel) */
-                <div className="flex flex-col flex-1 p-2">
-                  {/* Banner Ver Todo */}
-                  <button
-                    onClick={() => updateFiltersUrl({ sub: 'TODO_PASILLO' })}
-                    className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-xl flex items-center justify-between hover:opacity-90 transition shrink-0 shadow-sm mb-4 cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-base shadow-sm">
-                        <span className="text-white font-extrabold">{CAT_EMOJI[activeCat] || '📦'}</span>
-                      </div>
-                      <div className="text-left">
-                        <div className="font-extrabold text-[11px] text-green-800">Ver todo {activeCat}</div>
-                        <div className="text-[9px] text-green-600/80">Explorar pasillo completo</div>
-                      </div>
-                    </div>
-                    <ChevronRight size={13} className="text-green-700" />
-                  </button>
-
-                  {/* Título */}
-                  <div className="pt-1 pb-2 shrink-0">
-                    <h3 className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Subcategorías</h3>
-                  </div>
-
-                  {/* Grid de Burbujas circulares */}
-                  {subcats.length === 0 ? (
-                    <p className="text-[11px] text-gray-400 italic text-center py-8">Sin subcategorías en este pasillo</p>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-y-4 gap-x-2">
-                      {subcats.map(([s, count]) => {
-                        const emoji = obtenerEmojiSubcategoria(s, activeCat)
-                        return (
-                          <button
-                            key={s}
-                            onClick={() => updateFiltersUrl({ sub: s })}
-                            className="flex flex-col items-center group relative transition active:scale-95 duration-100 cursor-pointer"
-                          >
-                            <div className="w-14 h-14 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-2xl shadow-sm hover:bg-white transition-all relative">
-                              <span>{emoji}</span>
-                            </div>
-                            <span className="text-[9px] font-extrabold text-gray-600 text-center mt-1.5 leading-tight line-clamp-2 max-w-[72px]">
-                              {s}
-                            </span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* Nivel 2: Mostrar listado de productos de la subcategoría seleccionada */
-                <div className="flex flex-col flex-1">
-                  {/* Cabecera de filtro activo */}
-                  <div className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 shadow-xs mb-3">
-                    <span className="text-xs font-black text-green-700">
-                      {sub === 'TODO_PASILLO' ? `Todo ${activeCat}` : `Pasillo: ${sub}`}
-                    </span>
-                    <button
-                      onClick={() => updateFiltersUrl({ sub: '' })}
-                      className="text-xs text-green-600 font-extrabold flex items-center gap-0.5 hover:underline cursor-pointer border-none bg-transparent"
-                    >
-                      ← Volver
-                    </button>
-                  </div>
-
-                  {filtrados.length === 0 ? (
-                    <div className="text-center py-12 text-gray-400 text-xs italic">
-                      No hay productos disponibles con este filtro
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-1.5 pb-16">
-                      {filtrados.slice(0, visibles).map(p => (
-                        <TiendaVerticalProductCard
-                          key={p.codigo}
-                          p={p}
-                          tienda={tienda}
-                          onSelect={(prod) => openQuickView(prod, filtrados)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : filtrados.length === 0 ? (
+          {filtrados.length === 0 ? (
             <div className="text-center py-16 space-y-2">
               <div className="text-5xl">🔍</div>
               <p className="text-gray-500 font-medium">Sin productos con ese filtro</p>
