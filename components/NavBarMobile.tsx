@@ -97,9 +97,10 @@ function NavBarMobileInner() {
   }
   function handleBuscarClick() {
     try {
-      router.push(`/tiendas/${activeTId}/buscar`)
+      const url = `/tiendas/${activeTId}/buscar`;
+      window.open(url, '_blank');
     } catch (e) {
-      console.error('Error navigating to buscar page:', e)
+      console.error('Error al abrir la página de búsqueda:', e);
     }
   }
   // 5. Definir la botonera líquida según el contexto
