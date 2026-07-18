@@ -394,10 +394,19 @@ function HeaderSearch() {
 
 export default function Header() {
   const router = useRouter()
+  const pathname = usePathname()
+  const [mounted, setMounted] = useState(false)
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const [n, setN]                   = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [catOpen,    setCatOpen]    = useState(false)
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
+
+  if (mounted && pathname.endsWith('/buscar')) return null
 
   useEffect(() => {
     const update = () => setN(getCarrito().reduce((s, i) => s + i.cantidad, 0))
