@@ -78,8 +78,6 @@ function HeaderStoreCategories() {
     setMounted(true)
   }, [])
 
-  if (mounted && searchParams?.get('view') === 'pasillos') return null
-
   const activeTId = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
     ? pathname.split('/')[2]
     : ''
@@ -87,6 +85,8 @@ function HeaderStoreCategories() {
   const [cats, setCats] = useState<[string, number][]>([])
   const [localCatOpen, setLocalCatOpen] = useState(false)
   const cat = searchParams?.get('cat') || ''
+
+  if (mounted && searchParams?.get('view') === 'pasillos') return null
 
   useEffect(() => {
     setLocalCatOpen(false)
