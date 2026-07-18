@@ -628,7 +628,7 @@ function TiendaContent() {
 
 
 
-  const searchParamsStr = searchParams.toString()
+  const searchParamsStr = searchParams ? searchParams.toString() : ''
   // Sincronizar estado local con query params de la URL
   useEffect(() => {
     setCat(searchParams?.get('cat') || '')
@@ -1275,7 +1275,7 @@ function TiendaContent() {
                 )
               })()}
             </div>
-          ) : !cat && !sub && !marca && !q ? (
+          ) : !cat && !sub && !marca && !q && !esBusquedaOMovilPasillo ? (
             /* Vista agrupada por categoría principal en horizontal (tipo Tipti/Aki Home de Tienda) */
             <div className="space-y-6">
               {cats.map(([c]) => {

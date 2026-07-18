@@ -300,7 +300,7 @@ function HeaderSearch() {
       })
   }, [activeTId])
 
-  const searchParamsStr = searchParams.toString()
+  const searchParamsStr = searchParams ? searchParams.toString() : ''
   // 3. Sincronizar el input local con la URL query param q
   useEffect(() => {
     setQ(searchParams.get('q') || '')
