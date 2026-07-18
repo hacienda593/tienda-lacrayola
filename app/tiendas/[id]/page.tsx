@@ -912,7 +912,7 @@ function TiendaContent() {
                 {cats.map(([c, count]) => (
                   <button
                     key={c}
-                    onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
+                    onClick={() => irACategoria(c)}
                     className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-green-700 transition flex items-center justify-between border border-transparent hover:border-green-100"
                   >
                     <span className="flex items-center gap-2">
@@ -1254,14 +1254,14 @@ function TiendaContent() {
                   <div key={c} className="space-y-2.5 animate-fade-in">
                     <div className="flex items-center justify-between">
                       <button
-                        onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
+                        onClick={() => irACategoria(c)}
                         className="font-extrabold text-orange-600 text-sm flex items-center gap-1.5 hover:underline cursor-pointer text-left"
                       >
                         <span>{CAT_EMOJI[c] || '📦'}</span>
                         <span>{c}</span>
                       </button>
                       <button
-                        onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
+                        onClick={() => irACategoria(c)}
                         className="text-xs text-green-700 font-bold flex items-center gap-0.5 hover:underline"
                       >
                         Ver pasillo <ChevronRight size={12} />

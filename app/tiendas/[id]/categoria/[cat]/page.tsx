@@ -2,16 +2,62 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback, Suspense } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { getCarrito, cambiarCantidad } from '@/lib/carrito'
+import { getCarrito, cambiarCantidad, agregarItem } from '@/lib/carrito'
 import { OlTienda, Producto, CAT_EMOJI } from '@/lib/types'
 import { customSearch } from '@/lib/search'
 import { ArrowLeft, Search, ShoppingCart, Plus, Minus, Loader2, X, ScanLine } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import CartDrawer from '@/components/CartDrawer'
+import QuickViewDrawer from '@/components/QuickViewDrawer'
 
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false })
 
 function fmt(n: number) { return '$' + (n || 0).toFixed(2) }
+
+interface Variacion {
+  nombre: string;
+  precio: number;
+  emoji: string;
+}
+
+function obtenerVariaciones(p: Producto): Variacion[] {
+  const c = (p.categoria || '').toLowerCase()
+  const desc = (p.descripcion || '').toLowerCase()
+  const bp = p.precio_publico
+
+  if (c.includes('lacte') || c.includes('leche')) {
+    return [
+      { nombre: 'Entera 🥛', precio: bp, emoji: '🥛' },
+      { nombre: 'Deslactosada 🥛', precio: bp + 0.10, emoji: '🥛✨' },
+      { nombre: 'Semidescremada 🥛', precio: bp + 0.05, emoji: '🍼' }
+    ]
+  }
+  if (c.includes('bebida') || c.includes('gaseosa') || desc.includes('cola')) {
+    return [
+      { nombre: 'Sabor Original 🥤', precio: bp, emoji: '🥤' },
+      { nombre: 'Zero Azúcar 🥤', precio: bp + 0.15, emoji: '🥤🖤' },
+      { nombre: 'Light 🥤', precio: bp + 0.10, emoji: '🥤' }
+    ]
+  }
+  if (c.includes('aceite')) {
+    return [
+      { nombre: 'Girasol 🌻', precio: bp, emoji: '🌻' },
+      { nombre: 'Oliva 🫒', precio: bp + 1.55, emoji: '🫒' },
+      { nombre: 'Soya 🌾', precio: Math.max(0.1, bp - 0.30), emoji: '🌾' }
+    ]
+  }
+  if (c.includes('arroz') || c.includes('grano')) {
+    return [
+      { nombre: 'Normal 🌾', precio: bp, emoji: '🌾' },
+      { nombre: 'Integral 🌾', precio: bp + 0.20, emoji: '🌾' },
+      { nombre: 'Extra Seleccionado 🌾', precio: bp + 0.40, emoji: '🌾' }
+    ]
+  }
+
+  return [
+    { nombre: 'Estándar 📦', precio: bp, emoji: CAT_EMOJI[p.categoria || ''] || '📦' }
+  ]
+}
 
 function ImagenProducto({ src, categoria, alt }: { src?: string | null; categoria: string; alt: string }) {
   const [err, setErr] = useState(false)
@@ -19,7 +65,7 @@ function ImagenProducto({ src, categoria, alt }: { src?: string | null; categori
   return <img src={src} alt={alt} onError={() => setErr(true)} className="w-full h-full object-contain p-1 pointer-events-none" />
 }
 
-function ProductCard({ p, tiendaId, tiendaNombre }: { p: Producto; tiendaId: string; tiendaNombre: string }) {
+function ProductCard({ p, tiendaId, tiendaNombre, onSelect }: { p: Producto; tiendaId: string; tiendaNombre: string; onSelect: (p: Producto) => void }) {
   const [qty, setQty] = useState(() => getCarrito().find(i => i.codigo === p.codigo)?.cantidad ?? 0)
 
   useEffect(() => {
@@ -40,7 +86,10 @@ function ProductCard({ p, tiendaId, tiendaNombre }: { p: Producto; tiendaId: str
 
   const agotado = p.stock <= 0
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm flex flex-col relative">
+    <div 
+      onClick={() => onSelect(p)}
+      className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm flex flex-col relative cursor-pointer"
+    >
       <div className="relative bg-gray-50 aspect-square flex items-center justify-center overflow-hidden">
         <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
         {agotado && (
@@ -84,10 +133,75 @@ function CategoriaContent() {
   const [escaner, setEscaner] = useState(false)
   const [visibles, setVisibles] = useState(60)
   const [cartOpen, setCartOpen] = useState(false)
+  const [n, setN] = useState(0)
+
+  // Estados para SKU selector
+  const [skuProduct, setSkuProduct] = useState<Producto | null>(null)
+  const [skuTiendaId, setSkuTiendaId] = useState('')
+  const [skuTiendaNombre, setSkuTiendaNombre] = useState('')
+  const [skuCoords, setSkuCoords] = useState<{ x: number; y: number } | null>(null)
+  const [skuQty, setSkuQty] = useState(1)
+  const [skuOption, setSkuOption] = useState<Variacion | null>(null)
+
+  // Estados para QuickViewDrawer
+  const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null)
+  const [activeList, setActiveList] = useState<Producto[]>([])
 
   const tabsRef = useRef<HTMLDivElement>(null)
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
+
+  // Animación del carrito
+  const triggerFlyAnimation = (startX: number, startY: number, emojiOrText: string) => {
+    const cartButton = document.querySelector('[data-cart-button-tipti]')
+    if (!cartButton) return
+    const cartRect = cartButton.getBoundingClientRect()
+    const endX = cartRect.left + cartRect.width / 2
+    const endY = cartRect.top + cartRect.height / 2
+
+    const element = document.createElement('div')
+    element.className = 'fixed z-[9999] pointer-events-none w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold shadow-lg text-lg transition-all duration-700 ease-out'
+    element.innerText = emojiOrText
+    element.style.left = `${startX - 16}px`
+    element.style.top = `${startY - 16}px`
+    document.body.appendChild(element)
+
+    element.getBoundingClientRect() // Reflow
+
+    element.style.transform = `translate(${endX - startX}px, ${endY - startY}px) scale(0.2)`
+    element.style.opacity = '0.3'
+
+    element.addEventListener('transitionend', () => {
+      element.remove()
+      cartButton.classList.add('scale-110')
+      setTimeout(() => cartButton.classList.remove('scale-110'), 200)
+    })
+  }
+
+  useEffect(() => {
+    const update = () => setN(getCarrito().reduce((s, i) => s + i.cantidad, 0))
+    update()
+    window.addEventListener('carrito-update', update)
+    return () => window.removeEventListener('carrito-update', update)
+  }, [])
+
+  // Escuchar evento para abrir selector de variación / cantidad
+  useEffect(() => {
+    const handleOpenSku = (e: Event) => {
+      const customEvent = e as CustomEvent
+      const { prod, clientX, clientY, tiendaId, tiendaNombre } = customEvent.detail
+      setSkuProduct(prod)
+      setSkuCoords({ x: clientX, y: clientY })
+      setSkuTiendaId(tiendaId)
+      setSkuTiendaNombre(tiendaNombre)
+      setSkuQty(1)
+      
+      const vars = obtenerVariaciones(prod)
+      setSkuOption(vars[0])
+    }
+    window.addEventListener('open-sku-selector', handleOpenSku)
+    return () => window.removeEventListener('open-sku-selector', handleOpenSku)
+  }, [])
 
   useEffect(() => {
     const abrirCart = () => setCartOpen(true)
@@ -165,6 +279,27 @@ function CategoriaContent() {
     }
   }
 
+  function openQuickView(p: Producto, list: Producto[]) {
+    setSelectedProduct(p)
+    setActiveList(list)
+  }
+
+  const nextProduct = () => {
+    if (!selectedProduct || activeList.length === 0) return
+    const idx = activeList.findIndex(p => p.codigo === selectedProduct.codigo)
+    if (idx !== -1 && idx < activeList.length - 1) {
+      setSelectedProduct(activeList[idx + 1])
+    }
+  }
+
+  const prevProduct = () => {
+    if (!selectedProduct || activeList.length === 0) return
+    const idx = activeList.findIndex(p => p.codigo === selectedProduct.codigo)
+    if (idx > 0) {
+      setSelectedProduct(activeList[idx - 1])
+    }
+  }
+
   if (cargando) return (
     <div className="min-h-dvh bg-white flex items-center justify-center">
       <Loader2 size={32} className="animate-spin text-green-500" />
@@ -215,9 +350,16 @@ function CategoriaContent() {
               title="Escanear código de barras">
               <ScanLine size={19} />
             </button>
-            <button onClick={() => setCartOpen(true)}
-              className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-gray-600 hover:text-green-600">
+            <button 
+              data-cart-button-tipti
+              onClick={() => setCartOpen(true)}
+              className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-gray-600 hover:text-green-600 relative">
               <ShoppingCart size={19} />
+              {n > 0 && (
+                <span className="absolute top-1 right-1 w-4.5 h-4.5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] font-black leading-none shadow-sm">
+                  {n}
+                </span>
+              )}
             </button>
           </div>
         )}
@@ -261,7 +403,13 @@ function CategoriaContent() {
           <>
             <div className="grid grid-cols-2 gap-2">
               {filtrados.slice(0, visibles).map(p => (
-                <ProductCard key={p.codigo} p={p} tiendaId={id} tiendaNombre={tienda?.nombre || ''} />
+                <ProductCard 
+                  key={p.codigo} 
+                  p={p} 
+                  tiendaId={id} 
+                  tiendaNombre={tienda?.nombre || ''} 
+                  onSelect={(prod) => openQuickView(prod, filtrados)}
+                />
               ))}
             </div>
             {filtrados.length > visibles && (
@@ -273,6 +421,129 @@ function CategoriaContent() {
           </>
         )}
       </div>
+
+      {/* QuickViewDrawer */}
+      {(() => {
+        const idx = activeList.findIndex(p => p.codigo === selectedProduct?.codigo)
+        const prevProd = idx > 0 ? activeList[idx - 1] : null
+        const nextProd = (idx !== -1 && idx < activeList.length - 1) ? activeList[idx + 1] : null
+        return (
+          <QuickViewDrawer
+            producto={selectedProduct}
+            prevProducto={prevProd}
+            nextProducto={nextProd}
+            isOpen={selectedProduct !== null}
+            onClose={() => { setSelectedProduct(null); setActiveList([]); }}
+            onNext={nextProduct}
+            onPrev={prevProduct}
+          />
+        )
+      })()}
+
+      {/* SKU Selector Bottom Sheet */}
+      {skuProduct && (
+        <>
+          <div 
+            onClick={() => setSkuProduct(null)}
+            className="fixed inset-0 bg-black/60 z-[190] animate-fade-in"
+          />
+          <div className="fixed inset-x-0 bottom-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-md w-full bg-white rounded-t-[30px] md:rounded-3xl shadow-2xl z-[200] p-6 animate-slide-in-up md:animate-fade-in flex flex-col font-sans select-none border-t md:border border-gray-100">
+            <div 
+              onClick={() => setSkuProduct(null)}
+              className="md:hidden w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4 cursor-pointer"
+            />
+            <div className="flex gap-4">
+              <div className="w-16 h-16 bg-gray-50 rounded-xl flex items-center justify-center shadow-inner overflow-hidden shrink-0 text-3xl transition-all duration-200">
+                {skuOption ? (
+                  <span className="animate-fade-in">{skuOption.emoji}</span>
+                ) : (
+                  <ImagenProducto src={skuProduct.imagen_url} categoria={skuProduct.categoria} alt={skuProduct.descripcion} />
+                )}
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col justify-between">
+                <h3 className="font-extrabold text-gray-800 text-[13px] leading-snug line-clamp-2">{skuProduct.descripcion}</h3>
+                <div>
+                  <span className="text-[10px] text-gray-400 block">{skuProduct.marca || 'Marca seleccionada'}</span>
+                  <span className="font-black text-green-700 text-base transition-all duration-150">
+                    {fmt(skuOption ? skuOption.precio : skuProduct.precio_publico)}
+                  </span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSkuProduct(null)}
+                className="text-gray-400 hover:text-gray-600 shrink-0 self-start p-1"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="mt-5">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block mb-2">Selecciona variedad:</span>
+              <div className="flex flex-wrap gap-2">
+                {obtenerVariaciones(skuProduct).map(opt => {
+                  const esActiva = skuOption && skuOption.nombre === opt.nombre
+                  return (
+                    <button
+                      key={opt.nombre}
+                      onClick={() => setSkuOption(opt)}
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border cursor-pointer
+                        ${esActiva 
+                          ? 'bg-green-50 border-green-600 text-green-700 font-extrabold shadow-inner' 
+                          : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+                    >
+                      {opt.nombre}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-4">
+              <span className="text-xs font-bold text-gray-500">Cantidad a agregar:</span>
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-0.5 shrink-0">
+                <button 
+                  onClick={() => setSkuQty(q => Math.max(1, q - 1))}
+                  className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-700 font-extrabold active:scale-90 transition text-xs"
+                >
+                  -
+                </button>
+                <span className="text-xs font-black text-gray-800 min-w-[20px] text-center">{skuQty}</span>
+                <button 
+                  onClick={() => setSkuQty(q => q + 1)}
+                  className="w-7 h-7 rounded-lg bg-green-600 flex items-center justify-center text-white font-extrabold active:scale-90 transition text-xs"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                const precioFinal = skuOption ? skuOption.precio : skuProduct.precio_publico
+                const descFinal = `${skuProduct.descripcion} [${skuOption ? skuOption.nombre : ''}]`
+
+                agregarItem({
+                  ...skuProduct,
+                  precio_publico: precioFinal,
+                  tienda_id: skuTiendaId,
+                  tienda_nombre: skuTiendaNombre,
+                  descripcion: descFinal
+                }, skuQty)
+
+                if (skuCoords) {
+                  const emoji = skuOption ? skuOption.emoji : (CAT_EMOJI[skuProduct.categoria || ''] || '📦')
+                  triggerFlyAnimation(skuCoords.x, skuCoords.y, emoji)
+                }
+
+                setSkuProduct(null)
+              }}
+              className="mt-6 w-full py-3 bg-green-600 hover:bg-green-700 text-white font-extrabold text-xs rounded-2xl active:scale-[0.98] transition cursor-pointer border-none flex items-center justify-center gap-2 shadow-md"
+            >
+              Confirmar y Agregar
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }
