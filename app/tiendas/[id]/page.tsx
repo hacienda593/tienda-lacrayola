@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState, useMemo, useRef, Suspense } from 'react'
+import React, { useEffect, useState, useMemo, useRef, useCallback, Suspense } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
@@ -414,6 +414,10 @@ function TiendaContent() {
   const [infoOpen, setInfoOpen] = useState(false)
   const [localCatOpen, setLocalCatOpen] = useState(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const tabsMobileRef = useRef<HTMLDivElement>(null)
+  const touchStartXMobile = useRef(0)
+  const touchStartYMobile = useRef(0)
+  const [buscandoEnTienda, setBuscandoEnTienda] = useState(false)
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
@@ -761,6 +765,41 @@ function TiendaContent() {
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], 'es', { sensitivity: 'base' }))
   }, [base, activeCat])
 
+  // Tabs ordenados: ['', ...subcats] para swipe
+  const allSubsMobile = useMemo(() => ['', ...subcats.map(([s]) => s)], [subcats])
+  const activeSubIndexMobile = allSubsMobile.indexOf(sub || '')
+
+  // Auto-scroll del tab activo al centro
+  const scrollMobileTabToView = useCallback((idx: number) => {
+    if (!tabsMobileRef.current) return
+    const tabs = tabsMobileRef.current.querySelectorAll('[data-tab-mobile]')
+    const el = tabs[idx] as HTMLElement | undefined
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+  }, [])
+
+  function cambiarSubMobile(nuevaSub: string, idx: number) {
+    updateFiltersUrl({ sub: nuevaSub })
+    setTimeout(() => scrollMobileTabToView(idx), 60)
+  }
+
+  function onTouchStartMobile(e: React.TouchEvent) {
+    touchStartXMobile.current = e.touches[0].clientX
+    touchStartYMobile.current = e.touches[0].clientY
+  }
+
+  function onTouchEndMobile(e: React.TouchEvent) {
+    if (!cat) return
+    const dx = e.changedTouches[0].clientX - touchStartXMobile.current
+    const dy = e.changedTouches[0].clientY - touchStartYMobile.current
+    if (Math.abs(dx) < 45 || Math.abs(dy) > Math.abs(dx) * 0.8) return
+    const currentIdx = activeSubIndexMobile < 0 ? 0 : activeSubIndexMobile
+    if (dx < 0 && currentIdx < allSubsMobile.length - 1) {
+      cambiarSubMobile(allSubsMobile[currentIdx + 1], currentIdx + 1)
+    } else if (dx > 0 && currentIdx > 0) {
+      cambiarSubMobile(allSubsMobile[currentIdx - 1], currentIdx - 1)
+    }
+  }
+
   // Marcas dinamicas contextuales al pasillo y la subcategoria activa (estilo sub-subcategorias)
   const marcas = useMemo(() => {
     const map = new Map<string, number>()
@@ -899,6 +938,91 @@ function TiendaContent() {
         </div>
       )}
 
+      {/* ── HEADER MÓVIL DINÁMICO estilo Tipti (solo cuando hay categoría activa) ── */}
+      {cat && (
+        <div className="md:hidden shrink-0 bg-white border-b border-gray-100 sticky top-0 z-30">
+          {buscandoEnTienda ? (
+            /* Modo búsqueda dentro de la categoría */
+            <div className="flex items-center gap-2 px-3 py-2.5">
+              <button
+                onClick={() => { setBuscandoEnTienda(false); updateFiltersUrl({ q: '' }) }}
+                className="p-1.5 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition"
+              >
+                <ArrowLeft size={20} className="text-gray-700" />
+              </button>
+              <div className="flex-1 relative">
+                <input
+                  value={q}
+                  onChange={e => updateFiltersUrl({ q: e.target.value })}
+                  placeholder={`Buscar en ${cat}...`}
+                  autoFocus
+                  className="w-full bg-gray-100 rounded-xl pl-3 pr-8 py-2 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 transition border-none"
+                />
+                {q && (
+                  <button onClick={() => updateFiltersUrl({ q: '' })} className="absolute right-3 top-1/2 -translate-y-1/2 border-none bg-transparent cursor-pointer text-gray-400">
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Modo navegación: ← [Emoji + NombreCat] 🔍 🛒 */
+            <div className="flex items-center gap-1 px-2 py-2.5">
+              <button
+                onClick={() => updateFiltersUrl({ cat: '', sub: '', marca: '', q: '' })}
+                className="p-1.5 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition"
+              >
+                <ArrowLeft size={20} className="text-gray-700" />
+              </button>
+              <h1 className="flex-1 text-sm font-extrabold text-gray-800 text-center truncate px-1">
+                {CAT_EMOJI[cat] || '📦'} {cat}
+              </h1>
+              <button
+                onClick={() => setBuscandoEnTienda(true)}
+                className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-gray-600 hover:text-green-600"
+              >
+                <Search size={19} />
+              </button>
+              <button
+                onClick={() => window.dispatchEvent(new Event('open-cart-global'))}
+                className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-gray-600 hover:text-green-600"
+              >
+                <ShoppingCart size={19} />
+              </button>
+            </div>
+          )}
+
+          {/* Segunda fila: tabs de subcategorías con indicador estilo Tipti */}
+          {!buscandoEnTienda && subcats.length > 0 && (
+            <div
+              ref={tabsMobileRef}
+              className="overflow-x-auto scrollbar-hide flex border-t border-gray-100"
+            >
+              <button
+                data-tab-mobile
+                onClick={() => cambiarSubMobile('', 0)}
+                className={`shrink-0 px-4 py-2.5 text-[11px] font-extrabold relative whitespace-nowrap border-none bg-transparent cursor-pointer transition-colors
+                  ${!sub ? 'text-green-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Todos los productos
+                {!sub && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-green-600 rounded-t-full" />}
+              </button>
+              {subcats.map(([s], idx) => (
+                <button
+                  key={s}
+                  data-tab-mobile
+                  onClick={() => cambiarSubMobile(s, idx + 1)}
+                  className={`shrink-0 px-4 py-2.5 text-[11px] font-extrabold relative whitespace-nowrap border-none bg-transparent cursor-pointer transition-colors
+                    ${sub === s ? 'text-green-600' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  {s}
+                  {sub === s && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-green-600 rounded-t-full" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
 
       <div className="flex-1 flex flex-row md:gap-6 md:items-start overflow-hidden">
@@ -1001,8 +1125,8 @@ function TiendaContent() {
         {/* ── COLUMNA DERECHA / CONTENIDO PRINCIPAL ── */}
         <div className="flex-1 min-w-0 bg-white md:bg-transparent">
           
-          {/* Subcategorías horizontal (Burbujas en el tope derecho) - SOLO MÓVIL */}
-          {cat && subcats.length > 0 && (
+          {/* Subcategorías horizontal chips - SOLO MÓVIL - ocultar cuando hay tabs Tipti activos */}
+          {cat && subcats.length > 0 && false && (
             <div className="md:hidden p-3 pb-1 border-b border-gray-50 shrink-0 bg-white z-10">
               <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-hide">
                 <button
@@ -1037,10 +1161,14 @@ function TiendaContent() {
 
 
           {/* Listado de Productos (Scrollable vertical independiente en móvil) */}
-          <div className={esBusquedaOMovilPasillo 
-            ? 'flex-1 md:h-auto overflow-y-auto md:overflow-visible p-3 md:p-0 space-y-4 bg-gray-50/30' 
-            : 'space-y-6 md:p-0'
-          }>
+          <div
+            className={esBusquedaOMovilPasillo 
+              ? 'flex-1 md:h-auto overflow-y-auto md:overflow-visible p-3 md:p-0 space-y-4 bg-gray-50/30' 
+              : 'space-y-6 md:p-0'
+            }
+            onTouchStart={onTouchStartMobile}
+            onTouchEnd={onTouchEndMobile}
+          >
 
 
           {/* Filtros activos */}
