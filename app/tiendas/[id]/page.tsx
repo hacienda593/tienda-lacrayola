@@ -477,7 +477,7 @@ function TiendaContent() {
 
   // Flying cart animation
   const triggerFlyAnimation = (startX: number, startY: number, emojiOrText: string) => {
-    const cartButton = document.getElementById('global-cart-btn')
+    const cartButton = document.getElementById('mobile-cart-btn') || document.getElementById('global-cart-btn')
     if (!cartButton) return
     const cartRect = cartButton.getBoundingClientRect()
     const endX = cartRect.left + cartRect.width / 2

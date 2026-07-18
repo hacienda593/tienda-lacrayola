@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useSearchParams, useRouter } from 'next/navigation'
-import { Home, Store, ShoppingCart, ClipboardList, Menu, LayoutGrid, Sparkles, ArrowLeft, Package } from 'lucide-react'
+import { Home, Store, ShoppingCart, ClipboardList, Menu, LayoutGrid, Sparkles, ArrowLeft, Package, Search } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { getCarrito } from '@/lib/carrito'
 import { supabase } from '@/lib/supabase'
@@ -94,60 +94,65 @@ function NavBarMobileInner() {
   // 5. Definir la botonera líquida según el contexto
   // 5. Definir la botonera líquida según el contexto
   if (esTienda) {
-    // ── Contexto Tienda Aliada (o búsqueda dentro de tienda): Enfoque en recolección rápida, favoritos y pasillos dinámicos ──
-    const nombreCorto = getNombreCorto(tiendaNombre)
+    // ── Contexto Tienda Aliada: Navegación interna (Inicio, Buscar/Pasillos, Carrito, Lista, Salir) ──
+    const hasAislesActive = !!(activeCat || activeSub || activeMarca || activeQ || searchParams.get('view') === 'pasillos')
+    
     return (
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/85 backdrop-blur-xl border-t border-gray-200/50 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl will-change-transform">
         <div className="flex h-16 items-center px-2">
           
-          {/* Botón 1: Inicio */}
-          <Link href="/" className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100">
-            <Home size={20} className="stroke-[1.8]" />
+          {/* Botón 1: Inicio Tienda */}
+          <button 
+            onClick={() => router.push(`/tiendas/${activeTId}`)}
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent
+              ${!hasAislesActive ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
+          >
+            <Home size={20} className={!hasAislesActive ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
             <span className="text-[9px] font-bold">Inicio</span>
-          </Link>
+          </button>
 
-          {/* Botón 2: Lista */}
-          <Link 
-            href="/favoritos" 
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100
-              ${pathname === '/favoritos' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
+          {/* Botón 2: Buscar / Pasillos (Lupa - Activa doble columna) */}
+          <button 
+            onClick={() => router.push(`/tiendas/${activeTId}?view=pasillos`)}
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent
+              ${hasAislesActive ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
           >
-            <ClipboardList size={20} className={pathname === '/favoritos' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
+            <Search size={20} className={hasAislesActive ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
+            <span className="text-[9px] font-bold">Buscar</span>
+          </button>
+
+          {/* Botón 3: Carrito (Con globito animable y detector de vuelo) */}
+          <button 
+            id="mobile-cart-btn"
+            onClick={openCart}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 relative cursor-pointer border-none bg-transparent text-gray-400 hover:text-green-600"
+          >
+            <ShoppingCart size={20} className="stroke-[1.8]" />
+            <span className="text-[9px] font-bold">Carrito</span>
+            {n > 0 && (
+              <span className="absolute top-1.5 right-4 bg-red-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                {n}
+              </span>
+            )}
+          </button>
+
+          {/* Botón 4: Lista Favoritos */}
+          <button 
+            onClick={() => router.push('/favoritos')}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent text-gray-400 hover:text-green-600"
+          >
+            <ClipboardList size={20} className="stroke-[1.8]" />
             <span className="text-[9px] font-bold">Lista</span>
-          </Link>
+          </button>
 
-          {/* Botón 3: PASILLOS (CENTRAL HERO FLOTANTE CON NOMBRE DE TIENDA) */}
-          <div className="flex-1 flex flex-col items-center justify-center relative h-full">
-            <button
-              onClick={() => window.dispatchEvent(new Event('open-categorias-global'))}
-              className="w-14 h-14 bg-gradient-to-br from-green-600 to-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-green-500/30 border-4 border-white absolute -top-5 active:scale-90 transition-transform duration-150"
-            >
-              <LayoutGrid size={22} className="stroke-[2.5]" />
-            </button>
-            <span className="text-[9px] font-extrabold text-green-600 mt-7 uppercase tracking-wider text-center px-1 truncate max-w-full">
-              Pasillos {nombreCorto}
-            </span>
-          </div>
-
-          {/* Botón 4: Comercios */}
-          <Link 
-            href="/tiendas" 
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100
-              ${pathname === '/tiendas' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
+          {/* Botón 5: Volver al Inicio General de Tienlo */}
+          <button 
+            onClick={() => router.push('/')}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent text-gray-400 hover:text-green-600"
           >
-            <Store size={20} className={pathname === '/tiendas' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
-            <span className="text-[9px] font-bold">Comercios</span>
-          </Link>
-
-          {/* Botón 5: Pedidos */}
-          <Link 
-            href="/pedidos" 
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100
-              ${pathname === '/pedidos' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
-          >
-            <Package size={20} className={pathname === '/pedidos' ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
-            <span className="text-[9px] font-bold">Pedidos</span>
-          </Link>
+            <Store size={20} className="stroke-[1.8]" />
+            <span className="text-[9px] font-bold">Inicio Web</span>
+          </button>
 
         </div>
       </nav>
