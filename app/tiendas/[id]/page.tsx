@@ -418,6 +418,9 @@ function TiendaContent() {
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     setMounted(true)
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0)
+    }
   }, [])
   const esBusquedaOMovilPasillo = mounted && searchParams?.get('view') === 'pasillos'
 

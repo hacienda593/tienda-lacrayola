@@ -312,7 +312,7 @@ function CategoriaContent() {
       {escaner && <BarcodeScanner onDetected={onBarcodeDetected} onClose={() => setEscaner(false)} />}
 
       {/* ── HEADER ESTILO TIPTI ── */}
-      <div className="shrink-0 bg-white border-b border-gray-100 z-20">
+      <div className="fixed top-0 left-0 right-0 bg-white border-b border-gray-100 z-30 shadow-xs">
         {buscando ? (
           <div className="flex items-center gap-2 px-3 py-2.5">
             <button onClick={() => { setBuscando(false); setQ('') }}
@@ -393,8 +393,12 @@ function CategoriaContent() {
       </div>
 
       {/* ── GRID DE PRODUCTOS (swipeable entre subcats) ── */}
-      <div className="flex-1 overflow-y-auto overscroll-y-contain p-2 pb-24"
-        onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div 
+        className={`flex-1 overflow-y-auto overscroll-y-contain p-2 pb-24 ${
+          !buscando && subcats.length > 0 ? 'pt-[88px]' : 'pt-[50px]'
+        }`}
+        onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
+      >
         {filtrados.length === 0 ? (
           <div className="text-center py-20 text-gray-400 text-xs italic">
             {q.length >= 2 ? `Sin resultados para "${q}"` : 'Sin productos en esta sección'}
