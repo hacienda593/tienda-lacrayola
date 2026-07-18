@@ -69,6 +69,7 @@ function TopBar() {
 }
 
 function HeaderStoreCategories() {
+  return null
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()

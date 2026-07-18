@@ -687,7 +687,7 @@ function TiendaContent() {
   )
 
   return (
-    <div className="max-w-5xl mx-auto px-4 pt-3 pb-5 md:py-5 space-y-5">
+    <div className="max-w-5xl mx-auto md:px-4 md:py-5 md:space-y-5 h-[calc(100dvh-105px)] md:h-auto flex flex-col overflow-hidden md:overflow-visible bg-white md:bg-transparent">
 
       {/* Header tienda (Sticky en móvil) */}
       <div className="hidden md:flex sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 py-3.5 -mx-4 px-4 items-center justify-between gap-3 shadow-sm md:shadow-none md:border-none md:relative md:top-auto md:z-auto md:bg-transparent md:py-0 md:mx-0 md:px-0">
@@ -771,9 +771,46 @@ function TiendaContent() {
 
 
 
-      <div className="flex flex-col md:flex-row gap-6 md:items-start">
-        {/* ── SIDEBAR filtros (desktop) ── */}
-        <aside className="hidden md:block w-52 shrink-0 space-y-5 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+      <div className="flex-1 flex flex-row md:gap-6 md:items-start overflow-hidden">
+        {/* ── SIDEBAR pasillos (móvil y desktop) ── */}
+        <aside className="w-20 md:w-52 shrink-0 h-full md:h-auto bg-gray-50 md:bg-white border-r md:border border-gray-100 md:rounded-2xl p-0 md:p-4 md:shadow-sm overflow-y-auto flex flex-col select-none">
+          {/* MÓVIL: Sidebar vertical de pasillos */}
+          <div className="md:hidden flex flex-col text-center">
+            {/* Todos / Inicio */}
+            <button
+              onClick={() => updateFiltersUrl({ cat: '', sub: '', marca: '' })}
+              className={`py-3.5 px-1 border-l-4 cursor-pointer relative active:bg-gray-100 flex flex-col items-center gap-1.5 transition-all
+                ${!cat 
+                  ? 'bg-white border-green-600 font-extrabold text-green-700 shadow-xs' 
+                  : 'border-transparent text-gray-500 font-medium'}`}
+            >
+              <span className="text-base">🏪</span>
+              <span className="text-[9px] leading-tight font-extrabold">Todos</span>
+              {!cat && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-green-600 rounded-l-md" />}
+            </button>
+
+            {/* Lista de Categorías de la Tienda */}
+            {cats.map(([c, count]) => {
+              const esActiva = cat === c
+              return (
+                <button
+                  key={c}
+                  onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
+                  className={`py-3.5 px-1 border-l-4 cursor-pointer relative active:bg-gray-100 flex flex-col items-center gap-1.5 transition-all
+                    ${esActiva 
+                      ? 'bg-white border-green-600 font-extrabold text-green-700 shadow-xs' 
+                      : 'border-transparent text-gray-500 font-medium'}`}
+                >
+                  <span className="text-base">{CAT_EMOJI[c] || '📦'}</span>
+                  <span className="text-[9px] leading-tight font-extrabold break-words max-w-[72px]">{c}</span>
+                  {esActiva && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-green-600 rounded-l-md" />}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* DESKTOP: El aside tradicional */}
+          <div className="hidden md:block space-y-5">
           {!cat ? (
             // Nivel 1: Lista de Categorías
             <div className="space-y-1">
@@ -863,10 +900,48 @@ function TiendaContent() {
               )}
             </div>
           )}
+          </div>
         </aside>
 
-        {/* ── CONTENIDO PRINCIPAL ── */}
-        <div className="flex-1 min-w-0 space-y-4">
+        {/* ── COLUMNA DERECHA / CONTENIDO PRINCIPAL ── */}
+        <div className="flex-1 min-w-0 h-full overflow-hidden flex flex-col md:block bg-white md:bg-transparent">
+          
+          {/* Subcategorías horizontal (Burbujas en el tope derecho) - SOLO MÓVIL */}
+          {cat && subcats.length > 0 && (
+            <div className="md:hidden p-3 pb-1 border-b border-gray-50 shrink-0 bg-white z-10">
+              <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-hide">
+                <button
+                  onClick={() => updateFiltersUrl({ sub: '' })}
+                  className={`px-3 py-1.5 rounded-full text-[10px] font-bold shrink-0 transition active:scale-95 cursor-pointer
+                    ${!sub 
+                      ? 'bg-green-600 text-white shadow-sm shadow-green-600/10' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                  Todo 🛍️
+                </button>
+                {[...subcats].sort((a,b) => a[0].localeCompare(b[0])).map(([s, count]) => {
+                  const esActiva = sub === s
+                  const emoji = obtenerEmojiSubcategoria(s, cat)
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => updateFiltersUrl({ sub: s })}
+                      className={`px-3 py-1.5 rounded-full text-[10px] font-bold shrink-0 transition active:scale-95 cursor-pointer flex items-center gap-1
+                        ${esActiva 
+                          ? 'bg-green-600 text-white shadow-sm shadow-green-600/10' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                    >
+                      <span>{emoji}</span>
+                      <span>{s}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Listado de Productos (Scrollable vertical independiente en móvil) */}
+          <div className="flex-1 md:h-auto overflow-y-auto md:overflow-visible p-3 md:p-0 space-y-4">
 
 
           {/* Filtros activos */}
@@ -1125,6 +1200,7 @@ function TiendaContent() {
               )}
             </>
           )}
+          </div>
         </div>
       </div>
 
