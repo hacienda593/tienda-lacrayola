@@ -416,33 +416,63 @@ function TiendaContent() {
   const sentinelRef = useRef<HTMLDivElement>(null)
 
   // SKU Bottom Sheet States
+  interface Variacion {
+    nombre: string;
+    precio: number;
+    emoji: string;
+  }
+
   const [skuProduct, setSkuProduct] = useState<Producto | null>(null)
   const [skuTiendaId, setSkuTiendaId] = useState('')
   const [skuTiendaNombre, setSkuTiendaNombre] = useState('')
   const [skuCoords, setSkuCoords] = useState<{ x: number; y: number } | null>(null)
   const [skuQty, setSkuQty] = useState(1)
-  const [skuOption, setSkuOption] = useState('')
+  const [skuOption, setSkuOption] = useState<Variacion | null>(null)
 
   // Helper for dynamic variations based on category
-  function obtenerVariaciones(p: Producto): string[] {
+  function obtenerVariaciones(p: Producto): Variacion[] {
     const c = (p.categoria || '').toLowerCase()
     const desc = (p.descripcion || '').toLowerCase()
+    const bp = p.precio_publico
+
     if (c.includes('lacte') || c.includes('leche')) {
-      return ['Entera 🥛', 'Deslactosada 🥛', 'Semidescremada 🥛']
+      return [
+        { nombre: 'Entera 🥛', precio: bp, emoji: '🥛' },
+        { nombre: 'Deslactosada 🥛', precio: bp + 0.10, emoji: '🥛✨' },
+        { nombre: 'Semidescremada 🥛', precio: bp + 0.05, emoji: '🍼' }
+      ]
     }
     if (c.includes('bebida') || c.includes('gaseosa') || desc.includes('cola')) {
-      return ['Sabor Original 🥤', 'Zero Azúcar 🥤', 'Light 🥤']
+      return [
+        { nombre: 'Sabor Original 🥤', precio: bp, emoji: '🥤' },
+        { nombre: 'Zero Azúcar 🥤', precio: bp + 0.15, emoji: '🥤🖤' },
+        { nombre: 'Light 🥤', precio: bp + 0.10, emoji: '🥤' }
+      ]
     }
     if (c.includes('aceite')) {
-      return ['Girasol 🌻', 'Oliva 🫒', 'Soya 🌾']
+      return [
+        { nombre: 'Girasol 🌻', precio: bp, emoji: '🌻' },
+        { nombre: 'Oliva 🫒', precio: bp + 1.55, emoji: '🫒' },
+        { nombre: 'Soya 🌾', precio: Math.max(0.1, bp - 0.30), emoji: '🌾' }
+      ]
     }
     if (c.includes('arroz') || c.includes('grano')) {
-      return ['Normal', 'Integral 🌾', 'Extra Seleccionado 🌾']
+      return [
+        { nombre: 'Normal 🌾', precio: bp, emoji: '🌾' },
+        { nombre: 'Integral 🌾', precio: bp + 0.20, emoji: '🌾' },
+        { nombre: 'Extra Seleccionado 🌾', precio: bp + 0.40, emoji: '🌾' }
+      ]
     }
     if (c.includes('ferre') || c.includes('herra')) {
-      return ['Estándar 🔧', 'Profesional ⚙️']
+      return [
+        { nombre: 'Estándar 🔧', precio: bp, emoji: '🔧' },
+        { nombre: 'Profesional ⚙️', precio: bp + 1.20, emoji: '⚙️' }
+      ]
     }
-    return ['Estándar', 'Premium ✨']
+    return [
+      { nombre: 'Estándar 📦', precio: bp, emoji: '📦' },
+      { nombre: 'Premium ✨', precio: bp + 0.50, emoji: '✨' }
+    ]
   }
 
   // Flying cart animation
@@ -1349,14 +1379,20 @@ function TiendaContent() {
             
             {/* Ficha básica del producto */}
             <div className="flex gap-4">
-              <div className="w-16 h-16 bg-gray-50 rounded-xl flex items-center justify-center shadow-inner overflow-hidden shrink-0">
-                <ImagenProducto src={skuProduct.imagen_url} categoria={skuProduct.categoria} alt={skuProduct.descripcion} descripcion={skuProduct.descripcion} />
+              <div className="w-16 h-16 bg-gray-50 rounded-xl flex items-center justify-center shadow-inner overflow-hidden shrink-0 text-3xl transition-all duration-200">
+                {skuOption ? (
+                  <span className="animate-fade-in">{skuOption.emoji}</span>
+                ) : (
+                  <ImagenProducto src={skuProduct.imagen_url} categoria={skuProduct.categoria} alt={skuProduct.descripcion} descripcion={skuProduct.descripcion} />
+                )}
               </div>
               <div className="flex-1 min-w-0 flex flex-col justify-between">
                 <h3 className="font-extrabold text-gray-800 text-[13px] leading-snug line-clamp-2">{skuProduct.descripcion}</h3>
                 <div>
                   <span className="text-[10px] text-gray-400 block">{skuProduct.marca || 'Marca seleccionada'}</span>
-                  <span className="font-black text-green-700 text-base">{fmt(skuProduct.precio_publico)}</span>
+                  <span className="font-black text-green-700 text-base transition-all duration-150">
+                    {fmt(skuOption ? skuOption.precio : skuProduct.precio_publico)}
+                  </span>
                 </div>
               </div>
               <button 
@@ -1372,17 +1408,17 @@ function TiendaContent() {
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block mb-2">Selecciona variedad:</span>
               <div className="flex flex-wrap gap-2">
                 {obtenerVariaciones(skuProduct).map(opt => {
-                  const esActiva = skuOption === opt
+                  const esActiva = skuOption && skuOption.nombre === opt.nombre
                   return (
                     <button
-                      key={opt}
+                      key={opt.nombre}
                       onClick={() => setSkuOption(opt)}
                       className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border cursor-pointer
                         ${esActiva 
-                          ? 'bg-green-50 border-green-600 text-green-700 font-extrabold' 
+                          ? 'bg-green-50 border-green-600 text-green-700 font-extrabold shadow-inner' 
                           : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
                     >
-                      {opt}
+                      {opt.nombre}
                     </button>
                   )
                 })}
@@ -1412,18 +1448,21 @@ function TiendaContent() {
             {/* Botón de Confirmación */}
             <button
               onClick={() => {
-                // Agregar al carrito
+                // Agregar al carrito con precio y descripción de la variante
+                const precioFinal = skuOption ? skuOption.precio : skuProduct.precio_publico
+                const descFinal = `${skuProduct.descripcion} [${skuOption ? skuOption.nombre : ''}]`
+
                 agregarItem({
                   ...skuProduct,
-                  precio_publico: skuProduct.precio_publico,
+                  precio_publico: precioFinal,
                   tienda_id: skuTiendaId,
                   tienda_nombre: skuTiendaNombre,
-                  descripcion: `${skuProduct.descripcion} [${skuOption}]`
+                  descripcion: descFinal
                 }, skuQty)
 
                 // Lanzar animación de vuelo
                 if (skuCoords) {
-                  const emoji = CAT_EMOJI[skuProduct.categoria || ''] || '📦'
+                  const emoji = skuOption ? skuOption.emoji : (CAT_EMOJI[skuProduct.categoria || ''] || '📦')
                   triggerFlyAnimation(skuCoords.x, skuCoords.y, emoji)
                 }
 
