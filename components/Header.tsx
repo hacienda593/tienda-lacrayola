@@ -69,10 +69,11 @@ function TopBar() {
 }
 
 function HeaderStoreCategories() {
-  return null
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()
+
+  if (searchParams.get('view') === 'pasillos') return null
 
   const activeTId = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
     ? pathname.split('/')[2]

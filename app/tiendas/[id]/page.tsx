@@ -798,7 +798,7 @@ function TiendaContent() {
     </div>
   )
 
-  const esBusquedaOMovilPasillo = !!(cat || q || sub || marca)
+  const esBusquedaOMovilPasillo = searchParams.get('view') === 'pasillos'
 
   return (
     <div className={`max-w-5xl mx-auto md:px-4 md:py-5 md:space-y-5 md:h-auto flex flex-col md:overflow-visible bg-white md:bg-transparent
