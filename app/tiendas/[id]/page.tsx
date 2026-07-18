@@ -639,6 +639,13 @@ function TiendaContent() {
     setVisibles(40)
   }, [searchParamsStr])
 
+  // Redireccionar parámetro viejo de view=pasillos a la nueva página dedicada
+  useEffect(() => {
+    if (searchParams?.get('view') === 'pasillos') {
+      router.replace(`/tiendas/${id}/buscar`)
+    }
+  }, [searchParams, id, router])
+
   useEffect(() => {
     async function cargar() {
       const { data: t } = await supabase.from('ol_tiendas').select('*').eq('id', id).single()
