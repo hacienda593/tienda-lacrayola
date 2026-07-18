@@ -94,9 +94,10 @@ function NavBarMobileInner() {
   // 5. Definir la botonera líquida según el contexto
   // 5. Definir la botonera líquida según el contexto
   if (esTienda) {
-    // ── Contexto Tienda Aliada: Navegación interna (Inicio, Buscar/Pasillos, Carrito, Lista, Salir) ──
+    // ── Contexto Tienda Aliada: Navegación interna (Inicio, Lista, Pasillos Central, Comercios, Pedidos) ──
     const hasAislesActive = !!(activeCat || activeSub || activeMarca || activeQ || searchParams.get('view') === 'pasillos')
-    
+    const nombreCorto = getNombreCorto(tiendaNombre)
+
     return (
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/85 backdrop-blur-xl border-t border-gray-200/50 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl will-change-transform">
         <div className="flex h-16 items-center px-2">
@@ -111,32 +112,7 @@ function NavBarMobileInner() {
             <span className="text-[9px] font-bold">Inicio</span>
           </button>
 
-          {/* Botón 2: Buscar / Pasillos (Lupa - Activa doble columna) */}
-          <button 
-            onClick={() => router.push(`/tiendas/${activeTId}?view=pasillos`)}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent
-              ${hasAislesActive ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
-          >
-            <Search size={20} className={hasAislesActive ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
-            <span className="text-[9px] font-bold">Buscar</span>
-          </button>
-
-          {/* Botón 3: Carrito (Con globito animable y detector de vuelo) */}
-          <button 
-            id="mobile-cart-btn"
-            onClick={openCart}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 relative cursor-pointer border-none bg-transparent text-gray-400 hover:text-green-600"
-          >
-            <ShoppingCart size={20} className="stroke-[1.8]" />
-            <span className="text-[9px] font-bold">Carrito</span>
-            {n > 0 && (
-              <span className="absolute top-1.5 right-4 bg-red-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center">
-                {n}
-              </span>
-            )}
-          </button>
-
-          {/* Botón 4: Lista Favoritos */}
+          {/* Botón 2: Lista Favoritos */}
           <button 
             onClick={() => router.push('/favoritos')}
             className="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent text-gray-400 hover:text-green-600"
@@ -145,13 +121,40 @@ function NavBarMobileInner() {
             <span className="text-[9px] font-bold">Lista</span>
           </button>
 
-          {/* Botón 5: Volver al Inicio General de Tienlo */}
+          {/* Botón 3: PASILLOS (CENTRAL HERO FLOTANTE - Activa doble columna) */}
+          <div className="flex-1 flex flex-col items-center justify-center relative h-full">
+            <button
+              onClick={() => router.push(`/tiendas/${activeTId}?view=pasillos`)}
+              className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-white absolute -top-5 active:scale-90 transition-all duration-150 cursor-pointer
+                ${hasAislesActive 
+                  ? 'bg-gradient-to-br from-green-600 to-emerald-500 shadow-green-500/30' 
+                  : 'bg-gradient-to-br from-gray-500 to-gray-400 shadow-gray-500/30'}`}
+            >
+              <LayoutGrid size={22} className="stroke-[2.5]" />
+            </button>
+            <span className={`text-[9px] font-extrabold mt-7 uppercase tracking-wider text-center px-1 truncate max-w-full
+              ${hasAislesActive ? 'text-green-600' : 'text-gray-500'}`}
+            >
+              Pasillos {nombreCorto}
+            </span>
+          </div>
+
+          {/* Botón 4: Comercios */}
           <button 
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/tiendas')}
             className="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent text-gray-400 hover:text-green-600"
           >
             <Store size={20} className="stroke-[1.8]" />
-            <span className="text-[9px] font-bold">Inicio Web</span>
+            <span className="text-[9px] font-bold">Comercios</span>
+          </button>
+
+          {/* Botón 5: Pedidos */}
+          <button 
+            onClick={() => router.push('/pedidos')}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent text-gray-400 hover:text-green-600"
+          >
+            <Package size={20} className="stroke-[1.8]" />
+            <span className="text-[9px] font-bold">Pedidos</span>
           </button>
 
         </div>
