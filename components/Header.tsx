@@ -303,7 +303,7 @@ function HeaderSearch() {
   const searchParamsStr = searchParams ? searchParams.toString() : ''
   // 3. Sincronizar el input local con la URL query param q
   useEffect(() => {
-    setQ(searchParams.get('q') || '')
+    setQ(searchParams?.get('q') || '')
   }, [searchParamsStr])
 
   // Limpiar el nombre para formato móvil compacto (ej: "Supermercado Tuti" -> "Tuti")
