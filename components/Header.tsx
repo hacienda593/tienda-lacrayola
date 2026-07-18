@@ -73,7 +73,12 @@ function HeaderStoreCategories() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
-  if (searchParams?.get('view') === 'pasillos') return null
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (mounted && searchParams?.get('view') === 'pasillos') return null
 
   const activeTId = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
     ? pathname.split('/')[2]

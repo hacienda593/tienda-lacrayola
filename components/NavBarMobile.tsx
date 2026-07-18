@@ -14,6 +14,11 @@ function NavBarMobileInner() {
   const [crayolaId, setCrayolaId] = useState('')
   const [tiendaNombre, setTiendaNombre] = useState('')
 
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const activeCat = searchParams?.get('cat') || ''
   const activeSub = searchParams?.get('sub') || ''
   const activeMarca = searchParams?.get('marca') || ''
@@ -95,7 +100,7 @@ function NavBarMobileInner() {
   // 5. Definir la botonera líquida según el contexto
   if (esTienda) {
     // ── Contexto Tienda Aliada: Navegación interna (Inicio, Buscar/Lupa, Pasillos Central, Lista, Comercios) ──
-    const hasAislesActive = searchParams?.get('view') === 'pasillos'
+    const hasAislesActive = mounted && searchParams?.get('view') === 'pasillos'
     const nombreCorto = getNombreCorto(tiendaNombre)
 
     return (
