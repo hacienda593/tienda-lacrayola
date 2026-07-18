@@ -406,7 +406,15 @@ export default function Header() {
   const [catOpen,    setCatOpen]    = useState(false)
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
 
-  if (mounted && pathname.endsWith('/buscar')) return null
+  // Determinar si debemos ocultar el Header en la página de búsqueda doble columna
+  const hideHeader = mounted && pathname.endsWith('/buscar');
+  if (hideHeader) {
+    // Renderizamos nada pero mantenemos todos los hooks ejecutados
+    return null;
+  }
+
+  // --- Render del Header original (mantener el resto del JSX) ---
+
 
   useEffect(() => {
     const update = () => setN(getCarrito().reduce((s, i) => s + i.cantidad, 0))

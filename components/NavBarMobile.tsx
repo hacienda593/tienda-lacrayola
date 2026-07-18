@@ -95,7 +95,13 @@ function NavBarMobileInner() {
     e.preventDefault()
     window.dispatchEvent(new Event('open-cart-global'))
   }
-
+  function handleBuscarClick() {
+    try {
+      router.push(`/tiendas/${activeTId}/buscar`)
+    } catch (e) {
+      console.error('Error navigating to buscar page:', e)
+    }
+  }
   // 5. Definir la botonera líquida según el contexto
   // 5. Definir la botonera líquida según el contexto
   if (esTienda) {
@@ -116,16 +122,17 @@ function NavBarMobileInner() {
             <Home size={20} className={!hasAislesActive ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
             <span className="text-[9px] font-bold">Inicio</span>
           </button>
+  
 
-          {/* Botón 2: Buscar / Pasillos (Lupa - Activa doble columna) */}
-          <button 
-            onClick={() => router.push(`/tiendas/${activeTId}/buscar`)}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent
-              ${hasAislesActive ? 'text-green-600 font-extrabold' : 'text-gray-400 hover:text-green-600'}`}
-          >
-            <Search size={20} className={hasAislesActive ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
-            <span className="text-[9px] font-bold">Buscar</span>
-          </button>
+            {/* Botón 2: Buscar / Pasillos (Lupa - Activa doble columna) */}
+            <button 
+              onClick={handleBuscarClick}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent
+                ${hasAislesActive ? 'text-green-600 font-extrabold' : 'text-gray-400 hover:text-green-600'}`}
+            >
+              <Search size={20} className={hasAislesActive ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
+              <span className="text-[9px] font-bold">Buscar</span>
+            </button>
 
           {/* Botón 3: PASILLOS (CENTRAL HERO FLOTANTE - Abre pasillos globales) */}
           <div className="flex-1 flex flex-col items-center justify-center relative h-full">
