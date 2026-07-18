@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useMemo, useRef, Suspense } from 'react'
+import React, { useEffect, useState, useMemo, useRef, Suspense } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
@@ -1595,6 +1595,31 @@ function TiendaContent() {
   )
 }
 
+class LocalErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: any) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error("ErrorBoundary caught an error", error, errorInfo)
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-xs space-y-2 m-4">
+          <h2 className="font-bold text-sm flex items-center gap-1.5">⚠️ Error de Renderizado:</h2>
+          <p className="font-mono font-bold">{this.state.error?.message}</p>
+          <pre className="font-mono text-[9px] overflow-auto max-h-60 bg-white p-2.5 border border-red-100 rounded-xl leading-relaxed">{this.state.error?.stack}</pre>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 export default function TiendaPage() {
   return (
     <Suspense fallback={
@@ -1602,7 +1627,9 @@ export default function TiendaPage() {
         <Loader2 size={28} className="animate-spin text-green-500" />
       </div>
     }>
-      <TiendaContent />
+      <LocalErrorBoundary>
+        <TiendaContent />
+      </LocalErrorBoundary>
     </Suspense>
   )
 }
