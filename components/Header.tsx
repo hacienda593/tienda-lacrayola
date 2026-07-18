@@ -87,6 +87,7 @@ function HeaderStoreCategories() {
   const cat = searchParams?.get('cat') || ''
 
   const shouldHide = mounted && (searchParams?.get('view') === 'pasillos' || pathname.endsWith('/buscar'))
+  const catActivoEnTienda = mounted && !!cat && activeTId !== ''
 
   useEffect(() => {
     setLocalCatOpen(false)
@@ -132,6 +133,8 @@ function HeaderStoreCategories() {
 
   if (shouldHide || !activeTId || cats.length === 0) return null
 
+  const wrapperClass = catActivoEnTienda ? 'hidden md:block' : 'block'
+
   function updateFiltersUrl(newFilters: { cat?: string; sub?: string; marca?: string; q?: string }) {
     const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
     if (newFilters.cat !== undefined) {
@@ -142,6 +145,11 @@ function HeaderStoreCategories() {
     }
     const qs = params.toString()
     router.push(qs ? `${pathname}?${qs}` : pathname)
+  }
+
+  // En móvil: navegar a ruta dedicada /tiendas/[id]/categoria/[cat]
+  function navegarACategoria(c: string) {
+    router.push(`/tiendas/${activeTId}/categoria/${encodeURIComponent(c)}`)
   }
 
   const CAT_EMOJI: Record<string, string> = {
@@ -170,7 +178,7 @@ function HeaderStoreCategories() {
               return (
                 <button
                   key={c}
-                  onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
+                  onClick={() => navegarACategoria(c)}
                   className={`pb-1 transition-all relative shrink-0 cursor-pointer
                     ${esActivo 
                       ? 'text-green-700 font-extrabold border-b-2 border-green-600' 
@@ -223,7 +231,7 @@ function HeaderStoreCategories() {
               return (
                 <button
                   key={c}
-                  onClick={() => { updateFiltersUrl({ cat: c, sub: '', marca: '' }); setLocalCatOpen(false) }}
+                  onClick={() => { navegarACategoria(c); setLocalCatOpen(false) }}
                   className="flex flex-col items-center group relative transition active:scale-95 duration-100 cursor-pointer"
                 >
                   <div className={`w-11 h-11 rounded-full flex items-center justify-center text-xl shadow-xs border transition
@@ -406,8 +414,8 @@ export default function Header() {
   const [catOpen,    setCatOpen]    = useState(false)
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
 
-  // Determinar si debemos ocultar el Header en la página de búsqueda doble columna
-  const hideHeader = mounted && pathname.endsWith('/buscar');
+  // Ocultar header en /buscar y en rutas de categoria (tienen su propio header Tipti)
+  const hideHeader = mounted && (pathname.endsWith('/buscar') || pathname.includes('/categoria/'))
 
   // --- Render del Header original (mantener el resto del JSX) ---
 
