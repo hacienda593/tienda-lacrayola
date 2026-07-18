@@ -86,7 +86,7 @@ function HeaderStoreCategories() {
   const [localCatOpen, setLocalCatOpen] = useState(false)
   const cat = searchParams?.get('cat') || ''
 
-  if (mounted && (searchParams?.get('view') === 'pasillos' || pathname.endsWith('/buscar'))) return null
+  const shouldHide = mounted && (searchParams?.get('view') === 'pasillos' || pathname.endsWith('/buscar'))
 
   useEffect(() => {
     setLocalCatOpen(false)
@@ -130,7 +130,7 @@ function HeaderStoreCategories() {
       })
   }, [activeTId])
 
-  if (!activeTId || cats.length === 0) return null
+  if (shouldHide || !activeTId || cats.length === 0) return null
 
   function updateFiltersUrl(newFilters: { cat?: string; sub?: string; marca?: string; q?: string }) {
     const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
@@ -408,13 +408,8 @@ export default function Header() {
 
   // Determinar si debemos ocultar el Header en la página de búsqueda doble columna
   const hideHeader = mounted && pathname.endsWith('/buscar');
-  if (hideHeader) {
-    // Renderizamos nada pero mantenemos todos los hooks ejecutados
-    return null;
-  }
 
   // --- Render del Header original (mantener el resto del JSX) ---
-
 
   useEffect(() => {
     const update = () => setN(getCarrito().reduce((s, i) => s + i.cantidad, 0))
@@ -436,6 +431,8 @@ export default function Header() {
       window.removeEventListener('open-cart-global', abrirCart)
     }
   }, [])
+
+  if (hideHeader) return null;
 
   return (
     <>
