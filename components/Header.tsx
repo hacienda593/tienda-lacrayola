@@ -73,7 +73,7 @@ function HeaderStoreCategories() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
-  if (searchParams.get('view') === 'pasillos') return null
+  if (searchParams?.get('view') === 'pasillos') return null
 
   const activeTId = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
     ? pathname.split('/')[2]
@@ -81,7 +81,7 @@ function HeaderStoreCategories() {
 
   const [cats, setCats] = useState<[string, number][]>([])
   const [localCatOpen, setLocalCatOpen] = useState(false)
-  const cat = searchParams.get('cat') || ''
+  const cat = searchParams?.get('cat') || ''
 
   useEffect(() => {
     setLocalCatOpen(false)

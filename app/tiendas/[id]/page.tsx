@@ -626,10 +626,10 @@ function TiendaContent() {
   const searchParamsStr = searchParams.toString()
   // Sincronizar estado local con query params de la URL
   useEffect(() => {
-    setCat(searchParams.get('cat') || '')
-    setSub(searchParams.get('sub') || '')
-    setMarca(searchParams.get('marca') || '')
-    setQ(searchParams.get('q') || '')
+    setCat(searchParams?.get('cat') || '')
+    setSub(searchParams?.get('sub') || '')
+    setMarca(searchParams?.get('marca') || '')
+    setQ(searchParams?.get('q') || '')
     setVisibles(40)
   }, [searchParamsStr])
 
@@ -798,7 +798,7 @@ function TiendaContent() {
     </div>
   )
 
-  const esBusquedaOMovilPasillo = searchParams.get('view') === 'pasillos'
+  const esBusquedaOMovilPasillo = searchParams?.get('view') === 'pasillos'
 
   return (
     <div className={`max-w-5xl mx-auto md:px-4 md:py-5 md:space-y-5 md:h-auto flex flex-col md:overflow-visible bg-white md:bg-transparent
