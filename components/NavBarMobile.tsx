@@ -94,8 +94,9 @@ function NavBarMobileInner() {
   // 5. Definir la botonera líquida según el contexto
   // 5. Definir la botonera líquida según el contexto
   if (esTienda) {
-    // ── Contexto Tienda Aliada: Navegación interna (Inicio, Buscar/Lupa, Lista, Comercios, Pedidos) ──
+    // ── Contexto Tienda Aliada: Navegación interna (Inicio, Buscar/Lupa, Pasillos Central, Lista, Comercios) ──
     const hasAislesActive = searchParams.get('view') === 'pasillos'
+    const nombreCorto = getNombreCorto(tiendaNombre)
 
     return (
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/85 backdrop-blur-xl border-t border-gray-200/50 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl will-change-transform">
@@ -121,7 +122,20 @@ function NavBarMobileInner() {
             <span className="text-[9px] font-bold">Buscar</span>
           </button>
 
-          {/* Botón 3: Lista Favoritos */}
+          {/* Botón 3: PASILLOS (CENTRAL HERO FLOTANTE - Abre pasillos globales) */}
+          <div className="flex-1 flex flex-col items-center justify-center relative h-full">
+            <button
+              onClick={() => window.dispatchEvent(new Event('open-categorias-global'))}
+              className="w-14 h-14 bg-gradient-to-br from-green-600 to-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-green-500/30 border-4 border-white absolute -top-5 active:scale-90 transition-transform duration-150 cursor-pointer"
+            >
+              <LayoutGrid size={22} className="stroke-[2.5]" />
+            </button>
+            <span className="text-[9px] font-extrabold text-green-600 mt-7 uppercase tracking-wider text-center px-1 truncate max-w-full">
+              Pasillos {nombreCorto}
+            </span>
+          </div>
+
+          {/* Botón 4: Lista Favoritos */}
           <button 
             onClick={() => router.push('/favoritos')}
             className="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent text-gray-400 hover:text-green-600"
@@ -130,22 +144,13 @@ function NavBarMobileInner() {
             <span className="text-[9px] font-bold">Lista</span>
           </button>
 
-          {/* Botón 4: Comercios */}
+          {/* Botón 5: Comercios */}
           <button 
             onClick={() => router.push('/tiendas')}
             className="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent text-gray-400 hover:text-green-600"
           >
             <Store size={20} className="stroke-[1.8]" />
             <span className="text-[9px] font-bold">Comercios</span>
-          </button>
-
-          {/* Botón 5: Pedidos */}
-          <button 
-            onClick={() => router.push('/pedidos')}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent text-gray-400 hover:text-green-600"
-          >
-            <Package size={20} className="stroke-[1.8]" />
-            <span className="text-[9px] font-bold">Pedidos</span>
           </button>
 
         </div>

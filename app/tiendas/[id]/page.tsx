@@ -807,8 +807,8 @@ function TiendaContent() {
         : 'h-auto overflow-y-auto px-4 py-3.5 space-y-5'}`}
     >
 
-      {/* Header tienda (Sticky en móvil) */}
-      <div className={`${esBusquedaOMovilPasillo ? 'hidden md:flex' : 'flex'} sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 py-3.5 -mx-4 px-4 items-center justify-between gap-3 shadow-sm md:shadow-none md:border-none md:relative md:top-auto md:z-auto md:bg-transparent md:py-0 md:mx-0 md:px-0`}>
+      {/* Header tienda (Solo visible en desktop) */}
+      <div className="hidden md:flex sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 py-3.5 -mx-4 px-4 items-center justify-between gap-3 shadow-sm md:shadow-none md:border-none md:relative md:top-auto md:z-auto md:bg-transparent md:py-0 md:mx-0 md:px-0">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-xl transition shrink-0">
             <ArrowLeft size={18} className="text-gray-600" />
@@ -1064,31 +1064,6 @@ function TiendaContent() {
             </div>
           )}
 
-          {/* ── Rejilla de Pasillos Principales (Solo en Vista Inicio de la tienda en móvil) ── */}
-          {!esBusquedaOMovilPasillo && (
-            <div className="w-full bg-white border border-gray-100/50 rounded-2xl p-4.5 shadow-xs mb-1 animate-fade-in md:hidden">
-              <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-3">Explorar Pasillos</div>
-              <div className="grid grid-cols-5 gap-y-4 gap-x-1.5 justify-items-center">
-                {cats.map(([c, count]) => {
-                  const emoji = CAT_EMOJI[c] || '📦'
-                  return (
-                    <button
-                      key={c}
-                      onClick={() => updateFiltersUrl({ cat: c, sub: '', marca: '' })}
-                      className="flex flex-col items-center group relative transition active:scale-95 duration-100 cursor-pointer"
-                    >
-                      <div className="w-11 h-11 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-xl shadow-xs hover:bg-white overflow-hidden transition">
-                        {emoji}
-                      </div>
-                      <span className="text-[9px] font-extrabold text-gray-600 text-center mt-1.5 leading-tight line-clamp-2 max-w-[64px]">
-                        {c}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Listado de Productos (Scrollable vertical independiente en móvil) */}
           <div className={esBusquedaOMovilPasillo 
