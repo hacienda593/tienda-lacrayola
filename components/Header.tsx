@@ -133,7 +133,7 @@ function HeaderStoreCategories() {
   if (!activeTId || cats.length === 0) return null
 
   function updateFiltersUrl(newFilters: { cat?: string; sub?: string; marca?: string; q?: string }) {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
     if (newFilters.cat !== undefined) {
       if (newFilters.cat) params.set('cat', newFilters.cat)
       else params.delete('cat')
@@ -323,7 +323,7 @@ function HeaderSearch() {
       (document.activeElement as HTMLElement)?.blur()
     }
     if (esTienda || pathname === '/productos') {
-      const params = new URLSearchParams(searchParams.toString())
+      const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
       if (q.trim()) params.set('q', q.trim())
       else params.delete('q')
       params.delete('cat')
@@ -343,7 +343,7 @@ function HeaderSearch() {
   function limpiar() {
     setQ('')
     if (esTienda || pathname === '/productos') {
-      const params = new URLSearchParams(searchParams.toString())
+      const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
       params.delete('q')
       const qs = params.toString()
       router.replace(qs ? `${pathname}?${qs}` : pathname)

@@ -26,7 +26,7 @@ function NavBarMobileInner() {
   const hasActiveFilter = !!(activeCat || activeSub || activeMarca || activeQ)
 
   function handleVolver() {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
     if (activeSub) {
       params.delete('sub')
     } else if (activeMarca) {
@@ -43,7 +43,7 @@ function NavBarMobileInner() {
   // 1. Obtener la ID de la tienda activa si está en la URL o ruta (defecto La Crayola)
   const activeTId = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
     ? pathname.split('/')[2]
-    : (pathname.startsWith('/productos') ? (searchParams.get('tienda_id') || crayolaId || 'b7fe17b9-c3da-4c9f-9a87-169d70623566') : '')
+    : (pathname.startsWith('/productos') ? ((searchParams ? searchParams.get('tienda_id') : null) || crayolaId || 'b7fe17b9-c3da-4c9f-9a87-169d70623566') : '')
 
   const esTienda = !!activeTId
   const esProductos = pathname.startsWith('/productos') && !activeTId

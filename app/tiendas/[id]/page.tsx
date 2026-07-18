@@ -533,7 +533,7 @@ function TiendaContent() {
 
 
   function updateFiltersUrl(newFilters: { cat?: string; sub?: string; marca?: string; q?: string }, replace = false) {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
     
     if (newFilters.cat !== undefined) {
       if (newFilters.cat) params.set('cat', newFilters.cat)
