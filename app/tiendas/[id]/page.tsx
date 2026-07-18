@@ -797,6 +797,14 @@ function TiendaContent() {
     }
   }, [filtrados.length])
 
+  function irACategoria(c: string) {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      router.push(`/tiendas/${id}/categoria/${encodeURIComponent(c)}`)
+    } else {
+      updateFiltersUrl({ cat: c, sub: '', marca: '' })
+    }
+  }
+
   function limpiarFiltros() {
     updateFiltersUrl({ cat: '', sub: '', marca: '', q: '' })
   }
@@ -1041,8 +1049,6 @@ function TiendaContent() {
               ? 'flex-1 md:h-auto overflow-y-auto md:overflow-visible p-3 md:p-0 space-y-4 bg-gray-50/30' 
               : 'space-y-6 md:p-0'
             }
-            onTouchStart={onTouchStartMobile}
-            onTouchEnd={onTouchEndMobile}
           >
 
 
