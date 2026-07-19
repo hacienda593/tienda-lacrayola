@@ -134,6 +134,8 @@ function CategoriaContent() {
   const [visibles, setVisibles] = useState(60)
   const [cartOpen, setCartOpen] = useState(false)
   const [n, setN] = useState(0)
+  const [marcaFiltro, setMarcaFiltro] = useState('')
+  const [marcasOpen, setMarcasOpen] = useState(false)
 
   // Estados para SKU selector
   const [skuProduct, setSkuProduct] = useState<Producto | null>(null)
@@ -185,6 +187,13 @@ function CategoriaContent() {
     return () => window.removeEventListener('carrito-update', update)
   }, [])
 
+  // Escuchar evento para abrir modal de marcas desde el navbar móvil inferior
+  useEffect(() => {
+    const abrirMarcas = () => setMarcasOpen(true)
+    window.addEventListener('open-marcas-global', abrirMarcas)
+    return () => window.removeEventListener('open-marcas-global', abrirMarcas)
+  }, [])
+
   // Escuchar evento para abrir selector de variación / cantidad
   useEffect(() => {
     const handleOpenSku = (e: Event) => {
@@ -232,14 +241,33 @@ function CategoriaContent() {
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], 'es', { sensitivity: 'base' }))
   }, [base, cat])
 
+  const marcasDisponibles = useMemo(() => {
+    const map = new Map<string, number>()
+    let pool = base.filter(p => p.stock > 0 && p.categoria === cat)
+    if (sub) pool = pool.filter(p => p.subcategoria === sub)
+    pool.forEach(p => {
+      if (p.marca) map.set(p.marca, (map.get(p.marca) ?? 0) + 1)
+    })
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
+  }, [base, cat, sub])
+
+  const cambiarMarcaFiltro = useCallback((nuevaMarca: string) => {
+    setMarcaFiltro(nuevaMarca)
+    setVisibles(60)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('marca-filtro-update', { detail: { marca: nuevaMarca } }))
+    }
+  }, [])
+
   const allSubs = useMemo(() => ['', ...subcats.map(([s]) => s)], [subcats])
   const activeIdx = allSubs.indexOf(sub)
 
   const filtrados = useMemo(() => {
     let pool = q.length >= 2 ? customSearch(base, q) : base.filter(p => p.stock > 0 && p.categoria === cat)
     if (q.length < 2 && sub) pool = pool.filter(p => p.subcategoria === sub)
+    if (q.length < 2 && marcaFiltro) pool = pool.filter(p => p.marca === marcaFiltro)
     return pool
-  }, [base, cat, sub, q])
+  }, [base, cat, sub, q, marcaFiltro])
 
   const scrollTabToView = useCallback((idx: number) => {
     if (!tabsRef.current) return
@@ -390,12 +418,29 @@ function CategoriaContent() {
             </span>
           </div>
         )}
+
+        {/* Burbuja flotante de marca activa */}
+        {!buscando && marcaFiltro && (
+          <div className="px-3 py-1.5 bg-green-50 border-t border-gray-100 flex items-center justify-between animate-fade-in shrink-0">
+            <span className="flex items-center gap-1 text-[10px] font-black text-green-700 bg-white border border-green-200 px-2 py-0.5 rounded-full">
+              🏷️ Marca: {marcaFiltro}
+            </span>
+            <button
+              onClick={() => cambiarMarcaFiltro('')}
+              className="text-[9px] font-extrabold text-green-700 bg-green-100 hover:bg-green-200 px-2.5 py-1 rounded-lg border-none cursor-pointer flex items-center gap-1 active:scale-95 transition"
+            >
+              Quitar filtro <X size={10} strokeWidth={3} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── GRID DE PRODUCTOS (swipeable entre subcats) ── */}
       <div 
         className={`flex-1 overflow-y-auto overscroll-y-contain p-2 pb-24 ${
-          !buscando && subcats.length > 0 ? 'pt-[88px]' : 'pt-[50px]'
+          !buscando && subcats.length > 0 
+            ? (marcaFiltro ? 'pt-[118px]' : 'pt-[88px]') 
+            : (marcaFiltro ? 'pt-[80px]' : 'pt-[50px]')
         }`}
         onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
       >
@@ -545,6 +590,53 @@ function CategoriaContent() {
             >
               Confirmar y Agregar
             </button>
+          </div>
+        </>
+      )}
+
+      {/* Modal Bottom Sheet de Marcas */}
+      {marcasOpen && (
+        <>
+          <div 
+            onClick={() => setMarcasOpen(false)}
+            className="fixed inset-0 bg-black/60 z-[190] animate-fade-in"
+          />
+          <div className="fixed inset-x-0 bottom-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-md w-full bg-white rounded-t-[30px] md:rounded-3xl shadow-2xl z-[200] p-6 animate-slide-in-up md:animate-fade-in flex flex-col font-sans select-none border-t md:border border-gray-100 max-h-[75vh]">
+            <div 
+              onClick={() => setMarcasOpen(false)}
+              className="md:hidden w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4 cursor-pointer"
+            />
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 shrink-0">
+              <span className="text-xs font-black text-gray-800 uppercase tracking-wider">Filtrar por Marca</span>
+              <button onClick={() => setMarcasOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 bg-transparent border-none cursor-pointer"><X size={16} /></button>
+            </div>
+
+            <div className="overflow-y-auto py-4 flex flex-wrap gap-2 max-h-[40vh] scrollbar-hide">
+              <button
+                onClick={() => { cambiarMarcaFiltro(''); setMarcasOpen(false) }}
+                className={`px-3.5 py-2 rounded-xl text-[10px] font-extrabold border cursor-pointer transition-all
+                  ${!marcaFiltro 
+                    ? 'bg-green-50 border-green-600 text-green-700 font-extrabold shadow-inner' 
+                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+              >
+                Todas las marcas
+              </button>
+              {marcasDisponibles.map(([m, count]) => {
+                const esActivo = marcaFiltro === m
+                return (
+                  <button
+                    key={m}
+                    onClick={() => { cambiarMarcaFiltro(m); setMarcasOpen(false) }}
+                    className={`px-3.5 py-2 rounded-xl text-[10px] font-bold border cursor-pointer transition-all
+                      ${esActivo 
+                        ? 'bg-green-50 border-green-600 text-green-700 font-extrabold shadow-inner' 
+                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+                  >
+                    {m} ({count})
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </>
       )}

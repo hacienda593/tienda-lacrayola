@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useSearchParams, useRouter } from 'next/navigation'
-import { Home, Store, ShoppingCart, ClipboardList, Menu, LayoutGrid, Sparkles, ArrowLeft, Package, Search, LayoutList } from 'lucide-react'
+import { Home, Store, ShoppingCart, ClipboardList, Menu, LayoutGrid, Sparkles, ArrowLeft, Package, Search, LayoutList, Tag } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { getCarrito } from '@/lib/carrito'
 import { supabase } from '@/lib/supabase'
@@ -13,6 +13,16 @@ function NavBarMobileInner() {
   const [n, setN] = useState(0)
   const [crayolaId, setCrayolaId] = useState('')
   const [tiendaNombre, setTiendaNombre] = useState('')
+  const [marcaFiltro, setMarcaFiltro] = useState('')
+
+  useEffect(() => {
+    const update = (e: Event) => {
+      const customEvent = e as CustomEvent
+      setMarcaFiltro(customEvent.detail?.marca || '')
+    }
+    window.addEventListener('marca-filtro-update', update)
+    return () => window.removeEventListener('marca-filtro-update', update)
+  }, [])
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
@@ -148,14 +158,27 @@ function NavBarMobileInner() {
             </span>
           </div>
 
-          {/* Botón 4: Lista Favoritos */}
-          <button 
-            onClick={() => router.push('/favoritos')}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent text-gray-400 hover:text-green-600"
-          >
-            <ClipboardList size={20} className="stroke-[1.8]" />
-            <span className="text-[9px] font-bold">Lista</span>
-          </button>
+          {/* Botón 4: Lista o Marcas según contexto */}
+          {mounted && pathname.includes('/categoria/') ? (
+            <button 
+              onClick={() => window.dispatchEvent(new Event('open-marcas-global'))}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent
+                ${marcaFiltro ? 'text-green-600 font-extrabold font-black' : 'text-gray-400 hover:text-green-600'}`}
+            >
+              <Tag size={20} className={marcaFiltro ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
+              <span className="text-[9px] font-bold truncate max-w-[70px]">
+                {marcaFiltro ? marcaFiltro : 'Marcas'}
+              </span>
+            </button>
+          ) : (
+            <button 
+              onClick={() => router.push('/favoritos')}
+              className="flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent text-gray-400 hover:text-green-600"
+            >
+              <ClipboardList size={20} className="stroke-[1.8]" />
+              <span className="text-[9px] font-bold">Lista</span>
+            </button>
+          )}
 
           {/* Botón 5: Comercios */}
           <button 
