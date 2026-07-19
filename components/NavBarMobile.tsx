@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useSearchParams, useRouter } from 'next/navigation'
-import { Home, Store, ShoppingCart, ClipboardList, Menu, LayoutGrid, Sparkles, ArrowLeft, Package, Search } from 'lucide-react'
+import { Home, Store, ShoppingCart, ClipboardList, Menu, LayoutGrid, Sparkles, ArrowLeft, Package, Search, FolderSearch } from 'lucide-react'
 import { useEffect, useState, Suspense } from 'react'
 import { getCarrito } from '@/lib/carrito'
 import { supabase } from '@/lib/supabase'
@@ -125,14 +125,14 @@ function NavBarMobileInner() {
           </button>
   
 
-            {/* Botón 2: Buscar / Pasillos (Lupa - Activa doble columna) */}
+            {/* Botón 2: Clasificado (FolderSearch - Activa doble columna de búsqueda) */}
             <button 
               onClick={handleBuscarClick}
               className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent
                 ${hasAislesActive ? 'text-green-600 font-extrabold' : 'text-gray-400 hover:text-green-600'}`}
             >
-              <Search size={20} className={hasAislesActive ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
-              <span className="text-[9px] font-bold">Buscar</span>
+              <FolderSearch size={20} className={hasAislesActive ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
+              <span className="text-[9px] font-bold">Clasificado</span>
             </button>
 
           {/* Botón 3: PASILLOS (CENTRAL HERO FLOTANTE - Abre pasillos globales) */}
