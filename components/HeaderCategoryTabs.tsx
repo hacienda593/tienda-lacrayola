@@ -50,7 +50,7 @@ export default function HeaderCategoryTabs() {
     return () => window.removeEventListener('category-tab-change', handleGlobalChange)
   }, [])
 
-  // Centrar suavemente la pestaña activa en el contenedor horizontal sin bloquear el click
+  // Centrar suavemente la pestaña activa en el contenedor horizontal
   useEffect(() => {
     if (!mounted) return
     const key = activeCat || 'inicio'
@@ -77,10 +77,8 @@ export default function HeaderCategoryTabs() {
   if (!isHomeOrCatalog) return null
 
   function selectTab(catValue: string) {
-    // 1. Actualizar estado local inmediatamente
     setActiveCat(catValue)
 
-    // 2. Construir la nueva URL
     const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
     if (catValue) {
       params.set('cat', catValue)
@@ -93,20 +91,17 @@ export default function HeaderCategoryTabs() {
 
     const targetUrl = params.toString() ? `/?${params.toString()}` : '/'
 
-    // 3. Notificar a toda la app inmediatamente por evento personalizado
     window.dispatchEvent(new CustomEvent('category-tab-change', { detail: catValue }))
-
-    // 4. Actualizar la URL sin recargar
     window.history.pushState(null, '', targetUrl)
     router.push(targetUrl)
   }
 
   return (
-    <div className="w-full bg-white border-t border-gray-100 shadow-xs z-30 sticky top-[57px]">
+    <div className="w-full bg-white border-b border-gray-100 shadow-2xs z-30 sticky top-[56px]">
       <div className="max-w-5xl mx-auto px-2">
         <div
           ref={containerRef}
-          className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-2 text-xs md:text-sm font-bold select-none px-1"
+          className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1.5 text-xs md:text-sm font-extrabold select-none px-1"
         >
           {MAIN_CATEGORY_TABS.map((tab) => {
             const tabKey = tab.cat || 'inicio'
@@ -120,10 +115,10 @@ export default function HeaderCategoryTabs() {
                   e.stopPropagation()
                   selectTab(tab.cat)
                 }}
-                className={`relative shrink-0 flex items-center justify-center px-3.5 py-1.5 rounded-full transition-all duration-200 cursor-pointer border
+                className={`relative shrink-0 flex items-center justify-center px-3.5 py-1.5 rounded-full transition-all duration-150 cursor-pointer border-none
                   ${isActive
-                    ? 'bg-green-600 text-white border-green-600 shadow-md font-black scale-105'
-                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 font-bold'
+                    ? 'bg-emerald-600 text-white font-black shadow-sm'
+                    : 'bg-transparent text-gray-600 hover:text-emerald-700 hover:bg-emerald-50/60 font-bold'
                   }`}
               >
                 <span>{tab.name}</span>

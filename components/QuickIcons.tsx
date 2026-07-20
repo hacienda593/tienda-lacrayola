@@ -11,8 +11,8 @@ interface QuickIcon {
   scrollTo?: string
   icon: React.ElementType
   iconColor: string
-  bgGradient: string
-  glowColor: string
+  bgColor: string
+  borderColor: string
   badge?: string
   badgeBg?: string
 }
@@ -23,20 +23,20 @@ const ICONS: QuickIcon[] = [
     label: 'Ofertas',    
     scrollTo: 'sec-ofertas',    
     icon: Flame,
-    iconColor: 'text-amber-500',
-    bgGradient: 'from-red-500 via-orange-500 to-amber-500',
-    glowColor: 'shadow-orange-500/30',
+    iconColor: 'text-rose-600',
+    bgColor: 'bg-rose-50 hover:bg-rose-100/80',
+    borderColor: 'border-rose-200/60',
     badge: 'HOT',
-    badgeBg: 'bg-red-600 text-white'
+    badgeBg: 'bg-rose-600 text-white'
   },
   { 
     id: 'exclusivos', 
     label: 'Exclusivos', 
     scrollTo: 'sec-exclusivos', 
     icon: Star,
-    iconColor: 'text-yellow-400',
-    bgGradient: 'from-amber-400 via-yellow-500 to-orange-400',
-    glowColor: 'shadow-amber-500/30',
+    iconColor: 'text-amber-600',
+    bgColor: 'bg-amber-50 hover:bg-amber-100/80',
+    borderColor: 'border-amber-200/60',
     badge: 'TOP',
     badgeBg: 'bg-amber-600 text-white'
   },
@@ -45,18 +45,18 @@ const ICONS: QuickIcon[] = [
     label: 'Tiendas',    
     href: '/tiendas',           
     icon: Store,
-    iconColor: 'text-blue-500',
-    bgGradient: 'from-blue-600 via-indigo-600 to-sky-500',
-    glowColor: 'shadow-blue-500/30'
+    iconColor: 'text-blue-600',
+    bgColor: 'bg-blue-50 hover:bg-blue-100/80',
+    borderColor: 'border-blue-200/60'
   },
   { 
     id: 'crayola',    
     label: 'Crayola',    
     href: '',                   
     icon: Backpack,
-    iconColor: 'text-emerald-400',
-    bgGradient: 'from-emerald-600 via-green-500 to-teal-500',
-    glowColor: 'shadow-emerald-500/30',
+    iconColor: 'text-emerald-700',
+    bgColor: 'bg-emerald-50 hover:bg-emerald-100/80',
+    borderColor: 'border-emerald-200/60',
     badge: 'OFICIAL',
     badgeBg: 'bg-emerald-700 text-white'
   },
@@ -65,9 +65,9 @@ const ICONS: QuickIcon[] = [
     label: 'Nuevos',     
     scrollTo: 'sec-novedades',  
     icon: Sparkles,
-    iconColor: 'text-fuchsia-400',
-    bgGradient: 'from-purple-600 via-fuchsia-500 to-pink-500',
-    glowColor: 'shadow-purple-500/30',
+    iconColor: 'text-purple-600',
+    bgColor: 'bg-purple-50 hover:bg-purple-100/80',
+    borderColor: 'border-purple-200/60',
     badge: 'NUEVO',
     badgeBg: 'bg-purple-600 text-white'
   },
@@ -76,27 +76,27 @@ const ICONS: QuickIcon[] = [
     label: 'Recompra', 
     scrollTo: 'sec-frecuentes', 
     icon: Package,
-    iconColor: 'text-teal-400',
-    bgGradient: 'from-teal-600 via-cyan-500 to-emerald-500',
-    glowColor: 'shadow-teal-500/30'
+    iconColor: 'text-teal-600',
+    bgColor: 'bg-teal-50 hover:bg-teal-100/80',
+    borderColor: 'border-teal-200/60'
   },
   { 
     id: 'marcas',     
     label: 'Marcas',     
     href: '/productos',          
     icon: Tag,
-    iconColor: 'text-rose-400',
-    bgGradient: 'from-rose-500 via-pink-500 to-red-400',
-    glowColor: 'shadow-pink-500/30'
+    iconColor: 'text-gray-700',
+    bgColor: 'bg-gray-100 hover:bg-gray-200/80',
+    borderColor: 'border-gray-200'
   },
   { 
     id: 'favoritos',  
     label: 'Favoritos',  
     href: '/favoritos',          
     icon: Heart,
-    iconColor: 'text-red-400',
-    bgGradient: 'from-red-600 via-rose-500 to-pink-600',
-    glowColor: 'shadow-red-500/30'
+    iconColor: 'text-rose-500',
+    bgColor: 'bg-rose-50/60 hover:bg-rose-100/80',
+    borderColor: 'border-rose-200/50'
   },
 ]
 
@@ -124,9 +124,9 @@ export default function QuickIcons() {
     <div 
       onTouchStart={(e) => e.stopPropagation()}
       onTouchEnd={(e) => e.stopPropagation()}
-      className="w-full overflow-x-auto scrollbar-hide py-1.5 px-0.5"
+      className="w-full overflow-x-auto scrollbar-hide py-1 px-0.5"
     >
-      <div className="flex gap-4.5 justify-start md:justify-center min-w-max px-1">
+      <div className="flex gap-3 justify-start md:justify-center min-w-max px-1">
         {ICONS.map(iconItem => {
           const IconComp = iconItem.icon
           const href = iconItem.id === 'crayola'
@@ -134,30 +134,27 @@ export default function QuickIcons() {
             : iconItem.href
 
           const content = (
-            <div className="flex flex-col items-center gap-1.5 w-[62px] group cursor-pointer select-none">
+            <div className="flex flex-col items-center gap-1.5 w-[60px] group cursor-pointer select-none">
               <div className="relative">
-                {/* Icon Squircle Container with 3D gradient, soft shadow glow & micro-interactions */}
-                <div className={`w-13 h-13 rounded-[18px] bg-gradient-to-br ${iconItem.bgGradient}
-                  flex items-center justify-center text-white shadow-md ${iconItem.glowColor}
-                  border border-white/25
-                  group-hover:scale-110 group-hover:shadow-lg group-active:scale-90
-                  transition-all duration-200 ease-out relative overflow-hidden`}
+                {/* Clean, professional squircle container */}
+                <div className={`w-12 h-12 rounded-2xl ${iconItem.bgColor} ${iconItem.borderColor} border
+                  flex items-center justify-center shadow-2xs
+                  group-hover:scale-105 group-active:scale-95
+                  transition-all duration-150 relative overflow-hidden`}
                 >
-                  {/* Subtle inner highlight gloss */}
-                  <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent pointer-events-none" />
-                  <IconComp size={24} className="stroke-[2.2] drop-shadow-sm transition-transform duration-200 group-hover:scale-110" />
+                  <IconComp size={22} className={`${iconItem.iconColor} stroke-[2.2] transition-transform duration-150 group-hover:scale-110`} />
                 </div>
 
                 {/* Micro Badge */}
                 {iconItem.badge && (
-                  <span className={`absolute -top-1.5 -right-2 text-[7px] font-black tracking-wider uppercase px-1.2 py-0.2 rounded-full shadow-sm border border-white ${iconItem.badgeBg}`}>
+                  <span className={`absolute -top-1.5 -right-1 text-[7px] font-black tracking-wider uppercase px-1.2 py-0.2 rounded-md shadow-2xs border border-white ${iconItem.badgeBg}`}>
                     {iconItem.badge}
                   </span>
                 )}
               </div>
 
               {/* Label */}
-              <span className="text-[11px] font-extrabold text-gray-700 group-hover:text-green-700 transition-colors leading-tight text-center truncate w-full tracking-tight">
+              <span className="text-[10.5px] font-extrabold text-gray-700 group-hover:text-green-700 transition-colors leading-tight text-center truncate w-full tracking-tight">
                 {iconItem.label}
               </span>
             </div>
