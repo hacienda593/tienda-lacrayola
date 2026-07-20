@@ -28,35 +28,59 @@ export default function HeaderCategoryTabs() {
   const searchParams = useSearchParams()
 
   const [mounted, setMounted] = useState(false)
+  const [activeCat, setActiveCat] = useState('')
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     setMounted(true)
+    const currentCat = searchParams?.get('cat') || ''
+    setActiveCat(currentCat)
+  }, [searchParams])
+
+  // Escuchar cambios de categoría globales
+  useEffect(() => {
+    const handleGlobalChange = (e: Event) => {
+      const customEvent = e as CustomEvent
+      if (typeof customEvent.detail === 'string') {
+        setActiveCat(customEvent.detail)
+      }
+    }
+    window.addEventListener('category-tab-change', handleGlobalChange)
+    return () => window.removeEventListener('category-tab-change', handleGlobalChange)
   }, [])
 
-  const activeCat = searchParams?.get('cat') || ''
-
-  // Auto-centrar la pestaña activa suavemente cuando cambia la categoría (click o swipe)
+  // Centrar suavemente la pestaña activa en el contenedor horizontal sin bloquear el click
   useEffect(() => {
     if (!mounted) return
     const key = activeCat || 'inicio'
-    const activeEl = tabRefs.current[key]
-    if (activeEl) {
-      activeEl.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center'
-      })
-    }
+    const timer = setTimeout(() => {
+      const activeEl = tabRefs.current[key]
+      const container = containerRef.current
+      if (activeEl && container) {
+        const containerWidth = container.offsetWidth
+        const elLeft = activeEl.offsetLeft
+        const elWidth = activeEl.offsetWidth
+        const targetScroll = elLeft - (containerWidth / 2) + (elWidth / 2)
+        container.scrollTo({
+          left: Math.max(0, targetScroll),
+          behavior: 'smooth'
+        })
+      }
+    }, 50)
+    return () => clearTimeout(timer)
   }, [activeCat, mounted])
 
   if (!mounted) return null
 
-  // Solo mostrar en página principal o catálogo general de productos
   const isHomeOrCatalog = pathname === '/' || pathname === '/productos'
   if (!isHomeOrCatalog) return null
 
   function selectTab(catValue: string) {
+    // 1. Actualizar estado local inmediatamente
+    setActiveCat(catValue)
+
+    // 2. Construir la nueva URL
     const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
     if (catValue) {
       params.set('cat', catValue)
@@ -67,14 +91,23 @@ export default function HeaderCategoryTabs() {
     params.delete('marca')
     params.delete('q')
 
-    const qs = params.toString()
-    router.push(qs ? `/?${qs}` : '/')
+    const targetUrl = params.toString() ? `/?${params.toString()}` : '/'
+
+    // 3. Notificar a toda la app inmediatamente por evento personalizado
+    window.dispatchEvent(new CustomEvent('category-tab-change', { detail: catValue }))
+
+    // 4. Actualizar la URL sin recargar
+    window.history.pushState(null, '', targetUrl)
+    router.push(targetUrl)
   }
 
   return (
     <div className="w-full bg-white border-t border-gray-100 shadow-xs z-30 sticky top-[57px]">
       <div className="max-w-5xl mx-auto px-2">
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-2 text-xs md:text-sm font-bold select-none px-1">
+        <div
+          ref={containerRef}
+          className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-2 text-xs md:text-sm font-bold select-none px-1"
+        >
           {MAIN_CATEGORY_TABS.map((tab) => {
             const tabKey = tab.cat || 'inicio'
             const isActive = activeCat === tab.cat || (!activeCat && !tab.cat)
@@ -82,7 +115,11 @@ export default function HeaderCategoryTabs() {
               <button
                 key={tabKey}
                 ref={(el) => { tabRefs.current[tabKey] = el }}
-                onClick={() => selectTab(tab.cat)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  selectTab(tab.cat)
+                }}
                 className={`relative shrink-0 flex items-center justify-center px-3.5 py-1.5 rounded-full transition-all duration-200 cursor-pointer border
                   ${isActive
                     ? 'bg-green-600 text-white border-green-600 shadow-md font-black scale-105'

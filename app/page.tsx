@@ -166,7 +166,7 @@ function BannerCarrusel() {
 // ── Skeleton card ──────────────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-3 animate-pulse w-[145px] shrink-0 md:w-auto md:shrink">
+    <div className="bg-white rounded-2xl border border-gray-100 p-3 animate-pulse w-full shrink-0 md:w-auto md:shrink">
       <div className="bg-gray-100 h-28 rounded-xl mb-2" />
       <div className="h-2.5 bg-gray-100 rounded w-1/3 mb-1.5" />
       <div className="h-3 bg-gray-100 rounded mb-1" />
@@ -416,8 +416,43 @@ function HomeContent() {
   const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const activeCat = searchParams?.get('cat') || ''
-  const activeSub = searchParams?.get('sub') || ''
+  
+  // Estado local para la categoría activa
+  const [activeCat, setActiveCat] = useState(() => searchParams?.get('cat') || '')
+  const [activeSub, setActiveSub] = useState(() => searchParams?.get('sub') || '')
+
+  useEffect(() => {
+    setActiveCat(searchParams?.get('cat') || '')
+    setActiveSub(searchParams?.get('sub') || '')
+  }, [searchParams])
+
+  // Escuchar eventos globales de pestañas de categorías
+  useEffect(() => {
+    const handleCatEvent = (e: Event) => {
+      const customEvent = e as CustomEvent
+      if (typeof customEvent.detail === 'string') {
+        setActiveCat(customEvent.detail)
+        setActiveSub('')
+      }
+    }
+    window.addEventListener('category-tab-change', handleCatEvent)
+    return () => window.removeEventListener('category-tab-change', handleCatEvent)
+  }, [])
+
+  function cambiarCategoria(targetCat: string) {
+    setActiveCat(targetCat)
+    setActiveSub('')
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
+    if (targetCat) params.set('cat', targetCat)
+    else params.delete('cat')
+    params.delete('sub')
+    params.delete('marca')
+
+    const targetUrl = params.toString() ? `/?${params.toString()}` : '/'
+    window.dispatchEvent(new CustomEvent('category-tab-change', { detail: targetCat }))
+    window.history.pushState(null, '', targetUrl)
+    router.push(targetUrl)
+  }
 
   const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null)
   const [activeList, setActiveList] = useState<Producto[]>([])
@@ -476,8 +511,8 @@ function HomeContent() {
     const dx = e.changedTouches[0].clientX - touchStartX.current
     const dy = e.changedTouches[0].clientY - touchStartY.current
 
-    // Solo si el deslizamiento es predominantemente horizontal
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+    // Deslizamiento horizontal claro
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.2) {
       const currentIdx = MAIN_CATEGORY_TABS.findIndex(t => t.cat === activeCat || (!activeCat && !t.cat))
       if (currentIdx !== -1) {
         let nextIdx = currentIdx
@@ -488,12 +523,7 @@ function HomeContent() {
         }
 
         if (nextIdx !== currentIdx) {
-          const targetCat = MAIN_CATEGORY_TABS[nextIdx].cat
-          const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
-          if (targetCat) params.set('cat', targetCat)
-          else params.delete('cat')
-          params.delete('sub')
-          router.push(params.toString() ? `/?${params.toString()}` : '/')
+          cambiarCategoria(MAIN_CATEGORY_TABS[nextIdx].cat)
         }
       }
     }
@@ -667,14 +697,17 @@ function HomeContent() {
   }, [user])
 
   function selectSub(s: string) {
+    setActiveSub(s)
     const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
     if (s) params.set('sub', s)
     else params.delete('sub')
-    router.push(`/?${params.toString()}`)
+    const targetUrl = `/?${params.toString()}`
+    window.history.pushState(null, '', targetUrl)
+    router.push(targetUrl)
   }
 
   function limpiarCategoria() {
-    router.push('/')
+    cambiarCategoria('')
   }
 
   const prodsCatFiltrados = activeSub
@@ -933,12 +966,15 @@ function HomeContent() {
                   {cats.map(({ categoria, n }) => {
                     const cfg = CAT_CONFIG[categoria] || { emoji: '📦', color: 'text-gray-700', bg: 'bg-gray-50 border-gray-200' }
                     return (
-                      <Link key={categoria} href={`/?cat=${encodeURIComponent(categoria)}`}
-                        className={`${cfg.bg} border rounded-xl p-2.5 text-center hover:shadow-md active:scale-95 transition`}>
+                      <button
+                        key={categoria}
+                        onClick={() => cambiarCategoria(categoria)}
+                        className={`${cfg.bg} border rounded-xl p-2.5 text-center hover:shadow-md active:scale-95 transition cursor-pointer border-none`}
+                      >
                         <div className="text-2xl mb-1">{cfg.emoji}</div>
                         <div className={`text-[9px] font-bold ${cfg.color} leading-tight line-clamp-2`}>{categoria}</div>
                         <div className="text-[8px] text-gray-400 mt-0.5">{n}</div>
-                      </Link>
+                      </button>
                     )
                   })}
                 </div>
@@ -1002,4 +1038,3 @@ export default function Home() {
     </Suspense>
   )
 }
-
