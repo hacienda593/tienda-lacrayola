@@ -35,28 +35,12 @@ function NavBarMobileInner() {
   const activeQ = searchParams?.get('q') || ''
   const hasActiveFilter = !!(activeCat || activeSub || activeMarca || activeQ)
 
-  function handleVolver() {
-    const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
-    if (activeSub) {
-      params.delete('sub')
-    } else if (activeMarca) {
-      params.delete('marca')
-    } else if (activeCat) {
-      params.delete('cat')
-    } else if (activeQ) {
-      params.delete('q')
-    }
-    const qs = params.toString()
-    router.push(qs ? `${pathname}?${qs}` : pathname)
-  }
-
-  // 1. Obtener la ID de la tienda activa si está en la URL o ruta (defecto La Crayola)
+  // 1. Obtener la ID de la tienda activa si está en la URL o ruta
   const activeTId = pathname.startsWith('/tiendas/') && pathname !== '/tiendas'
     ? pathname.split('/')[2]
     : (pathname.startsWith('/productos') ? ((searchParams ? searchParams.get('tienda_id') : null) || crayolaId || 'b7fe17b9-c3da-4c9f-9a87-169d70623566') : '')
 
   const esTienda = !!activeTId
-  const esProductos = pathname.startsWith('/productos') && !activeTId
 
   // 2. Escuchar actualizaciones de la cantidad de artículos del carrito
   useEffect(() => {
@@ -66,7 +50,7 @@ function NavBarMobileInner() {
     return () => window.removeEventListener('carrito-update', update)
   }, [])
 
-  // 3. Obtener dinámicamente el ID de la tienda La Crayola para el botón Hero del Home
+  // 3. Obtener dinámicamente el ID de la tienda La Crayola
   useEffect(() => {
     supabase.from('ol_tiendas')
       .select('id')
@@ -105,6 +89,7 @@ function NavBarMobileInner() {
     e.preventDefault()
     window.dispatchEvent(new Event('open-cart-global'))
   }
+
   function handleBuscarClick() {
     try {
       const url = `/tiendas/${activeTId}/buscar`;
@@ -113,39 +98,71 @@ function NavBarMobileInner() {
       console.error('Error al abrir la página de búsqueda:', e);
     }
   }
-  // 5. Definir la botonera líquida según el contexto
-  // 5. Definir la botonera líquida según el contexto
+
+  // ── Lógica Inteligente para el botón INICIO ──
+  // 1er click dentro de tienda: regresa al inicio de esa tienda o resetea filtros/scroll
+  // 2do click (o estando ya en el inicio de la tienda): regresa al Inicio General de la App Web (/)
+  function handleInicioTiendaClick() {
+    const storeRootPath = `/tiendas/${activeTId}`
+    const estaEnRaizTienda = pathname === storeRootPath && !hasActiveFilter
+
+    if (estaEnRaizTienda) {
+      // 2do click estando ya en el inicio de la tienda: ir al inicio de la web app
+      router.push('/')
+    } else {
+      // 1er click: ir al inicio de la tienda actual y subir scroll
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
+      router.push(storeRootPath)
+    }
+  }
+
+  function handleInicioAppClick(e: React.MouseEvent) {
+    if (pathname === '/') {
+      if (hasActiveFilter) {
+        e.preventDefault()
+        window.dispatchEvent(new CustomEvent('category-tab-change', { detail: '' }))
+        router.push('/')
+      }
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    }
+  }
+
   if (esTienda) {
-    // ── Contexto Tienda Aliada: Navegación interna (Inicio, Buscar/Lupa, Pasillos Central, Lista, Comercios) ──
+    // ── Contexto Tienda Aliada: Navegación interna ──
     const hasAislesActive = mounted && (searchParams?.get('view') === 'pasillos' || pathname.endsWith('/buscar'))
     const nombreCorto = getNombreCorto(tiendaNombre)
+    const estaEnRaizTienda = pathname === `/tiendas/${activeTId}` && !hasActiveFilter
 
     return (
       <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/85 backdrop-blur-xl border-t border-gray-200/50 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl will-change-transform">
         <div className="flex h-16 items-center px-2">
           
-          {/* Botón 1: Inicio Tienda */}
+          {/* Botón 1: Inicio Tienda / Inicio App (Inteligente) */}
           <button 
-            onClick={() => router.push(`/tiendas/${activeTId}`)}
+            onClick={handleInicioTiendaClick}
             className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent
               ${!hasAislesActive ? 'text-green-600 font-extrabold' : 'text-gray-400 hover:text-green-600'}`}
+            title={estaEnRaizTienda ? "Toca de nuevo para ir al Inicio Principal" : "Ir al inicio de la tienda"}
           >
             <Home size={20} className={!hasAislesActive ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
-            <span className="text-[9px] font-bold">Inicio</span>
+            <span className="text-[9px] font-bold">
+              {estaEnRaizTienda ? 'Inicio Web' : 'Inicio'}
+            </span>
           </button>
-  
 
-            {/* Botón 2: Catálogo (LayoutList - Activa doble columna de búsqueda) */}
-            <button 
-              onClick={handleBuscarClick}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent
-                ${hasAislesActive ? 'text-green-600 font-extrabold' : 'text-gray-400 hover:text-green-600'}`}
-            >
-              <LayoutList size={20} className={hasAislesActive ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
-              <span className="text-[9px] font-bold">Catálogo</span>
-            </button>
+          {/* Botón 2: Catálogo */}
+          <button 
+            onClick={handleBuscarClick}
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100 cursor-pointer border-none bg-transparent
+              ${hasAislesActive ? 'text-green-600 font-extrabold' : 'text-gray-400 hover:text-green-600'}`}
+          >
+            <LayoutList size={20} className={hasAislesActive ? 'stroke-[2.2]' : 'stroke-[1.8]'} />
+            <span className="text-[9px] font-bold">Catálogo</span>
+          </button>
 
-          {/* Botón 3: PASILLOS (CENTRAL HERO FLOTANTE - Abre pasillos globales) */}
+          {/* Botón 3: PASILLOS */}
           <div className="flex-1 flex flex-col items-center justify-center relative h-full">
             <button
               onClick={() => window.dispatchEvent(new Event('open-categorias-global'))}
@@ -158,7 +175,7 @@ function NavBarMobileInner() {
             </span>
           </div>
 
-          {/* Botón 4: Lista o Marcas según contexto */}
+          {/* Botón 4: Lista o Marcas */}
           {mounted && pathname.includes('/categoria/') ? (
             <button 
               onClick={() => window.dispatchEvent(new Event('open-marcas-global'))}
@@ -194,7 +211,7 @@ function NavBarMobileInner() {
     )
   }
 
-  // ── Contexto General (Home, Tiendas list, Favoritos, Catálogo, Carrito): Centro de mando unificado ──
+  // ── Contexto General ──
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/85 backdrop-blur-xl border-t border-gray-200/50 z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl will-change-transform">
       <div className="flex h-16 items-center px-2">
@@ -202,6 +219,7 @@ function NavBarMobileInner() {
         {/* Botón 1: Inicio */}
         <Link 
           href="/" 
+          onClick={handleInicioAppClick}
           className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform duration-100
             ${pathname === '/' ? 'text-green-600' : 'text-gray-400 hover:text-green-600'}`}
         >
@@ -219,7 +237,7 @@ function NavBarMobileInner() {
           <span className="text-[9px] font-bold">Lista</span>
         </Link>
 
-        {/* Botón 3: TIENDAS (CENTRAL HERO FLOTANTE GLOBAL) */}
+        {/* Botón 3: TIENDAS */}
         <div className="flex-1 flex flex-col items-center justify-center relative h-full">
           <Link
             href="/tiendas"
@@ -230,7 +248,7 @@ function NavBarMobileInner() {
           <span className="text-[9px] font-extrabold text-green-600 mt-7 uppercase tracking-wider">Tiendas</span>
         </div>
 
-        {/* Botón 4: Pasillos (Categorías globales) */}
+        {/* Botón 4: Pasillos */}
         <button 
           onClick={() => window.dispatchEvent(new Event('open-categorias-global'))}
           className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100 cursor-pointer"
