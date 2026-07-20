@@ -9,6 +9,7 @@ import MenuDrawer from '@/components/MenuDrawer'
 import CategoriasPanel from '@/components/CategoriasPanel'
 import CartDrawer from '@/components/CartDrawer'
 import BarcodeScannerModal from '@/components/BarcodeScannerModal'
+import HeaderCategoryTabs from '@/components/HeaderCategoryTabs'
 
 function TopBar() {
   const pathname = usePathname()
@@ -503,77 +504,12 @@ export default function Header() {
           </button>
         </div>
 
-        {/* Barra inferior del header */}
-        <div className="border-t border-gray-100 bg-white hidden md:block">
-          <div className="max-w-5xl mx-auto px-4">
-            <div className="flex items-center gap-1 py-1.5">
+        {/* Barra de pestañas de categorías estilo Pinduoduo / Marketplace */}
+        <Suspense fallback={null}>
+          <HeaderCategoryTabs />
+        </Suspense>
 
-              {/* Botón Categorías — siempre visible */}
-              <button
-                onClick={() => setCatOpen(true)}
-                className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shrink-0 mr-2"
-              >
-                <LayoutGrid size={13} />
-                Tiendas
-              </button>
-
-              {/* Links rápidos desktop */}
-              <div className="hidden md:flex gap-5 overflow-x-auto scrollbar-hide">
-                <Link href="/tiendas"
-                  className="shrink-0 text-sm font-bold text-green-700 hover:text-green-900 transition whitespace-nowrap py-0.5 flex items-center gap-1">
-                  🏪 Tiendas
-                </Link>
-                <span className="text-gray-200 py-0.5">|</span>
-                <Link href="/productos?frecuentes=true"
-                  className="shrink-0 text-sm font-bold text-green-700 hover:text-green-900 transition whitespace-nowrap py-0.5 flex items-center gap-1">
-                  🔄 Frecuentes
-                </Link>
-                <span className="text-gray-200 py-0.5">|</span>
-                <Link href="/impresion"
-                  className="shrink-0 text-sm font-bold text-green-700 hover:text-green-900 transition whitespace-nowrap py-0.5 flex items-center gap-1">
-                  🖨️ Impresiones
-                </Link>
-                <span className="text-gray-200 py-0.5">|</span>
-                <Link href="/recargas"
-                  className="shrink-0 text-sm font-bold text-green-700 hover:text-green-900 transition whitespace-nowrap py-0.5 flex items-center gap-1">
-                  📱 Recargas
-                </Link>
-                <span className="text-gray-200 py-0.5">|</span>
-                {['Escolar','Arte','Oficina','Tecnologia','Juguetes','Manualidades','Libros','Pintura'].map(c => (
-                  <Link key={c} href={`/productos?cat=${encodeURIComponent(c)}`}
-                    className="shrink-0 text-sm text-gray-600 hover:text-green-700 font-medium transition whitespace-nowrap py-0.5">
-                    {c}
-                  </Link>
-                ))}
-              </div>
-
-              {/* Móvil: chips de categorías horizontales */}
-              <div className="md:hidden flex gap-2 overflow-x-auto scrollbar-hide flex-1 items-center min-w-0">
-                <Link href="/productos?frecuentes=true"
-                  className="shrink-0 text-xs text-green-700 hover:text-green-900 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200 transition whitespace-nowrap flex items-center gap-1">
-                  🔄 Frecuentes
-                </Link>
-                <Link href="/impresion"
-                  className="shrink-0 text-xs text-green-700 hover:text-green-900 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200 transition whitespace-nowrap flex items-center gap-1">
-                  🖨️ Impresiones
-                </Link>
-                <Link href="/recargas"
-                  className="shrink-0 text-xs text-green-700 hover:text-green-900 font-bold bg-green-50 px-2.5 py-1 rounded-lg border border-green-200 transition whitespace-nowrap flex items-center gap-1">
-                  📱 Recargas
-                </Link>
-                {['Escolar','Arte','Oficina','Juguetes','Libros'].map(c => (
-                  <Link key={c} href={`/productos?cat=${encodeURIComponent(c)}`}
-                    className="shrink-0 text-xs text-gray-600 hover:text-green-700 font-medium transition whitespace-nowrap py-1">
-                    {c}
-                  </Link>
-                ))}
-              </div>
-
-            </div>
-          </div>
-        </div>
-
-        {/* Dynamic Store Categories Bar (2nd Row) */}
+        {/* Dynamic Store Categories Bar (2nd Row para dentro de tiendas) */}
         <Suspense fallback={null}>
           <HeaderStoreCategories />
         </Suspense>

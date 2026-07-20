@@ -1,13 +1,14 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ChevronRight, ShoppingCart, ChevronLeft, Minus, Plus, ClipboardList } from 'lucide-react'
+import { ChevronRight, ShoppingCart, ChevronLeft, Minus, Plus, ClipboardList, Filter, X } from 'lucide-react'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto } from '@/lib/types'
 import QuickIcons from '@/components/QuickIcons'
+import { MAIN_CATEGORY_TABS } from '@/components/HeaderCategoryTabs'
 import { useAuth } from '@/context/AuthContext'
 import { getPerfil } from '@/lib/perfil'
 import QuickViewDrawer from '@/components/QuickViewDrawer'
@@ -220,7 +221,7 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
         router.push(`/producto/${encodeURIComponent(p.codigo)}`)
       }
     }}
-      className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group w-[145px] shrink-0 snap-start md:w-auto md:shrink md:snap-align-none">
+      className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group w-full shrink-0 snap-start md:w-auto md:shrink md:snap-align-none">
       <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-32 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
         {p.imagen_url && !imageError ? (
           <img
@@ -391,7 +392,11 @@ function ProductSection({
         </div>
       ) : (
         <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide snap-x md:grid md:grid-cols-4 md:gap-3 md:overflow-visible">
-          {productos.map(p => <ProdCard key={p.codigo} p={p} showOffer={showOffer} onSelect={(prod) => onSelect(prod, productos)} />)}
+          {productos.map(p => (
+            <div key={p.codigo} className="w-[145px] shrink-0 md:w-auto md:shrink">
+              <ProdCard p={p} showOffer={showOffer} onSelect={(prod) => onSelect(prod, productos)} />
+            </div>
+          ))}
         </div>
       )}
     </section>
@@ -407,12 +412,20 @@ const CAT_TIENDA: Record<string, string> = {
   impresion: '🖨️', recargas: '📱', otros: '🏪',
 }
 
-export default function Home() {
+function HomeContent() {
   const { user } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const activeCat = searchParams?.get('cat') || ''
+  const activeSub = searchParams?.get('sub') || ''
+
   const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null)
   const [activeList, setActiveList] = useState<Producto[]>([])
   const [frecuentes, setFrecuentes] = useState<Producto[]>([])
+
+  // Touch gesture swipe para navegar horizontalmente entre las pestañas de categorías
+  const touchStartX = useRef<number | null>(null)
+  const touchStartY = useRef<number | null>(null)
 
   function openQuickView(p: Producto, list: Producto[]) {
     setSelectedProduct(p)
@@ -446,6 +459,47 @@ export default function Home() {
   const [cargandoExcl, setCargandoExcl] = useState(true)
   const [cargandoProds, setCargandoProds] = useState(true)
   const [crayolaId, setCrayolaId]     = useState('')
+
+  // Estado para la vista de categoría activa
+  const [prodsCat, setProdsCat] = useState<Producto[]>([])
+  const [subsCat, setSubsCat]   = useState<string[]>([])
+  const [cargandoCatActive, setCargandoCatActive] = useState(false)
+
+  // Deslizar horizontalmente con el pulgar para cambiar entre categorías de la barra
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null || touchStartY.current === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - touchStartY.current
+
+    // Solo si el deslizamiento es predominantemente horizontal
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      const currentIdx = MAIN_CATEGORY_TABS.findIndex(t => t.cat === activeCat || (!activeCat && !t.cat))
+      if (currentIdx !== -1) {
+        let nextIdx = currentIdx
+        if (dx < 0 && currentIdx < MAIN_CATEGORY_TABS.length - 1) {
+          nextIdx = currentIdx + 1 // Swipe izquierda -> siguiente pestaña
+        } else if (dx > 0 && currentIdx > 0) {
+          nextIdx = currentIdx - 1 // Swipe derecha -> pestaña anterior
+        }
+
+        if (nextIdx !== currentIdx) {
+          const targetCat = MAIN_CATEGORY_TABS[nextIdx].cat
+          const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
+          if (targetCat) params.set('cat', targetCat)
+          else params.delete('cat')
+          params.delete('sub')
+          router.push(params.toString() ? `/?${params.toString()}` : '/')
+        }
+      }
+    }
+    touchStartX.current = null
+    touchStartY.current = null
+  }
 
   useEffect(() => {
     // Obtener ID de La Crayola
@@ -486,7 +540,7 @@ export default function Home() {
         setCargando(false)
       })
 
-    // Ofertas (productos marcados como en_oferta)
+    // Ofertas
     supabase.from('ol_productos')
       .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles,en_oferta,precio_oferta')
       .eq('en_oferta', true)
@@ -535,6 +589,38 @@ export default function Home() {
       })
   }, [])
 
+  // Cargar productos de la categoría activa cuando activeCat cambia
+  useEffect(() => {
+    if (!activeCat) {
+      setProdsCat([])
+      setSubsCat([])
+      return
+    }
+
+    setCargandoCatActive(true)
+
+    supabase.from('ol_productos')
+      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles,en_oferta,precio_oferta')
+      .ilike('categoria', activeCat)
+      .gt('stock', 0)
+      .order('precio_publico', { ascending: true })
+      .limit(60)
+      .then(({ data }) => {
+        if (data) {
+          const list = data as Producto[]
+          setProdsCat(list)
+
+          // Extraer subcategorías únicas
+          const subMap = new Map<string, number>()
+          list.forEach(p => {
+            if (p.subcategoria) subMap.set(p.subcategoria, (subMap.get(p.subcategoria) || 0) + 1)
+          })
+          setSubsCat(Array.from(subMap.keys()))
+        }
+        setCargandoCatActive(false)
+      })
+  }, [activeCat])
+
   // Cargar productos frecuentes
   useEffect(() => {
     async function cargarFrecuentes() {
@@ -580,187 +666,297 @@ export default function Home() {
     cargarFrecuentes()
   }, [user])
 
+  function selectSub(s: string) {
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
+    if (s) params.set('sub', s)
+    else params.delete('sub')
+    router.push(`/?${params.toString()}`)
+  }
+
+  function limpiarCategoria() {
+    router.push('/')
+  }
+
+  const prodsCatFiltrados = activeSub
+    ? prodsCat.filter(p => p.subcategoria?.toLowerCase() === activeSub.toLowerCase())
+    : prodsCat
+
+  const cfgActiva = CAT_CONFIG[activeCat] || { emoji: '📦', color: 'text-gray-900', bg: 'bg-gray-50' }
+
   return (
-    <div>
+    <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} className="min-h-screen">
       <div className="max-w-5xl mx-auto px-3 py-4 space-y-6 md:px-4 md:py-6 md:space-y-8">
 
-        {/* ── 1. ÍCONOS RÁPIDOS ── */}
-        <QuickIcons />
-
-        {/* ── 2. BANNER CARRUSEL ── */}
-        <BannerCarrusel />
-
-        {/* ── 3. OFERTAS ── */}
-        {(cargandoOfertas || ofertas.length > 0) && (
-          <ProductSection
-            id="sec-ofertas"
-            emoji="🔥"
-            titulo="Ofertas"
-            subtitulo="Productos a precios especiales por tiempo limitado"
-            productos={ofertas}
-            loading={cargandoOfertas}
-            onSelect={openQuickView}
-            showOffer={true}
-            verTodosHref="/productos?ofertas=true"
-          />
-        )}
-
-        {/* ── 4. EXCLUSIVOS LA CRAYOLA ── */}
-        {(cargandoExcl || exclusivos.length > 0) && (
-          <ProductSection
-            id="sec-exclusivos"
-            emoji="⭐"
-            titulo="Exclusivos Tienlo"
-            subtitulo="Productos que solo encuentras en nuestra tienda"
-            productos={exclusivos}
-            loading={cargandoExcl}
-            onSelect={openQuickView}
-            verTodosHref={crayolaId ? `/tiendas/${crayolaId}` : '/tiendas'}
-          />
-        )}
-
-        {/* ── 5. COMPRAR DE NUEVO ── */}
-        {frecuentes.length > 0 && (
-          <section id="sec-frecuentes" className="bg-green-50/50 border border-green-100/60 rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-1.5">
-                  🔄 Comprar de nuevo
-                </h2>
-                <p className="text-[10px] text-gray-400 mt-0.5">Tus productos habituales listos para reordenar</p>
+        {/* ══════════════════════════════════════════════════════════════════
+            1. VISTA DE CATEGORÍA ACTIVA (Si el usuario seleccionó una pestaña)
+           ══════════════════════════════════════════════════════════════════ */}
+        {activeCat ? (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {/* Header de Categoría */}
+            <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 p-4 rounded-2xl">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{cfgActiva.emoji}</span>
+                <div>
+                  <h1 className="text-lg font-black text-gray-900 leading-tight">{activeCat}</h1>
+                  <p className="text-xs text-gray-500 font-medium">
+                    {cargandoCatActive ? 'Cargando...' : `${prodsCatFiltrados.length} productos disponibles`}
+                  </p>
+                </div>
               </div>
+
+              <button
+                onClick={limpiarCategoria}
+                className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-green-700 bg-white border border-gray-200 px-3 py-1.5 rounded-xl shadow-xs transition"
+              >
+                <X size={13} />
+                Inicio
+              </button>
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {frecuentes.map(p => (
-                <div key={p.codigo}
-                  onClick={() => {
-                    if (USE_QUICK_VIEW) {
-                      openQuickView(p, frecuentes)
-                    } else {
-                      router.push(`/producto/${encodeURIComponent(p.codigo)}`)
-                    }
-                  }}
-                  className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[130px] relative group/freq">
-                  <div className="relative bg-gray-50 h-24 flex items-center justify-center text-2xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors w-full">
-                    {p.imagen_url ? (
-                      <img src={p.imagen_url} alt={p.descripcion} className="w-full h-full object-contain p-1.5" />
-                    ) : (
-                      CAT_CONFIG[p.categoria]?.emoji || '📦'
-                    )}
-                  </div>
-                  <div className="p-2 flex-1 min-w-0 flex flex-col justify-between">
-                    <div className="text-[10px] font-bold text-gray-800 leading-snug line-clamp-2 min-h-[28px] mb-1">{p.descripcion}</div>
-                    <div className="flex items-center justify-between gap-1">
-                      <div className="text-[11px] font-black text-gray-900">{fmt(p.precio_publico)}</div>
-                      <div className="scale-75 origin-right shrink-0">
-                        <BtnAgregarFrecuente prod={p} />
-                      </div>
-                    </div>
+
+            {/* Subcategorías (Chips de filtro) */}
+            {subsCat.length > 0 && (
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                <button
+                  onClick={() => selectSub('')}
+                  className={`shrink-0 text-xs font-extrabold px-3 py-1.5 rounded-xl transition cursor-pointer border
+                    ${!activeSub
+                      ? 'bg-green-600 text-white border-green-600 shadow-sm'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                >
+                  Todos
+                </button>
+                {subsCat.map(s => {
+                  const esSubActiva = activeSub.toLowerCase() === s.toLowerCase()
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => selectSub(s)}
+                      className={`shrink-0 text-xs font-extrabold px-3 py-1.5 rounded-xl transition cursor-pointer border
+                        ${esSubActiva
+                          ? 'bg-green-600 text-white border-green-600 shadow-sm'
+                          : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                    >
+                      {s}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Grid de productos de la categoría */}
+            {cargandoCatActive ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
+              </div>
+            ) : prodsCatFiltrados.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center space-y-2">
+                <div className="text-4xl">🔍</div>
+                <h3 className="text-sm font-bold text-gray-700">No hay productos en este pasillo</h3>
+                <p className="text-xs text-gray-400">Intenta seleccionar otra subcategoría o regresa a Inicio</p>
+                <button
+                  onClick={limpiarCategoria}
+                  className="inline-block mt-2 bg-green-600 text-white text-xs font-bold px-4 py-2 rounded-xl"
+                >
+                  Volver a Inicio
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {prodsCatFiltrados.map(p => (
+                  <ProdCard
+                    key={p.codigo}
+                    p={p}
+                    showOffer={true}
+                    onSelect={(prod) => openQuickView(prod, prodsCatFiltrados)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* ══════════════════════════════════════════════════════════════════
+              2. VISTA DE INICIO COMPLETA (Página Principal Marketplace)
+             ══════════════════════════════════════════════════════════════════ */
+          <>
+            {/* ── 1. ÍCONOS RÁPIDOS ── */}
+            <QuickIcons />
+
+            {/* ── 2. BANNER CARRUSEL ── */}
+            <BannerCarrusel />
+
+            {/* ── 3. OFERTAS ── */}
+            {(cargandoOfertas || ofertas.length > 0) && (
+              <ProductSection
+                id="sec-ofertas"
+                emoji="🔥"
+                titulo="Ofertas"
+                subtitulo="Productos a precios especiales por tiempo limitado"
+                productos={ofertas}
+                loading={cargandoOfertas}
+                onSelect={openQuickView}
+                showOffer={true}
+                verTodosHref="/productos?ofertas=true"
+              />
+            )}
+
+            {/* ── 4. EXCLUSIVOS LA CRAYOLA ── */}
+            {(cargandoExcl || exclusivos.length > 0) && (
+              <ProductSection
+                id="sec-exclusivos"
+                emoji="⭐"
+                titulo="Exclusivos Tienlo"
+                subtitulo="Productos que solo encuentras en nuestra tienda"
+                productos={exclusivos}
+                loading={cargandoExcl}
+                onSelect={openQuickView}
+                verTodosHref={crayolaId ? `/tiendas/${crayolaId}` : '/tiendas'}
+              />
+            )}
+
+            {/* ── 5. COMPRAR DE NUEVO ── */}
+            {frecuentes.length > 0 && (
+              <section id="sec-frecuentes" className="bg-green-50/50 border border-green-100/60 rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-1.5">
+                      🔄 Comprar de nuevo
+                    </h2>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Tus productos habituales listos para reordenar</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── 6. BANNER INTERMEDIO — Tiendas aliadas ── */}
-        <section className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 md:p-6 text-white flex items-center gap-4">
-          <div className="text-4xl md:text-5xl shrink-0">🏪</div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm md:text-lg font-extrabold">¿Necesitas algo de Tía o Tuti?</h3>
-            <p className="text-blue-100 text-[11px] md:text-sm mt-0.5">Lo compramos por ti y te lo llevamos junto con tu pedido</p>
-          </div>
-          <Link href="/tiendas"
-            className="bg-white text-blue-700 font-bold px-4 py-2 rounded-xl hover:bg-blue-50 transition text-xs shrink-0">
-            Ver →
-          </Link>
-        </section>
-
-        {/* ── 7. TIENDAS (Compactas — logos horizontales) ── */}
-        {tiendas.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-extrabold text-gray-900">🏪 Tiendas</h2>
-              <Link href="/tiendas" className="text-xs text-green-600 font-semibold flex items-center gap-0.5 hover:underline">
-                Todas <ChevronRight size={13} />
-              </Link>
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {tiendas.map(t => {
-                const getHref = (id: string) => {
-                  if (id === 'frecuentes-virtual') return '/productos?frecuentes=true'
-                  if (id === 'impresion-virtual') return '/impresion'
-                  if (id === 'recargas-virtual') return '/recargas'
-                  return `/tiendas/${id}`
-                }
-                return (
-                  <Link key={t.id} href={getHref(t.id)}
-                    className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col items-center gap-1.5 text-center group shrink-0 w-[80px]">
-                    <div className="w-11 h-11 bg-green-50 rounded-xl flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
-                      {t.logo_url
-                        ? <img src={t.logo_url} alt={t.nombre} className="w-8 h-8 object-contain" />
-                        : (CAT_TIENDA[t.categoria ?? 'otros'] ?? '🏪')
-                      }
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                  {frecuentes.map(p => (
+                    <div key={p.codigo}
+                      onClick={() => {
+                        if (USE_QUICK_VIEW) {
+                          openQuickView(p, frecuentes)
+                        } else {
+                          router.push(`/producto/${encodeURIComponent(p.codigo)}`)
+                        }
+                      }}
+                      className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[130px] relative group/freq">
+                      <div className="relative bg-gray-50 h-24 flex items-center justify-center text-2xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors w-full">
+                        {p.imagen_url ? (
+                          <img src={p.imagen_url} alt={p.descripcion} className="w-full h-full object-contain p-1.5" />
+                        ) : (
+                          CAT_CONFIG[p.categoria]?.emoji || '📦'
+                        )}
+                      </div>
+                      <div className="p-2 flex-1 min-w-0 flex flex-col justify-between">
+                        <div className="text-[10px] font-bold text-gray-800 leading-snug line-clamp-2 min-h-[28px] mb-1">{p.descripcion}</div>
+                        <div className="flex items-center justify-between gap-1">
+                          <div className="text-[11px] font-black text-gray-900">{fmt(p.precio_publico)}</div>
+                          <div className="scale-75 origin-right shrink-0">
+                            <BtnAgregarFrecuente prod={p} />
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-[10px] font-bold text-gray-600 leading-tight truncate w-full">{t.nombre}</span>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* ── 6. BANNER INTERMEDIO — Tiendas aliadas ── */}
+            <section className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 md:p-6 text-white flex items-center gap-4">
+              <div className="text-4xl md:text-5xl shrink-0">🏪</div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm md:text-lg font-extrabold">¿Necesitas algo de Tía o Tuti?</h3>
+                <p className="text-blue-100 text-[11px] md:text-sm mt-0.5">Lo compramos por ti y te lo llevamos junto con tu pedido</p>
+              </div>
+              <Link href="/tiendas"
+                className="bg-white text-blue-700 font-bold px-4 py-2 rounded-xl hover:bg-blue-50 transition text-xs shrink-0">
+                Ver →
+              </Link>
+            </section>
+
+            {/* ── 7. TIENDAS (Compactas — logos horizontales) ── */}
+            {tiendas.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-base font-extrabold text-gray-900">🏪 Tiendas</h2>
+                  <Link href="/tiendas" className="text-xs text-green-600 font-semibold flex items-center gap-0.5 hover:underline">
+                    Todas <ChevronRight size={13} />
                   </Link>
-                )
-              })}
-            </div>
-          </section>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                  {tiendas.map(t => {
+                    const getHref = (id: string) => {
+                      if (id === 'frecuentes-virtual') return '/productos?frecuentes=true'
+                      if (id === 'impresion-virtual') return '/impresion'
+                      if (id === 'recargas-virtual') return '/recargas'
+                      return `/tiendas/${id}`
+                    }
+                    return (
+                      <Link key={t.id} href={getHref(t.id)}
+                        className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col items-center gap-1.5 text-center group shrink-0 w-[80px]">
+                        <div className="w-11 h-11 bg-green-50 rounded-xl flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
+                          {t.logo_url
+                            ? <img src={t.logo_url} alt={t.nombre} className="w-8 h-8 object-contain" />
+                            : (CAT_TIENDA[t.categoria ?? 'otros'] ?? '🏪')
+                          }
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-600 leading-tight truncate w-full">{t.nombre}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* ── 8. NOVEDADES ── */}
+            <ProductSection
+              id="sec-novedades"
+              emoji="✨"
+              titulo="Novedades"
+              subtitulo="Los últimos productos en llegar"
+              productos={novedades}
+              loading={cargandoProds}
+              onSelect={openQuickView}
+              verTodosHref="/productos"
+            />
+
+            {/* ── 9. CATEGORÍAS (Compactas) ── */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-base font-extrabold text-gray-900">📂 Categorías</h2>
+                <Link href="/productos" className="text-xs text-green-600 font-semibold flex items-center gap-0.5 hover:underline">
+                  Ver todo <ChevronRight size={13} />
+                </Link>
+              </div>
+              {cargando ? (
+                <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                  {[...Array(8)].map((_, i) => <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />)}
+                </div>
+              ) : (
+                <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                  {cats.map(({ categoria, n }) => {
+                    const cfg = CAT_CONFIG[categoria] || { emoji: '📦', color: 'text-gray-700', bg: 'bg-gray-50 border-gray-200' }
+                    return (
+                      <Link key={categoria} href={`/?cat=${encodeURIComponent(categoria)}`}
+                        className={`${cfg.bg} border rounded-xl p-2.5 text-center hover:shadow-md active:scale-95 transition`}>
+                        <div className="text-2xl mb-1">{cfg.emoji}</div>
+                        <div className={`text-[9px] font-bold ${cfg.color} leading-tight line-clamp-2`}>{categoria}</div>
+                        <div className="text-[8px] text-gray-400 mt-0.5">{n}</div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </section>
+
+            {/* ── 10. DESTACADOS ── */}
+            <ProductSection
+              emoji="⭐"
+              titulo="Destacados"
+              subtitulo="Los más valorados"
+              productos={destacados}
+              loading={cargandoProds}
+              onSelect={openQuickView}
+              verTodosHref="/productos"
+            />
+          </>
         )}
-
-        {/* ── 8. NOVEDADES ── */}
-        <ProductSection
-          id="sec-novedades"
-          emoji="✨"
-          titulo="Novedades"
-          subtitulo="Los últimos productos en llegar"
-          productos={novedades}
-          loading={cargandoProds}
-          onSelect={openQuickView}
-          verTodosHref="/productos"
-        />
-
-        {/* ── 9. CATEGORÍAS (Compactas) ── */}
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-extrabold text-gray-900">📂 Categorías</h2>
-            <Link href="/productos" className="text-xs text-green-600 font-semibold flex items-center gap-0.5 hover:underline">
-              Ver todo <ChevronRight size={13} />
-            </Link>
-          </div>
-          {cargando ? (
-            <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-              {[...Array(8)].map((_, i) => <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />)}
-            </div>
-          ) : (
-            <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-              {cats.map(({ categoria, n }) => {
-                const cfg = CAT_CONFIG[categoria] || { emoji: '📦', color: 'text-gray-700', bg: 'bg-gray-50 border-gray-200' }
-                return (
-                  <Link key={categoria} href={`/productos?cat=${encodeURIComponent(categoria)}`}
-                    className={`${cfg.bg} border rounded-xl p-2.5 text-center hover:shadow-md active:scale-95 transition`}>
-                    <div className="text-2xl mb-1">{cfg.emoji}</div>
-                    <div className={`text-[9px] font-bold ${cfg.color} leading-tight line-clamp-2`}>{categoria}</div>
-                    <div className="text-[8px] text-gray-400 mt-0.5">{n}</div>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
-        </section>
-
-        {/* ── 10. DESTACADOS ── */}
-        <ProductSection
-          emoji="⭐"
-          titulo="Destacados"
-          subtitulo="Los más valorados"
-          productos={destacados}
-          loading={cargandoProds}
-          onSelect={openQuickView}
-          verTodosHref="/productos"
-        />
 
       </div>
 
@@ -793,3 +989,17 @@ export default function Home() {
     </div>
   )
 }
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-4">
+        <div className="h-12 bg-gray-100 rounded-2xl animate-pulse" />
+        <div className="h-32 bg-gray-100 rounded-2xl animate-pulse" />
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
+  )
+}
+
