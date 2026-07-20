@@ -12,6 +12,8 @@ export interface Producto {
   tienda?:       OlTienda
   imagen_url?:   string | null
   detalles?:     string | null
+  en_oferta?:    boolean
+  precio_oferta?: number | null
 }
 
 export interface OlTienda {

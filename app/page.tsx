@@ -3,20 +3,18 @@ import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ChevronRight, ShoppingCart, Truck, Shield, Clock, ClipboardList, ChevronLeft, Minus, Plus } from 'lucide-react'
+import { ChevronRight, ShoppingCart, ChevronLeft, Minus, Plus, ClipboardList } from 'lucide-react'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto } from '@/lib/types'
-import LocalGrid from '@/components/LocalGrid'
+import QuickIcons from '@/components/QuickIcons'
 import { useAuth } from '@/context/AuthContext'
 import { getPerfil } from '@/lib/perfil'
-
 import QuickViewDrawer from '@/components/QuickViewDrawer'
 
 function fmt(n: number) { return '$' + n.toFixed(2) }
 
-// --- CONFIGURACIÓN DE VISUALIZACIÓN REVERSIBLE ---
-const USE_QUICK_VIEW = true; // Cambiar a 'false' para deshabilitar el Bottom Sheet/Popup y volver al comportamiento original
+const USE_QUICK_VIEW = true;
 
 const CAT_CONFIG: Record<string, { emoji: string; color: string; bg: string }> = {
   'Escolar':      { emoji: '📚', color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-100' },
@@ -40,31 +38,40 @@ const CAT_CONFIG: Record<string, { emoji: string; color: string; bg: string }> =
 
 const BANNERS = [
   {
-    titulo: '¡La Crayola evoluciona a Tienlo! 🎉',
-    sub: 'Seguimos ofreciéndote los mismos útiles escolares y tecnología de siempre, pero ahora compramos por ti en tus tiendas locales favoritas.',
-    emoji: '🚀',
-    cta: 'Conoce las tiendas',
+    titulo: '🔥 Ofertas de la semana',
+    sub: 'Productos seleccionados a precios especiales. ¡Solo por tiempo limitado!',
+    emoji: '💰',
+    cta: 'Ver ofertas',
+    href: '#sec-ofertas',
+    bg: 'from-red-600 via-orange-500 to-amber-500',
+    badge: '🔥 Ofertas',
+  },
+  {
+    titulo: 'Todo en un solo pedido 🛍️',
+    sub: 'Útiles escolares + abarrotes + farmacia. Un solo envío consolidado.',
+    emoji: '📦',
+    cta: 'Ver tiendas',
     href: '/tiendas',
     bg: 'from-green-700 via-green-600 to-emerald-500',
-    badge: '🚀 Nueva Etapa',
+    badge: '🚀 Multi-tienda',
   },
   {
-    titulo: 'Compra en múltiples tiendas a la vez',
-    sub: 'Puedes combinar útiles escolares, abarrotes, farmacia y más en un solo pedido. ¡Pagas un solo envío consolidado!',
-    emoji: '🛍️',
-    cta: 'Ver productos',
-    href: '/productos',
-    bg: 'from-purple-700 via-purple-600 to-indigo-600',
-    badge: '🛒 Pedido Consolidado',
-  },
-  {
-    titulo: 'Recibe todo en la puerta de tu hogar',
-    sub: 'Haz tu pedido por la web de Tienlo, lo confirmamos por WhatsApp y te lo entregamos rápido en Los Bancos.',
-    emoji: '🏡',
-    cta: 'Pedir por WhatsApp',
+    titulo: 'Entrega a domicilio 🏡',
+    sub: 'Haz tu pedido online, lo confirmamos por WhatsApp y te lo llevamos.',
+    emoji: '🚚',
+    cta: 'Pedir ahora',
     href: 'https://wa.me/593984341953?text=Hola%2C%20quiero%20hacer%20un%20pedido',
-    bg: 'from-orange-600 via-orange-500 to-amber-500',
-    badge: '📍 Solo en Los Bancos',
+    bg: 'from-purple-700 via-purple-600 to-indigo-600',
+    badge: '📍 Los Bancos',
+  },
+  {
+    titulo: '⭐ Exclusivos La Crayola',
+    sub: 'Productos que solo encuentras aquí: útiles, tecnología y más.',
+    emoji: '🎒',
+    cta: 'Ver exclusivos',
+    href: '#sec-exclusivos',
+    bg: 'from-amber-600 via-yellow-500 to-orange-500',
+    badge: '⭐ Solo aquí',
   },
 ]
 
@@ -72,6 +79,7 @@ const BANNERS = [
 function BannerCarrusel() {
   const [idx, setIdx] = useState(0)
   const timer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const touchStartX = useRef(0)
 
   function resetTimer() {
     if (timer.current) clearInterval(timer.current)
@@ -89,62 +97,65 @@ function BannerCarrusel() {
   const b = BANNERS[idx]
 
   return (
-    <div className={`relative bg-gradient-to-br ${b.bg} text-white overflow-hidden transition-all duration-500 rounded-2xl`}>
-      {/* Móvil (Cinta Compacta - Estilo Tipti) */}
-      <Link href={b.href} className="block md:hidden">
-        <div className="flex items-center justify-between px-5 h-[115px] relative">
-          <div className="pr-4 z-10 flex flex-col justify-center">
-            <span className="inline-block bg-white/20 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full mb-1 w-max">
-              {b.badge}
-            </span>
-            <h2 className="text-sm font-extrabold leading-snug">{b.titulo}</h2>
-            <span className="text-[10px] text-white/90 font-bold mt-1.5 flex items-center gap-0.5 hover:underline">
-              Ver oferta <ChevronRight size={10} />
-            </span>
+    <div
+      className={`relative bg-gradient-to-br ${b.bg} text-white overflow-hidden transition-all duration-500 rounded-2xl`}
+      onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
+      onTouchEnd={e => {
+        const dx = e.changedTouches[0].clientX - touchStartX.current
+        if (Math.abs(dx) > 40) { ir(dx < 0 ? 1 : -1) }
+      }}
+    >
+      {/* Móvil */}
+      <div className="block md:hidden">
+        <Link href={b.href} className="block">
+          <div className="flex items-center justify-between px-4 h-[100px] relative">
+            <div className="pr-3 z-10 flex flex-col justify-center flex-1 min-w-0">
+              <span className="inline-block bg-white/20 text-white text-[8px] font-bold px-2 py-0.5 rounded-full mb-1 w-max">
+                {b.badge}
+              </span>
+              <h2 className="text-[13px] font-extrabold leading-snug">{b.titulo}</h2>
+              <span className="text-[9px] text-white/80 font-semibold mt-1 flex items-center gap-0.5">
+                {b.cta} <ChevronRight size={9} />
+              </span>
+            </div>
+            <div className="text-5xl leading-none select-none shrink-0 z-10">{b.emoji}</div>
           </div>
-          <div className="text-6xl leading-none select-none shrink-0 z-10">{b.emoji}</div>
-        </div>
-      </Link>
+        </Link>
+      </div>
 
-      {/* Escritorio (Banner Completo original) */}
+      {/* Desktop */}
       <div className="hidden md:block">
-        <div className="max-w-5xl mx-auto px-4 py-8 md:py-10 flex flex-row items-center gap-6">
+        <div className="max-w-5xl mx-auto px-4 py-8 flex flex-row items-center gap-6">
           <div className="flex-1">
             <div className="inline-block bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">
               {b.badge}
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold leading-tight mb-2">{b.titulo}</h1>
             <p className="text-white/80 text-sm mb-4 max-w-md">{b.sub}</p>
-            <div className="flex gap-3">
-              <Link href={b.href}
-                className="bg-white text-gray-800 font-bold px-5 py-2.5 rounded-xl hover:bg-gray-50 transition text-xs text-center">
-                {b.cta}
-              </Link>
-              <Link href="/productos"
-                className="bg-white/20 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-white/30 transition text-xs text-center border border-white/20">
-                Todo el catálogo →
-              </Link>
-            </div>
+            <Link href={b.href}
+              className="bg-white text-gray-800 font-bold px-5 py-2.5 rounded-xl hover:bg-gray-50 transition text-xs text-center inline-block">
+              {b.cta}
+            </Link>
           </div>
-          <div className="text-[100px] leading-none select-none">{b.emoji}</div>
+          <div className="text-[80px] leading-none select-none">{b.emoji}</div>
         </div>
       </div>
 
-      {/* Controles (Solo Escritorio) */}
+      {/* Controles desktop */}
       <button onClick={() => ir(-1)}
-        className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/20 hover:bg-white/40 rounded-full hidden md:flex items-center justify-center transition">
-        <ChevronLeft size={18} className="text-white" />
+        className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/20 hover:bg-white/40 rounded-full hidden md:flex items-center justify-center transition">
+        <ChevronLeft size={16} className="text-white" />
       </button>
       <button onClick={() => ir(+1)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/20 hover:bg-white/40 rounded-full hidden md:flex items-center justify-center transition">
-        <ChevronRight size={18} className="text-white" />
+        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/20 hover:bg-white/40 rounded-full hidden md:flex items-center justify-center transition">
+        <ChevronRight size={16} className="text-white" />
       </button>
 
       {/* Dots */}
-      <div className="absolute bottom-2 md:bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+      <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex gap-1">
         {BANNERS.map((_, i) => (
           <button key={i} onClick={() => { setIdx(i); resetTimer() }}
-            className={`rounded-full transition-all ${i === idx ? 'w-5 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40'}`} />
+            className={`rounded-full transition-all ${i === idx ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40'}`} />
         ))}
       </div>
     </div>
@@ -154,18 +165,18 @@ function BannerCarrusel() {
 // ── Skeleton card ──────────────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse w-[155px] shrink-0 md:w-auto md:shrink">
-      <div className="bg-gray-100 h-32 rounded-xl mb-3" />
-      <div className="h-2.5 bg-gray-100 rounded w-1/3 mb-2" />
-      <div className="h-3.5 bg-gray-100 rounded mb-1" />
-      <div className="h-5 bg-gray-100 rounded w-1/4 mt-2 mb-3" />
-      <div className="h-8 bg-gray-100 rounded-lg" />
+    <div className="bg-white rounded-2xl border border-gray-100 p-3 animate-pulse w-[145px] shrink-0 md:w-auto md:shrink">
+      <div className="bg-gray-100 h-28 rounded-xl mb-2" />
+      <div className="h-2.5 bg-gray-100 rounded w-1/3 mb-1.5" />
+      <div className="h-3 bg-gray-100 rounded mb-1" />
+      <div className="h-5 bg-gray-100 rounded w-1/4 mt-1.5 mb-2" />
+      <div className="h-7 bg-gray-100 rounded-lg" />
     </div>
   )
 }
 
-// ── Tarjeta de producto con favorito ──────────────────────────────
-function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => void }) {
+// ── Tarjeta de producto ──────────────────────────────────────────
+function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Producto) => void; showOffer?: boolean }) {
   const router = useRouter()
   const [fav, setFav] = useState(() => esFavorito(p.codigo))
   const [ok, setOk]   = useState(false)
@@ -199,6 +210,8 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
     setFav(toggleFavorito({ codigo: p.codigo, descripcion: p.descripcion, categoria: p.categoria, precio_publico: p.precio_publico }))
   }
 
+  const tieneOferta = showOffer && p.en_oferta && p.precio_oferta && p.precio_oferta < p.precio_publico
+
   return (
     <div onClick={() => {
       if (USE_QUICK_VIEW && onSelect) {
@@ -207,8 +220,8 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
         router.push(`/producto/${encodeURIComponent(p.codigo)}`)
       }
     }}
-      className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group w-[155px] shrink-0 snap-start md:w-auto md:shrink md:snap-align-none">
-      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-36 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
+      className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group w-[145px] shrink-0 snap-start md:w-auto md:shrink md:snap-align-none">
+      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-32 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
         {p.imagen_url && !imageError ? (
           <img
             src={p.imagen_url}
@@ -221,47 +234,61 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
           CAT_CONFIG[p.categoria]?.emoji || '📦'
         )}
         <button onClick={toggleFav}
-          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm z-10 transition
+          className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center shadow-sm z-10 transition
             ${fav ? 'bg-green-600 text-white' : 'bg-white/90 text-gray-400 hover:text-green-600'}`}
           title={fav ? "Quitar de la lista" : "Añadir a la lista de compras"}
         >
-          <ClipboardList size={13} />
+          <ClipboardList size={11} />
         </button>
-        {p.stock > 0 && p.stock < 5 && (
-          <span className="absolute top-2 left-2 text-[9px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded-full z-10">
+        {tieneOferta && (
+          <span className="absolute top-1.5 left-1.5 text-[8px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded-full z-10 shadow-sm">
+            🔥 OFERTA
+          </span>
+        )}
+        {!tieneOferta && p.stock > 0 && p.stock < 5 && (
+          <span className="absolute top-1.5 left-1.5 text-[8px] font-bold bg-orange-500 text-white px-1.5 py-0.5 rounded-full z-10">
             ⚡ Últimas
           </span>
         )}
       </div>
       <div className="p-2 flex-1 flex flex-col justify-between">
         <div className="flex-1">
-          <div className="text-xs font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-0.5">{p.descripcion}</div>
+          <div className="text-[11px] font-bold text-gray-800 leading-snug line-clamp-2 min-h-[28px] mb-0.5">{p.descripcion}</div>
           {p.marca && (
-            <div className="text-[10px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+            <div className="text-[9px] text-gray-400 font-bold truncate">{p.marca}</div>
           )}
         </div>
         <div className="mt-1 flex items-center justify-between gap-1">
-          <div className="text-sm font-black text-gray-900 shrink-0">{fmt(p.precio_publico)}</div>
-          <div className="scale-90 origin-right shrink-0">
+          <div className="shrink-0">
+            {tieneOferta ? (
+              <div className="flex flex-col">
+                <span className="text-[10px] text-gray-400 line-through">{fmt(p.precio_publico)}</span>
+                <span className="text-sm font-black text-red-600">{fmt(p.precio_oferta!)}</span>
+              </div>
+            ) : (
+              <div className="text-sm font-black text-gray-900">{fmt(p.precio_publico)}</div>
+            )}
+          </div>
+          <div className="scale-85 origin-right shrink-0">
             {cantidad === 0 ? (
               <button onClick={addCart}
-                className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1 active:scale-[0.96] transition-transform duration-75 cursor-pointer
+                className={`py-1.5 px-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 active:scale-[0.96] transition-transform duration-75 cursor-pointer
                   ${ok ? 'bg-green-600 text-white shadow-sm' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-green-600 shadow-sm'}`}>
-                <ShoppingCart size={12} />
-                {ok ? '¡Ok!' : 'Agregar'}
+                <ShoppingCart size={11} />
+                {ok ? '✓' : 'Agregar'}
               </button>
             ) : (
-              <div className="flex items-center justify-between bg-green-600 rounded-lg overflow-hidden h-[30px] w-[80px] shadow-sm">
+              <div className="flex items-center justify-between bg-green-600 rounded-lg overflow-hidden h-[28px] w-[72px] shadow-sm">
                 <button 
                   onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad - 1); }}
-                  className="px-2 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center cursor-pointer"
+                  className="px-1.5 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center cursor-pointer"
                 >
                   <Minus size={10} />
                 </button>
                 <span className="text-white text-xs font-black select-none">{cantidad}</span>
                 <button 
                   onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad + 1); }}
-                  className="px-2 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center cursor-pointer"
+                  className="px-1.5 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center cursor-pointer"
                 >
                   <Plus size={10} />
                 </button>
@@ -274,6 +301,7 @@ function ProdCard({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => vo
   )
 }
 
+// ── Botón agregar frecuente ──────────────────────────────────────
 function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
   const [cantidad, setCantidad] = useState(() => {
     return getCarrito().find(i => i.codigo === prod.codigo)?.cantidad ?? 0
@@ -299,25 +327,25 @@ function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
   if (cantidad === 0) {
     return (
       <button onClick={add}
-        className="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1 active:scale-[0.96] transition-transform duration-75 shrink-0 cursor-pointer bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent">
-        <ShoppingCart size={11} />
+        className="px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 active:scale-[0.96] transition-transform duration-75 shrink-0 cursor-pointer bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent">
+        <ShoppingCart size={10} />
         Agregar
       </button>
     )
   }
 
   return (
-    <div className="flex items-center bg-green-600 text-white rounded-lg overflow-hidden h-[28px] shrink-0 border border-green-700">
+    <div className="flex items-center bg-green-600 text-white rounded-lg overflow-hidden h-[26px] shrink-0 border border-green-700">
       <button 
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(prod.codigo, cantidad - 1); }}
-        className="px-2 h-full flex items-center justify-center hover:bg-green-700 active:scale-[0.96] transition-transform duration-75 cursor-pointer"
+        className="px-1.5 h-full flex items-center justify-center hover:bg-green-700 active:scale-[0.96] transition-transform duration-75 cursor-pointer"
       >
         <Minus size={9} />
       </button>
-      <span className="px-1 text-[11px] font-extrabold select-none min-w-[14px] text-center">{cantidad}</span>
+      <span className="px-1 text-[10px] font-extrabold select-none min-w-[12px] text-center">{cantidad}</span>
       <button 
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(prod.codigo, cantidad + 1); }}
-        className="px-2 h-full flex items-center justify-center hover:bg-green-700 active:scale-[0.96] transition-transform duration-75 cursor-pointer"
+        className="px-1.5 h-full flex items-center justify-center hover:bg-green-700 active:scale-[0.96] transition-transform duration-75 cursor-pointer"
       >
         <Plus size={9} />
       </button>
@@ -325,6 +353,54 @@ function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
   )
 }
 
+// ── Sección horizontal de productos ──────────────────────────────
+function ProductSection({
+  id, titulo, subtitulo, productos, loading, onSelect, showOffer, emoji,
+  verTodosHref, bgClass
+}: {
+  id?: string
+  titulo: string
+  subtitulo?: string
+  productos: Producto[]
+  loading: boolean
+  onSelect: (p: Producto, list: Producto[]) => void
+  showOffer?: boolean
+  emoji?: string
+  verTodosHref?: string
+  bgClass?: string
+}) {
+  return (
+    <section id={id} className={`${bgClass || ''}`}>
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-1.5">
+            {emoji && <span>{emoji}</span>}
+            {titulo}
+          </h2>
+          {subtitulo && <p className="text-[10px] text-gray-400 mt-0.5">{subtitulo}</p>}
+        </div>
+        {verTodosHref && (
+          <Link href={verTodosHref} className="text-xs text-green-600 font-semibold flex items-center gap-0.5 hover:underline shrink-0">
+            Ver todos <ChevronRight size={13} />
+          </Link>
+        )}
+      </div>
+      {loading ? (
+        <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide snap-x md:grid md:grid-cols-4 md:gap-3 md:overflow-visible">
+          {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : (
+        <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide snap-x md:grid md:grid-cols-4 md:gap-3 md:overflow-visible">
+          {productos.map(p => <ProdCard key={p.codigo} p={p} showOffer={showOffer} onSelect={(prod) => onSelect(prod, productos)} />)}
+        </div>
+      )}
+    </section>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  HOME
+// ══════════════════════════════════════════════════════════════════
 const CAT_TIENDA: Record<string, string> = {
   supermercado: '🛒', farmacia: '💊', libreria: '📚',
   abarrotes: '🥬', tecnologia: '💻', frecuentes: '🔄',
@@ -358,14 +434,46 @@ export default function Home() {
       setSelectedProduct(activeList[idx - 1])
     }
   }
+
   const [cats,        setCats]        = useState<{ categoria: string; n: number }[]>([])
+  const [ofertas,     setOfertas]     = useState<Producto[]>([])
+  const [exclusivos,  setExclusivos]  = useState<Producto[]>([])
   const [destacados,  setDestacados]  = useState<Producto[]>([])
   const [novedades,   setNovedades]   = useState<Producto[]>([])
   const [tiendas,     setTiendas]     = useState<{ id: string; nombre: string; categoria: string | null; logo_url: string | null }[]>([])
-  const [cargandoCats, setCargandoCats] = useState(true)
+  const [cargando,    setCargando]    = useState(true)
+  const [cargandoOfertas, setCargandoOfertas] = useState(true)
+  const [cargandoExcl, setCargandoExcl] = useState(true)
   const [cargandoProds, setCargandoProds] = useState(true)
+  const [crayolaId, setCrayolaId]     = useState('')
 
   useEffect(() => {
+    // Obtener ID de La Crayola
+    supabase.from('ol_tiendas')
+      .select('id')
+      .ilike('nombre', '%crayola%')
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setCrayolaId(data.id)
+
+          // Exclusivos La Crayola
+          supabase.from('ol_productos')
+            .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles,tienda_id')
+            .eq('tienda_id', data.id)
+            .gt('stock', 0)
+            .gt('precio_publico', 0)
+            .order('precio_publico', { ascending: false })
+            .limit(10)
+            .then(({ data: prods }) => {
+              if (prods) setExclusivos(prods as Producto[])
+              setCargandoExcl(false)
+            })
+        } else {
+          setCargandoExcl(false)
+        }
+      })
+
     // Categorías
     supabase.from('ol_productos').select('categoria').gt('stock', 0)
       .then(({ data }) => {
@@ -374,11 +482,24 @@ export default function Home() {
         data.forEach((d: { categoria: string }) => {
           if (d.categoria) map.set(d.categoria, (map.get(d.categoria) || 0) + 1)
         })
-        setCats(Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 9).map(([categoria, n]) => ({ categoria, n })))
-        setCargandoCats(false)
+        setCats(Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([categoria, n]) => ({ categoria, n })))
+        setCargando(false)
       })
 
-    // Destacados (mayor precio con stock)
+    // Ofertas (productos marcados como en_oferta)
+    supabase.from('ol_productos')
+      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles,en_oferta,precio_oferta')
+      .eq('en_oferta', true)
+      .gt('stock', 0)
+      .limit(10)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setOfertas(data as Producto[])
+        }
+        setCargandoOfertas(false)
+      })
+
+    // Destacados
     supabase.from('ol_productos')
       .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles')
       .gt('stock', 0).gt('precio_publico', 5)
@@ -405,9 +526,9 @@ export default function Home() {
       .then(({ data }) => {
         if (data) {
           const virtualStores = [
-            { id: 'frecuentes-virtual', nombre: 'Productos Frecuentes', categoria: 'frecuentes', logo_url: null },
-            { id: 'impresion-virtual', nombre: 'Centro de Impresión', categoria: 'impresion', logo_url: null },
-            { id: 'recargas-virtual', nombre: 'Recargas y Planillas', categoria: 'recargas', logo_url: null }
+            { id: 'frecuentes-virtual', nombre: 'Frecuentes', categoria: 'frecuentes', logo_url: null },
+            { id: 'impresion-virtual', nombre: 'Impresión', categoria: 'impresion', logo_url: null },
+            { id: 'recargas-virtual', nombre: 'Recargas', categoria: 'recargas', logo_url: null }
           ]
           setTiendas([...data, ...virtualStores])
         }
@@ -461,44 +582,55 @@ export default function Home() {
 
   return (
     <div>
-      {/* ── TRUST BADGES ── */}
-      <div className="hidden md:block bg-white border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-4 py-4 grid grid-cols-3 gap-4">
-          {[
-            { icon: Truck,  text: 'Envíos a domicilio', sub: 'En Los Bancos' },
-            { icon: Shield, text: 'Calidad garantizada', sub: 'Productos verificados' },
-            { icon: Clock,  text: 'Atención rápida',    sub: 'Lun–Sáb 8–18h' },
-          ].map(({ icon: Icon, text, sub }) => (
-            <div key={text} className="flex items-center gap-2.5 justify-center md:justify-start">
-              <div className="bg-green-100 p-2 rounded-lg shrink-0">
-                <Icon size={16} className="text-green-700" />
-              </div>
-              <div className="hidden sm:block">
-                <div className="text-xs font-semibold text-gray-800">{text}</div>
-                <div className="text-[10px] text-gray-400">{sub}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <div className="max-w-5xl mx-auto px-3 py-4 space-y-6 md:px-4 md:py-6 md:space-y-8">
 
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-12">
+        {/* ── 1. ÍCONOS RÁPIDOS ── */}
+        <QuickIcons />
 
-        {/* ── SELECCIÓN DE VERTICALES (LocalGrid al inicio estilo PedidosYa) ── */}
-        <LocalGrid />
+        {/* ── 2. BANNER CARRUSEL ── */}
+        <BannerCarrusel />
 
-        {/* ── PRODUCTOS FRECUENTES (Comprar de nuevo) ── */}
+        {/* ── 3. OFERTAS ── */}
+        {(cargandoOfertas || ofertas.length > 0) && (
+          <ProductSection
+            id="sec-ofertas"
+            emoji="🔥"
+            titulo="Ofertas"
+            subtitulo="Productos a precios especiales por tiempo limitado"
+            productos={ofertas}
+            loading={cargandoOfertas}
+            onSelect={openQuickView}
+            showOffer={true}
+            verTodosHref="/productos?ofertas=true"
+          />
+        )}
+
+        {/* ── 4. EXCLUSIVOS LA CRAYOLA ── */}
+        {(cargandoExcl || exclusivos.length > 0) && (
+          <ProductSection
+            id="sec-exclusivos"
+            emoji="⭐"
+            titulo="Exclusivos Tienlo"
+            subtitulo="Productos que solo encuentras en nuestra tienda"
+            productos={exclusivos}
+            loading={cargandoExcl}
+            onSelect={openQuickView}
+            verTodosHref={crayolaId ? `/tiendas/${crayolaId}` : '/tiendas'}
+          />
+        )}
+
+        {/* ── 5. COMPRAR DE NUEVO ── */}
         {frecuentes.length > 0 && (
-          <section className="w-full max-w-full overflow-hidden space-y-4 bg-green-50/40 border border-green-100/60 rounded-2xl p-5 animate-fade-in">
-            <div className="flex items-center justify-between">
+          <section id="sec-frecuentes" className="bg-green-50/50 border border-green-100/60 rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-1.5">
                   🔄 Comprar de nuevo
                 </h2>
-                <p className="text-xs text-gray-400">Tus artículos habituales listos para volver a ordenar</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">Tus productos habituales listos para reordenar</p>
               </div>
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {frecuentes.map(p => (
                 <div key={p.codigo}
                   onClick={() => {
@@ -508,8 +640,8 @@ export default function Home() {
                       router.push(`/producto/${encodeURIComponent(p.codigo)}`)
                     }
                   }}
-                  className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group/freq">
-                  <div className="relative bg-gray-50 h-28 flex items-center justify-center text-2xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors w-full">
+                  className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[130px] relative group/freq">
+                  <div className="relative bg-gray-50 h-24 flex items-center justify-center text-2xl overflow-hidden group-hover/freq:bg-green-50/50 transition-colors w-full">
                     {p.imagen_url ? (
                       <img src={p.imagen_url} alt={p.descripcion} className="w-full h-full object-contain p-1.5" />
                     ) : (
@@ -517,11 +649,9 @@ export default function Home() {
                     )}
                   </div>
                   <div className="p-2 flex-1 min-w-0 flex flex-col justify-between">
-                    <div>
-                      <div className="text-[11px] font-bold text-gray-800 leading-snug line-clamp-2 min-h-[32px] mb-1">{p.descripcion}</div>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between gap-1">
-                      <div className="text-xs font-black text-gray-900">{fmt(p.precio_publico)}</div>
+                    <div className="text-[10px] font-bold text-gray-800 leading-snug line-clamp-2 min-h-[28px] mb-1">{p.descripcion}</div>
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="text-[11px] font-black text-gray-900">{fmt(p.precio_publico)}</div>
                       <div className="scale-75 origin-right shrink-0">
                         <BtnAgregarFrecuente prod={p} />
                       </div>
@@ -533,22 +663,29 @@ export default function Home() {
           </section>
         )}
 
-        {/* ── CARRUSEL COMPACTO (Debajo de categorías estilo Tipti) ── */}
-        <BannerCarrusel />
+        {/* ── 6. BANNER INTERMEDIO — Tiendas aliadas ── */}
+        <section className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 md:p-6 text-white flex items-center gap-4">
+          <div className="text-4xl md:text-5xl shrink-0">🏪</div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm md:text-lg font-extrabold">¿Necesitas algo de Tía o Tuti?</h3>
+            <p className="text-blue-100 text-[11px] md:text-sm mt-0.5">Lo compramos por ti y te lo llevamos junto con tu pedido</p>
+          </div>
+          <Link href="/tiendas"
+            className="bg-white text-blue-700 font-bold px-4 py-2 rounded-xl hover:bg-blue-50 transition text-xs shrink-0">
+            Ver →
+          </Link>
+        </section>
 
-        {/* ── TIENDAS ALIADAS ── */}
+        {/* ── 7. TIENDAS (Compactas — logos horizontales) ── */}
         {tiendas.length > 0 && (
           <section>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">🏪 Tiendas disponibles</h2>
-                <p className="text-xs text-gray-400">Compramos por ti y te entregamos en casa</p>
-              </div>
-              <Link href="/tiendas" className="text-sm text-green-600 font-medium flex items-center gap-1 hover:underline">
-                Ver todas <ChevronRight size={14} />
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-extrabold text-gray-900">🏪 Tiendas</h2>
+              <Link href="/tiendas" className="text-xs text-green-600 font-semibold flex items-center gap-0.5 hover:underline">
+                Todas <ChevronRight size={13} />
               </Link>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {tiendas.map(t => {
                 const getHref = (id: string) => {
                   if (id === 'frecuentes-virtual') return '/productos?frecuentes=true'
@@ -558,49 +695,55 @@ export default function Home() {
                 }
                 return (
                   <Link key={t.id} href={getHref(t.id)}
-                    className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col items-center gap-2 text-center group">
-                    <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">
+                    className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col items-center gap-1.5 text-center group shrink-0 w-[80px]">
+                    <div className="w-11 h-11 bg-green-50 rounded-xl flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
                       {t.logo_url
-                        ? <img src={t.logo_url} alt={t.nombre} className="w-9 h-9 object-contain" />
+                        ? <img src={t.logo_url} alt={t.nombre} className="w-8 h-8 object-contain" />
                         : (CAT_TIENDA[t.categoria ?? 'otros'] ?? '🏪')
                       }
                     </div>
-                    <span className="text-xs font-bold text-gray-700 leading-tight">{t.nombre}</span>
+                    <span className="text-[10px] font-bold text-gray-600 leading-tight truncate w-full">{t.nombre}</span>
                   </Link>
                 )
               })}
-              {/* Ver todas */}
-              <Link href="/tiendas"
-                className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-4 flex flex-col items-center gap-2 text-center hover:bg-green-50 hover:border-green-200 transition group">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-2xl group-hover:scale-105 transition-transform">➕</div>
-                <span className="text-xs font-bold text-gray-400 group-hover:text-green-600">Ver todas</span>
-              </Link>
             </div>
           </section>
         )}
 
-        {/* ── CATEGORÍAS ── */}
+        {/* ── 8. NOVEDADES ── */}
+        <ProductSection
+          id="sec-novedades"
+          emoji="✨"
+          titulo="Novedades"
+          subtitulo="Los últimos productos en llegar"
+          productos={novedades}
+          loading={cargandoProds}
+          onSelect={openQuickView}
+          verTodosHref="/productos"
+        />
+
+        {/* ── 9. CATEGORÍAS (Compactas) ── */}
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-900">Categorías</h2>
-            <Link href="/productos" className="text-sm text-green-600 font-medium flex items-center gap-1 hover:underline">
-              Ver todo <ChevronRight size={14} />
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-extrabold text-gray-900">📂 Categorías</h2>
+            <Link href="/productos" className="text-xs text-green-600 font-semibold flex items-center gap-0.5 hover:underline">
+              Ver todo <ChevronRight size={13} />
             </Link>
           </div>
-          {cargandoCats ? (
-            <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
-              {[...Array(9)].map((_, i) => <div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse" />)}
+          {cargando ? (
+            <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+              {[...Array(8)].map((_, i) => <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />)}
             </div>
           ) : (
-            <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
               {cats.map(({ categoria, n }) => {
                 const cfg = CAT_CONFIG[categoria] || { emoji: '📦', color: 'text-gray-700', bg: 'bg-gray-50 border-gray-200' }
                 return (
                   <Link key={categoria} href={`/productos?cat=${encodeURIComponent(categoria)}`}
-                    className={`${cfg.bg} border rounded-2xl p-4 text-center hover:shadow-md active:scale-95 transition`}>
-                    <div className="text-3xl mb-2">{cfg.emoji}</div>
-                    <div className={`text-xs font-bold ${cfg.color} leading-tight`}>{categoria}</div>
-                    <div className="text-[10px] text-gray-400 mt-0.5">{n} productos</div>
+                    className={`${cfg.bg} border rounded-xl p-2.5 text-center hover:shadow-md active:scale-95 transition`}>
+                    <div className="text-2xl mb-1">{cfg.emoji}</div>
+                    <div className={`text-[9px] font-bold ${cfg.color} leading-tight line-clamp-2`}>{categoria}</div>
+                    <div className="text-[8px] text-gray-400 mt-0.5">{n}</div>
                   </Link>
                 )
               })}
@@ -608,75 +751,16 @@ export default function Home() {
           )}
         </section>
 
-        {/* ── PRODUCTOS DESTACADOS ── */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">⭐ Destacados</h2>
-              <p className="text-xs text-gray-400">Los más valorados de nuestra tienda</p>
-            </div>
-            <Link href="/productos" className="text-sm text-green-600 font-medium flex items-center gap-1 hover:underline">
-              Ver todos <ChevronRight size={14} />
-            </Link>
-          </div>
-          {cargandoProds ? (
-            <div className="flex gap-3.5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x md:grid md:grid-cols-4 md:gap-4 md:overflow-visible">
-              {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
-            </div>
-          ) : (
-            <div className="flex gap-3.5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x md:grid md:grid-cols-4 md:gap-4 md:overflow-visible">
-              {destacados.map(p => <ProdCard key={p.codigo} p={p} onSelect={(prod) => openQuickView(prod, destacados)} />)}
-            </div>
-          )}
-        </section>
-
-        {/* ── BANNER INTERMEDIO ── */}
-        <section className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 md:p-8 text-white flex flex-col md:flex-row items-center gap-6">
-          <div className="text-6xl">🎒</div>
-          <div className="flex-1 text-center md:text-left">
-            <h3 className="text-xl font-extrabold mb-1">Lista escolar completa</h3>
-            <p className="text-blue-100 text-sm">Cuadernos, lápices, colores, mochilas y más. Todo en un solo lugar.</p>
-          </div>
-          <Link href="/productos?cat=Escolar"
-            className="bg-white text-blue-700 font-bold px-6 py-3 rounded-xl hover:bg-blue-50 transition text-sm shrink-0">
-            Ver útiles →
-          </Link>
-        </section>
-
-        {/* ── NOVEDADES ── */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">✨ Novedades</h2>
-              <p className="text-xs text-gray-400">Los últimos productos en llegar</p>
-            </div>
-            <Link href="/productos" className="text-sm text-green-600 font-medium flex items-center gap-1 hover:underline">
-              Ver todos <ChevronRight size={14} />
-            </Link>
-          </div>
-          {cargandoProds ? (
-            <div className="flex gap-3.5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x md:grid md:grid-cols-4 md:gap-4 md:overflow-visible">
-              {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
-            </div>
-          ) : (
-            <div className="flex gap-3.5 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x md:grid md:grid-cols-4 md:gap-4 md:overflow-visible">
-              {novedades.map(p => <ProdCard key={p.codigo} p={p} onSelect={(prod) => openQuickView(prod, novedades)} />)}
-            </div>
-          )}
-        </section>
-
-        {/* ── BANNER ARTE ── */}
-        <section className="bg-gradient-to-r from-pink-500 to-purple-600 rounded-2xl p-6 md:p-8 text-white flex flex-col md:flex-row items-center gap-6">
-          <div className="text-6xl">🎨</div>
-          <div className="flex-1 text-center md:text-left">
-            <h3 className="text-xl font-extrabold mb-1">Expresa tu creatividad</h3>
-            <p className="text-pink-100 text-sm">Pinturas, pinceles, marcadores y materiales para artistas de todos los niveles.</p>
-          </div>
-          <Link href="/productos?cat=Arte"
-            className="bg-white text-purple-700 font-bold px-6 py-3 rounded-xl hover:bg-purple-50 transition text-sm shrink-0">
-            Ver arte →
-          </Link>
-        </section>
+        {/* ── 10. DESTACADOS ── */}
+        <ProductSection
+          emoji="⭐"
+          titulo="Destacados"
+          subtitulo="Los más valorados"
+          productos={destacados}
+          loading={cargandoProds}
+          onSelect={openQuickView}
+          verTodosHref="/productos"
+        />
 
       </div>
 
@@ -689,7 +773,7 @@ export default function Home() {
         </svg>
       </a>
 
-      {/* Bottom Sheet Quick View Drawer (Totalmente reversible) */}
+      {/* QuickView Drawer */}
       {(() => {
         const idx = activeList.findIndex(p => p.codigo === selectedProduct?.codigo)
         const prevProd = idx > 0 ? activeList[idx - 1] : null
