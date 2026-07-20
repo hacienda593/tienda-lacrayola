@@ -99,7 +99,7 @@ function BannerCarrusel() {
 
   return (
     <div
-      className={`relative bg-gradient-to-br ${b.bg} text-white overflow-hidden transition-all duration-500 rounded-2xl`}
+      className={`relative bg-gradient-to-br ${b.bg} text-white overflow-hidden transition-all duration-500 rounded-3xl shadow-md shadow-gray-200/60 border border-white/10`}
       onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
       onTouchEnd={e => {
         const dx = e.changedTouches[0].clientX - touchStartX.current
@@ -109,54 +109,54 @@ function BannerCarrusel() {
       {/* Móvil */}
       <div className="block md:hidden">
         <Link href={b.href} className="block">
-          <div className="flex items-center justify-between px-4 h-[100px] relative">
+          <div className="flex items-center justify-between px-4.5 h-[105px] relative">
             <div className="pr-3 z-10 flex flex-col justify-center flex-1 min-w-0">
-              <span className="inline-block bg-white/20 text-white text-[8px] font-bold px-2 py-0.5 rounded-full mb-1 w-max">
+              <span className="inline-block bg-white/20 backdrop-blur-md border border-white/30 text-white text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-1 w-max shadow-2xs">
                 {b.badge}
               </span>
-              <h2 className="text-[13px] font-extrabold leading-snug">{b.titulo}</h2>
-              <span className="text-[9px] text-white/80 font-semibold mt-1 flex items-center gap-0.5">
-                {b.cta} <ChevronRight size={9} />
+              <h2 className="text-[13.5px] font-black leading-snug tracking-tight text-white drop-shadow-xs">{b.titulo}</h2>
+              <span className="text-[9.5px] text-white/90 font-extrabold mt-1.5 flex items-center gap-0.5 bg-white/15 backdrop-blur-xs px-2 py-0.5 rounded-md w-max border border-white/20">
+                {b.cta} <ChevronRight size={10} className="stroke-[3]" />
               </span>
             </div>
-            <div className="text-5xl leading-none select-none shrink-0 z-10">{b.emoji}</div>
+            <div className="text-5xl leading-none select-none shrink-0 z-10 drop-shadow-sm transition-transform duration-300 hover:scale-110">{b.emoji}</div>
           </div>
         </Link>
       </div>
 
       {/* Desktop */}
       <div className="hidden md:block">
-        <div className="max-w-5xl mx-auto px-4 py-8 flex flex-row items-center gap-6">
+        <div className="max-w-5xl mx-auto px-6 py-8 flex flex-row items-center gap-6">
           <div className="flex-1">
-            <div className="inline-block bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">
+            <div className="inline-block bg-white/20 backdrop-blur-md border border-white/30 text-white text-xs font-black uppercase tracking-wider px-3.5 py-1 rounded-full mb-3 shadow-2xs">
               {b.badge}
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold leading-tight mb-2">{b.titulo}</h1>
-            <p className="text-white/80 text-sm mb-4 max-w-md">{b.sub}</p>
+            <h1 className="text-2xl md:text-3xl font-black leading-tight mb-2 tracking-tight text-white drop-shadow-xs">{b.titulo}</h1>
+            <p className="text-white/90 text-sm mb-4 max-w-md font-medium">{b.sub}</p>
             <Link href={b.href}
-              className="bg-white text-gray-800 font-bold px-5 py-2.5 rounded-xl hover:bg-gray-50 transition text-xs text-center inline-block">
-              {b.cta}
+              className="bg-white text-gray-900 font-extrabold px-5 py-2.5 rounded-xl hover:bg-gray-50 hover:shadow-md active:scale-95 transition-all text-xs text-center inline-flex items-center gap-1.5 shadow-sm">
+              {b.cta} <ChevronRight size={14} className="stroke-[2.5]" />
             </Link>
           </div>
-          <div className="text-[80px] leading-none select-none">{b.emoji}</div>
+          <div className="text-[84px] leading-none select-none drop-shadow-md transition-transform duration-300 hover:scale-105">{b.emoji}</div>
         </div>
       </div>
 
       {/* Controles desktop */}
       <button onClick={() => ir(-1)}
-        className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/20 hover:bg-white/40 rounded-full hidden md:flex items-center justify-center transition">
-        <ChevronLeft size={16} className="text-white" />
+        className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/25 hover:bg-white/40 backdrop-blur-md rounded-full hidden md:flex items-center justify-center transition active:scale-90 shadow-sm">
+        <ChevronLeft size={18} className="text-white stroke-[2.5]" />
       </button>
       <button onClick={() => ir(+1)}
-        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-white/20 hover:bg-white/40 rounded-full hidden md:flex items-center justify-center transition">
-        <ChevronRight size={16} className="text-white" />
+        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/25 hover:bg-white/40 backdrop-blur-md rounded-full hidden md:flex items-center justify-center transition active:scale-90 shadow-sm">
+        <ChevronRight size={18} className="text-white stroke-[2.5]" />
       </button>
 
       {/* Dots */}
-      <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex gap-1">
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
         {BANNERS.map((_, i) => (
           <button key={i} onClick={() => { setIdx(i); resetTimer() }}
-            className={`rounded-full transition-all ${i === idx ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40'}`} />
+            className={`rounded-full transition-all duration-300 ${i === idx ? 'w-5 h-1.5 bg-white shadow-xs' : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/60'}`} />
         ))}
       </div>
     </div>
@@ -221,77 +221,77 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
         router.push(`/producto/${encodeURIComponent(p.codigo)}`)
       }
     }}
-      className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group w-full">
-      <div className="relative bg-gradient-to-br from-gray-50/80 to-gray-100/50 h-28 sm:h-32 flex items-center justify-center text-3xl overflow-hidden group-hover:from-green-50/60 group-hover:to-green-100/40 transition-colors w-full">
+      className="bg-white rounded-2xl border border-gray-100/90 overflow-hidden shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.09)] hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer group w-full relative">
+      <div className="relative bg-gradient-to-b from-gray-50/90 via-gray-50/40 to-white h-28 sm:h-32 flex items-center justify-center text-3xl overflow-hidden group-hover:from-emerald-50/40 transition-colors w-full">
         {p.imagen_url && !imageError ? (
           <img
             src={p.imagen_url}
             alt={p.descripcion}
             onError={() => setImageError(true)}
-            className="w-full h-full object-contain p-2"
+            className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
         ) : (
-          CAT_CONFIG[p.categoria]?.emoji || '📦'
+          <span className="group-hover:scale-110 transition-transform duration-300">{CAT_CONFIG[p.categoria]?.emoji || '📦'}</span>
         )}
         <button onClick={toggleFav}
-          className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center shadow-xs z-10 transition
-            ${fav ? 'bg-green-600 text-white' : 'bg-white/90 text-gray-400 hover:text-green-600'}`}
+          className={`absolute top-1.5 right-1.5 w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-xs z-10 transition backdrop-blur-xs
+            ${fav ? 'bg-emerald-600 text-white shadow-emerald-600/30' : 'bg-white/90 text-gray-400 hover:text-emerald-700 hover:bg-white'}`}
           title={fav ? "Quitar de la lista" : "Añadir a la lista de compras"}
         >
-          <ClipboardList size={11} />
+          <ClipboardList size={11.5} className="stroke-[2.2]" />
         </button>
         {tieneOferta && (
-          <span className="absolute top-1.5 left-1.5 text-[8px] font-black bg-red-500 text-white px-1.5 py-0.5 rounded-md z-10 shadow-xs">
-            🔥 OFERTA
+          <span className="absolute top-1.5 left-1.5 text-[7.5px] font-black bg-gradient-to-r from-red-600 to-rose-600 text-white px-1.5 py-0.5 rounded-md z-10 shadow-2xs uppercase tracking-wider border border-red-400/20">
+            🔥 Oferta
           </span>
         )}
         {!tieneOferta && p.stock > 0 && p.stock < 5 && (
-          <span className="absolute top-1.5 left-1.5 text-[8px] font-bold bg-orange-500 text-white px-1.5 py-0.5 rounded-md z-10">
+          <span className="absolute top-1.5 left-1.5 text-[7.5px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-md z-10 shadow-2xs">
             ⚡ Pocas
           </span>
         )}
       </div>
-      <div className="p-2.5 flex-1 flex flex-col justify-between">
+      <div className="p-2.5 flex-1 flex flex-col justify-between bg-white">
         <div className="flex-1">
-          <div className="text-[11px] font-extrabold text-gray-800 leading-snug line-clamp-2 min-h-[28px] mb-0.5">{p.descripcion}</div>
+          <div className="text-[11px] font-extrabold text-gray-800 leading-snug line-clamp-2 min-h-[28px] mb-0.5 group-hover:text-emerald-700 transition-colors">{p.descripcion}</div>
           {p.marca && (
-            <div className="text-[9.5px] text-gray-400 font-bold truncate">{p.marca}</div>
+            <div className="text-[9.5px] text-gray-400 font-bold truncate tracking-tight">{p.marca}</div>
           )}
         </div>
         <div className="mt-2 flex items-center justify-between gap-1">
           <div className="shrink-0">
             {tieneOferta ? (
               <div className="flex flex-col">
-                <span className="text-[9.5px] text-gray-400 line-through">{fmt(p.precio_publico)}</span>
-                <span className="text-sm font-black text-red-600">{fmt(p.precio_oferta!)}</span>
+                <span className="text-[9.5px] text-gray-400 line-through font-semibold">{fmt(p.precio_publico)}</span>
+                <span className="text-sm font-black text-rose-600 tracking-tight">{fmt(p.precio_oferta!)}</span>
               </div>
             ) : (
-              <div className="text-sm font-black text-gray-900">{fmt(p.precio_publico)}</div>
+              <div className="text-sm font-black text-gray-900 tracking-tight">{fmt(p.precio_publico)}</div>
             )}
           </div>
           <div className="scale-90 origin-right shrink-0">
             {cantidad === 0 ? (
               <button onClick={addCart}
-                className={`py-1 px-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 active:scale-[0.96] transition-transform duration-75 cursor-pointer
-                  ${ok ? 'bg-green-600 text-white shadow-xs' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-green-600 shadow-2xs'}`}>
-                <ShoppingCart size={11} />
+                className={`py-1 px-2.5 rounded-lg text-[11px] font-extrabold flex items-center justify-center gap-1 active:scale-[0.94] transition-all duration-150 cursor-pointer
+                  ${ok ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50/80 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 shadow-2xs'}`}>
+                <ShoppingCart size={11} className="stroke-[2.2]" />
                 {ok ? '✓' : 'Agregar'}
               </button>
             ) : (
-              <div className="flex items-center justify-between bg-green-600 rounded-lg overflow-hidden h-[26px] w-[68px] shadow-2xs">
+              <div className="flex items-center justify-between bg-emerald-600 text-white rounded-lg overflow-hidden h-[26px] w-[68px] shadow-xs border border-emerald-700">
                 <button 
                   onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad - 1); }}
-                  className="px-1.5 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center cursor-pointer"
+                  className="px-1.5 h-full text-white hover:bg-emerald-700 transition font-bold active:scale-[0.90] flex items-center justify-center cursor-pointer"
                 >
-                  <Minus size={9} />
+                  <Minus size={9.5} className="stroke-[3]" />
                 </button>
                 <span className="text-white text-[11px] font-black select-none">{cantidad}</span>
                 <button 
                   onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad + 1); }}
-                  className="px-1.5 h-full text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75 flex items-center justify-center cursor-pointer"
+                  className="px-1.5 h-full text-white hover:bg-emerald-700 transition font-bold active:scale-[0.90] flex items-center justify-center cursor-pointer"
                 >
-                  <Plus size={9} />
+                  <Plus size={9.5} className="stroke-[3]" />
                 </button>
               </div>
             )}
@@ -328,27 +328,27 @@ function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
   if (cantidad === 0) {
     return (
       <button onClick={add}
-        className="px-2 py-1 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 active:scale-[0.96] transition-transform duration-75 shrink-0 cursor-pointer bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent">
-        <ShoppingCart size={10} />
+        className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 active:scale-[0.94] transition-all shrink-0 cursor-pointer bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-600 hover:text-white hover:border-transparent shadow-2xs">
+        <ShoppingCart size={10} className="stroke-[2.2]" />
         Agregar
       </button>
     )
   }
 
   return (
-    <div className="flex items-center bg-green-600 text-white rounded-lg overflow-hidden h-[26px] shrink-0 border border-green-700">
+    <div className="flex items-center bg-emerald-600 text-white rounded-lg overflow-hidden h-[26px] shrink-0 border border-emerald-700 shadow-2xs">
       <button 
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(prod.codigo, cantidad - 1); }}
-        className="px-1.5 h-full flex items-center justify-center hover:bg-green-700 active:scale-[0.96] transition-transform duration-75 cursor-pointer"
+        className="px-1.5 h-full flex items-center justify-center hover:bg-emerald-700 active:scale-[0.90] transition cursor-pointer"
       >
-        <Minus size={9} />
+        <Minus size={9} className="stroke-[3]" />
       </button>
-      <span className="px-1 text-[10px] font-extrabold select-none min-w-[12px] text-center">{cantidad}</span>
+      <span className="px-1 text-[10px] font-black select-none min-w-[12px] text-center">{cantidad}</span>
       <button 
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(prod.codigo, cantidad + 1); }}
-        className="px-1.5 h-full flex items-center justify-center hover:bg-green-700 active:scale-[0.96] transition-transform duration-75 cursor-pointer"
+        className="px-1.5 h-full flex items-center justify-center hover:bg-emerald-700 active:scale-[0.90] transition cursor-pointer"
       >
-        <Plus size={9} />
+        <Plus size={9} className="stroke-[3]" />
       </button>
     </div>
   )
@@ -374,17 +374,20 @@ function ProductSection({
 
   return (
     <section id={id} className={`${bgClass || ''}`}>
-      <div className="flex items-center justify-between mb-2.5">
-        <div>
-          <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-1.5">
-            {emoji && <span>{emoji}</span>}
-            {titulo}
-          </h2>
-          {subtitulo && <p className="text-[10px] text-gray-400 mt-0.5">{subtitulo}</p>}
+      <div className="flex items-center justify-between mb-3 px-0.5">
+        <div className="flex items-center gap-2">
+          <div className="w-1 h-4 bg-emerald-600 rounded-full shrink-0" />
+          <div>
+            <h2 className="text-base font-black text-gray-900 tracking-tight flex items-center gap-1.5">
+              {emoji && <span>{emoji}</span>}
+              {titulo}
+            </h2>
+            {subtitulo && <p className="text-[10px] font-medium text-gray-400 mt-0.5">{subtitulo}</p>}
+          </div>
         </div>
         {verTodosHref && (
-          <Link href={verTodosHref} className="text-xs text-green-700 font-extrabold flex items-center gap-0.5 hover:underline shrink-0 bg-green-50/80 px-2.5 py-1 rounded-lg border border-green-100">
-            Ver más <ChevronRight size={13} />
+          <Link href={verTodosHref} className="text-xs text-emerald-700 font-extrabold flex items-center gap-0.5 hover:bg-emerald-100/60 transition shrink-0 bg-emerald-50/90 px-3 py-1 rounded-full border border-emerald-200/60 shadow-2xs">
+            Ver más <ChevronRight size={13} className="stroke-[2.5]" />
           </Link>
         )}
       </div>
