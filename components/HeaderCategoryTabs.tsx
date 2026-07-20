@@ -1,26 +1,25 @@
 'use client'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 export interface CategoryTab {
   name: string
   cat: string
-  emoji?: string
 }
 
 export const MAIN_CATEGORY_TABS: CategoryTab[] = [
-  { name: 'Inicio', cat: '', emoji: '🏠' },
-  { name: 'Abarrotes', cat: 'Abarrotes', emoji: '🥬' },
-  { name: 'Escolar', cat: 'Escolar', emoji: '📚' },
-  { name: 'Arte', cat: 'Arte', emoji: '🎨' },
-  { name: 'Bebidas', cat: 'Bebidas y Licores', emoji: '🥤' },
-  { name: 'Snacks', cat: 'Golosinas y Snacks', emoji: '🍪' },
-  { name: 'Cuidado Personal', cat: 'Cuidado Personal', emoji: '🧴' },
-  { name: 'Limpieza', cat: 'Hogar y Limpieza', emoji: '🧹' },
-  { name: 'Mascotas', cat: 'Mascotas', emoji: '🐶' },
-  { name: 'Tecnología', cat: 'Tecnologia', emoji: '💻' },
-  { name: 'Juguetes', cat: 'Juguetes', emoji: '🧸' },
-  { name: 'Libros', cat: 'Libros', emoji: '📖' },
+  { name: 'Inicio', cat: '' },
+  { name: 'Abarrotes', cat: 'Abarrotes' },
+  { name: 'Escolar', cat: 'Escolar' },
+  { name: 'Arte', cat: 'Arte' },
+  { name: 'Bebidas', cat: 'Bebidas y Licores' },
+  { name: 'Snacks', cat: 'Golosinas y Snacks' },
+  { name: 'Cuidado Personal', cat: 'Cuidado Personal' },
+  { name: 'Limpieza', cat: 'Hogar y Limpieza' },
+  { name: 'Mascotas', cat: 'Mascotas' },
+  { name: 'Tecnología', cat: 'Tecnologia' },
+  { name: 'Juguetes', cat: 'Juguetes' },
+  { name: 'Libros', cat: 'Libros' },
 ]
 
 export default function HeaderCategoryTabs() {
@@ -29,17 +28,33 @@ export default function HeaderCategoryTabs() {
   const searchParams = useSearchParams()
 
   const [mounted, setMounted] = useState(false)
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  const activeCat = searchParams?.get('cat') || ''
+
+  // Auto-centrar la pestaña activa suavemente cuando cambia la categoría (click o swipe)
+  useEffect(() => {
+    if (!mounted) return
+    const key = activeCat || 'inicio'
+    const activeEl = tabRefs.current[key]
+    if (activeEl) {
+      activeEl.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      })
+    }
+  }, [activeCat, mounted])
 
   if (!mounted) return null
 
   // Solo mostrar en página principal o catálogo general de productos
   const isHomeOrCatalog = pathname === '/' || pathname === '/productos'
   if (!isHomeOrCatalog) return null
-
-  const activeCat = searchParams?.get('cat') || ''
 
   function selectTab(catValue: string) {
     const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
@@ -59,24 +74,22 @@ export default function HeaderCategoryTabs() {
   return (
     <div className="w-full bg-white border-t border-gray-100 shadow-xs z-30 sticky top-[57px]">
       <div className="max-w-5xl mx-auto px-2">
-        <div className="flex items-center gap-5 overflow-x-auto scrollbar-hide py-2 text-xs md:text-sm font-bold select-none">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-2 text-xs md:text-sm font-bold select-none px-1">
           {MAIN_CATEGORY_TABS.map((tab) => {
+            const tabKey = tab.cat || 'inicio'
             const isActive = activeCat === tab.cat || (!activeCat && !tab.cat)
             return (
               <button
-                key={tab.cat || 'inicio'}
+                key={tabKey}
+                ref={(el) => { tabRefs.current[tabKey] = el }}
                 onClick={() => selectTab(tab.cat)}
-                className={`relative shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all duration-150 cursor-pointer border-none bg-transparent
+                className={`relative shrink-0 flex items-center justify-center px-3.5 py-1.5 rounded-full transition-all duration-200 cursor-pointer border
                   ${isActive
-                    ? 'text-green-700 font-extrabold bg-green-50 scale-105'
-                    : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50 font-medium'
+                    ? 'bg-green-600 text-white border-green-600 shadow-md font-black scale-105'
+                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 font-bold'
                   }`}
               >
-                <span>{tab.emoji}</span>
                 <span>{tab.name}</span>
-                {isActive && (
-                  <span className="absolute bottom-0 left-2 right-2 h-[2.5px] bg-green-600 rounded-full" />
-                )}
               </button>
             )
           })}
