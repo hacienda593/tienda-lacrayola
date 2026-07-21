@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coupang & Gmarket Hybrid UX Demo - Tienda La Crayola</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            coupang: {
+              red: '#E61A23',
+              darkRed: '#C4121A',
+              blue: '#0074E9',
+              green: '#00B050',
+              gray: '#F5F5F7',
+              dark: '#111827'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f3f4f6;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 antialiased pb-20">
+
+  <!-- BARRA DE SIMULACIÓN DE ESTADOS (DEMO TESTING BAR) -->
+  <div class="bg-gray-900 text-white p-3 text-xs sticky top-0 z-50 shadow-md">
+    <div class="max-w-md mx-auto flex items-center justify-between gap-2">
+      <span class="font-bold text-yellow-400">⚙️ Modo Simulación:</span>
+      <div class="flex gap-1 overflow-x-auto no-scrollbar">
+        <button onclick="setSimMode('nuevo')" id="btnSimNuevo" class="px-2.5 py-1 rounded bg-coupang-blue text-white font-semibold text-[11px] whitespace-nowrap shadow">
+          🆕 Cliente Nuevo
+        </button>
+        <button onclick="setSimMode('pocos')" id="btnSimPocos" class="px-2.5 py-1 rounded bg-gray-700 text-gray-300 font-semibold text-[11px] whitespace-nowrap">
+          🔁 Pocos Comprados (≤6)
+        </button>
+        <button onclick="setSimMode('muchos')" id="btnSimMuchos" class="px-2.5 py-1 rounded bg-gray-700 text-gray-300 font-semibold text-[11px] whitespace-nowrap">
+          👑 Frecuente (>6 + Chips)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP HEADER / NAV BAR -->
+  <header class="bg-white shadow-sm border-b border-gray-200">
+    <!-- Top info bar -->
+    <div class="bg-coupang-red text-white text-xs px-4 py-1.5 flex justify-between items-center font-medium">
+      <div class="flex items-center gap-1.5">
+        <span class="inline-block w-2 h-2 rounded-full bg-green-400 animate-ping"></span>
+        <span>📍 Entregar en: <b>Los Bancos, Calle Central 102</b></span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="bg-white/20 px-2 py-0.5 rounded text-[11px]">🚀 Rocket 7 AM</span>
+      </div>
+    </div>
+
+    <!-- Main header search area -->
+    <div class="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
+      <div class="flex-1 relative">
+        <input type="text" placeholder="Buscar útiles, abarrotes, tecnología..." 
+          class="w-full bg-gray-100 text-sm pl-10 pr-10 py-2 rounded-full border border-transparent focus:border-coupang-red focus:bg-white focus:outline-none transition-all">
+        <svg class="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+
+      <!-- Carrito Icon -->
+      <button onclick="toggleCartDrawer()" class="relative p-2 text-gray-700 hover:text-coupang-red transition">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
+        </svg>
+        <span id="cartCountBadge" class="absolute -top-1 -right-1 bg-coupang-red text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR PRINCIPAL MOBILE FIRST -->
+  <main class="max-w-md mx-auto bg-white min-h-screen shadow-md">
+
+    <!-- 1. MATRIZ DE ICONOS RÁPIDOS -->
+    <section class="p-4 border-b border-gray-100 bg-gradient-to-b from-red-50/40 to-white">
+      <div class="grid grid-cols-5 gap-3 text-center">
+        <div class="cursor-pointer">
+          <div class="w-11 h-11 mx-auto bg-blue-500 text-white rounded-xl flex items-center justify-center text-lg shadow-sm">🚀</div>
+          <span class="text-[10px] font-semibold text-gray-700 mt-1 block">Rocket 7AM</span>
+        </div>
+        <div class="cursor-pointer">
+          <div class="w-11 h-11 mx-auto bg-emerald-500 text-white rounded-xl flex items-center justify-center text-lg shadow-sm">🥬</div>
+          <span class="text-[10px] font-semibold text-gray-700 mt-1 block">Abarrotes</span>
+        </div>
+        <div class="cursor-pointer">
+          <div class="w-11 h-11 mx-auto bg-purple-600 text-white rounded-xl flex items-center justify-center text-lg shadow-sm">📚</div>
+          <span class="text-[10px] font-semibold text-gray-700 mt-1 block">Útiles</span>
+        </div>
+        <div class="cursor-pointer">
+          <div class="w-11 h-11 mx-auto bg-amber-500 text-white rounded-xl flex items-center justify-center text-lg shadow-sm">🎨</div>
+          <span class="text-[10px] font-semibold text-gray-700 mt-1 block">Arte</span>
+        </div>
+        <div class="cursor-pointer">
+          <div class="w-11 h-11 mx-auto bg-indigo-600 text-white rounded-xl flex items-center justify-center text-lg shadow-sm">💻</div>
+          <span class="text-[10px] font-semibold text-gray-700 mt-1 block">Tecnología</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 🌟 SECCIÓN DINÁMICA COMPRAR DE NUEVO / MÁS VENDIDOS (GRID 3 COLUMNAS) 🌟 -->
+    <section class="p-3 bg-emerald-50/70 border-y border-emerald-100 my-2">
+      <!-- Cabecera Dinámica -->
+      <div class="flex items-center justify-between mb-2">
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span id="sectionEmoji" class="text-base">🔥</span>
+            <h3 id="sectionTitle" class="font-extrabold text-sm text-gray-900">Los más vendidos</h3>
+          </div>
+          <p id="sectionSubtitle" class="text-[10px] text-gray-500">Productos populares en Los Bancos</p>
+        </div>
+        <span id="historyLink" class="text-[11px] font-bold text-emerald-700 hover:underline cursor-pointer">Ver todos ›</span>
+      </div>
+
+      <!-- BARRA DE CHIPS DESLIZABLES (Solo visible en Modo Frecuente >6) -->
+      <div id="chipsContainer" class="hidden mb-2.5 overflow-x-auto no-scrollbar flex gap-1.5 py-0.5">
+        <!-- Generado dinámicamente -->
+      </div>
+
+      <!-- GRID DE 3 COLUMNAS SUPER DENSE (grid-cols-3) -->
+      <div id="reorderGrid" class="grid grid-cols-3 gap-2">
+        <!-- Productos inyectados dinámicamente -->
+      </div>
+    </section>
+
+    <!-- 2. SECCIÓN DE EXPLORACIÓN GENERAL (GRID DE 2 COLUMNAS) -->
+    <section class="p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-bold text-sm text-gray-900">Explorar Catálogo</h3>
+        <span class="text-xs text-blue-600 font-semibold cursor-pointer">Ver todo ›</span>
+      </div>
+
+      <!-- Grid 2 Columnas para vista detallada -->
+      <div class="grid grid-cols-2 gap-3" id="generalGrid">
+        <!-- Tarjeta 1 -->
+        <div class="border border-gray-200 rounded-xl p-2.5 bg-white shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="w-full h-32 bg-gray-50 rounded-lg relative flex items-center justify-center text-4xl mb-2">
+              🎒
+              <span class="absolute top-2 left-2 bg-blue-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">🚀 Rocket</span>
+            </div>
+            <div class="text-[10px] text-emerald-600 font-bold">Llega Mañana 7:00 AM</div>
+            <h4 class="text-xs font-semibold text-gray-800 line-clamp-2 mt-0.5">Mochila Escolar Ergonómica Impermeable</h4>
+            <div class="flex items-center gap-1 mt-1 text-[10px] text-gray-500">
+              <span class="text-yellow-400">★★★★★</span>
+              <span>(420)</span>
+            </div>
+          </div>
+          <div class="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
+            <span class="text-sm font-extrabold text-gray-900">$24.50</span>
+            <button onclick="addToCart('Mochila Escolar Impermeable', 24.50, '🎒')" class="bg-coupang-red text-white px-2 py-1 rounded text-xs font-bold">
+              + Añadir
+            </button>
+          </div>
+        </div>
+
+        <!-- Tarjeta 2 -->
+        <div class="border border-gray-200 rounded-xl p-2.5 bg-white shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="w-full h-32 bg-gray-50 rounded-lg relative flex items-center justify-center text-4xl mb-2">
+              🖌️
+              <span class="absolute top-2 left-2 bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">👑 WOW</span>
+            </div>
+            <div class="text-[10px] text-emerald-600 font-bold">Llega Hoy 6:00 PM</div>
+            <h4 class="text-xs font-semibold text-gray-800 line-clamp-2 mt-0.5">Set de Pinceles de Cerdas Finas x 10</h4>
+            <div class="flex items-center gap-1 mt-1 text-[10px] text-gray-500">
+              <span class="text-yellow-400">★★★★☆</span>
+              <span>(180)</span>
+            </div>
+          </div>
+          <div class="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
+            <span class="text-sm font-extrabold text-gray-900">$6.80</span>
+            <button onclick="addToCart('Set Pinceles Finos x10', 6.80, '🖌️')" class="bg-coupang-red text-white px-2 py-1 rounded text-xs font-bold">
+              + Añadir
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- CART DRAWER SLIDE-OVER -->
+  <div id="cartDrawer" class="fixed inset-0 bg-black/50 z-50 hidden flex justify-end">
+    <div class="w-full max-w-md bg-white h-full flex flex-col justify-between shadow-2xl">
+      <div class="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+        <h3 class="font-extrabold text-base text-gray-900">Carrito de Compras</h3>
+        <button onclick="toggleCartDrawer()" class="text-gray-500 hover:text-gray-800 text-xl font-bold">✕</button>
+      </div>
+
+      <!-- Barra de Envío Gratis -->
+      <div class="bg-emerald-50 px-4 py-2.5 border-b border-emerald-100">
+        <div class="flex justify-between text-xs font-semibold text-emerald-900 mb-1">
+          <span id="freeShipText">¡Faltan $15.00 para Envío GRATIS!</span>
+          <span id="freeShipPercent">0%</span>
+        </div>
+        <div class="w-full bg-emerald-200 h-2 rounded-full overflow-hidden">
+          <div id="freeShipBar" class="bg-emerald-600 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div id="cartItemsList" class="flex-1 overflow-y-auto p-4 divide-y divide-gray-100">
+        <div class="text-center py-10 text-gray-400">🛒 El carrito está vacío</div>
+      </div>
+
+      <div class="p-4 border-t border-gray-200 bg-white space-y-3">
+        <div class="flex justify-between items-baseline">
+          <span class="text-xs text-gray-500">Total:</span>
+          <span id="cartTotal" class="text-2xl font-black text-coupang-red">$0.00</span>
+        </div>
+        <button onclick="alert('¡Simulación de compra completada!')" id="btnCheckout" disabled class="w-full bg-gray-300 text-gray-500 font-bold py-3.5 rounded-xl">
+          Pagar Pedido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT DE LÓGICA DINÁMICA -->
+  <script>
+    // BASE DE DATOS DE PRUEBA
+    const DATA_MAS_VENDIDOS = [
+      { id: 1, name: 'Cuaderno Espiral 100h', price: 2.49, emoji: '📚', cat: 'Útiles', badge: 'Top 1' },
+      { id: 2, name: 'Leche Entera 1 Litro', price: 1.25, emoji: '🥛', cat: 'Abarrotes', badge: 'Top 2' },
+      { id: 3, name: 'Caja Marcadores 12c', price: 4.50, emoji: '✏️', cat: 'Arte', badge: 'Top 3' },
+      { id: 4, name: 'Mouse Inalámbrico', price: 8.50, emoji: '💻', cat: 'Tecnología', badge: 'Top 4' },
+      { id: 5, name: 'Pan de Molde Blanco', price: 2.10, emoji: '🍞', cat: 'Abarrotes', badge: 'Top 5' },
+      { id: 6, name: 'Set Esferos Azul x3', price: 1.00, emoji: '🖊️', cat: 'Útiles', badge: 'Top 6' }
+    ];
+
+    const DATA_HISTORIAL_POCOS = [
+      { id: 101, name: 'Cuaderno Espiral 100h', price: 2.49, emoji: '📚', boughtCount: 3 },
+      { id: 102, name: 'Leche Entera 1 Litro', price: 1.25, emoji: '🥛', boughtCount: 5 },
+      { id: 103, name: 'Pan de Molde Blanco', price: 2.10, emoji: '🍞', boughtCount: 2 },
+      { id: 104, name: 'Detergente Líquido 1L', price: 4.80, emoji: '🧹', boughtCount: 1 }
+    ];
+
+    const DATA_HISTORIAL_MUCHOS = [
+      { id: 201, name: 'Cuaderno Espiral 100h', price: 2.49, emoji: '📚', cat: 'Útiles', boughtCount: 6 },
+      { id: 202, name: 'Leche Entera 1 Litro', price: 1.25, emoji: '🥛', cat: 'Abarrotes', boughtCount: 12 },
+      { id: 203, name: 'Caja Marcadores 12c', price: 4.50, emoji: '✏️', cat: 'Arte', boughtCount: 4 },
+      { id: 204, name: 'Mouse Inalámbrico', price: 8.50, emoji: '💻', cat: 'Tecnología', boughtCount: 2 },
+      { id: 205, name: 'Pan de Molde Blanco', price: 2.10, emoji: '🍞', cat: 'Abarrotes', boughtCount: 8 },
+      { id: 206, name: 'Set Esferos Azul x3', price: 1.00, emoji: '🖊️', cat: 'Útiles', boughtCount: 5 },
+      { id: 207, name: 'Café Molido 250g', price: 3.90, emoji: '☕', cat: 'Abarrotes', boughtCount: 4 },
+      { id: 208, name: 'Resma Papel Bond A4', price: 4.20, emoji: '📄', cat: 'Útiles', boughtCount: 3 },
+      { id: 209, name: 'Kit Acrílicos 12t', price: 11.80, emoji: '🎨', cat: 'Arte', boughtCount: 2 }
+    ];
+
+    let currentMode = 'nuevo';
+    let currentCategoryChip = 'Todos';
+    let cart = [];
+
+    function setSimMode(mode) {
+      currentMode = mode;
+      currentCategoryChip = 'Todos';
+
+      // Actualizar estilos botones simulación
+      document.getElementById('btnSimNuevo').className = mode === 'nuevo' ? "px-2.5 py-1 rounded bg-coupang-blue text-white font-semibold text-[11px] whitespace-nowrap shadow" : "px-2.5 py-1 rounded bg-gray-700 text-gray-300 font-semibold text-[11px] whitespace-nowrap";
+      document.getElementById('btnSimPocos').className = mode === 'pocos' ? "px-2.5 py-1 rounded bg-coupang-blue text-white font-semibold text-[11px] whitespace-nowrap shadow" : "px-2.5 py-1 rounded bg-gray-700 text-gray-300 font-semibold text-[11px] whitespace-nowrap";
+      document.getElementById('btnSimMuchos').className = mode === 'muchos' ? "px-2.5 py-1 rounded bg-coupang-blue text-white font-semibold text-[11px] whitespace-nowrap shadow" : "px-2.5 py-1 rounded bg-gray-700 text-gray-300 font-semibold text-[11px] whitespace-nowrap";
+
+      renderReorderSection();
+    }
+
+    function renderReorderSection() {
+      const titleEl = document.getElementById('sectionTitle');
+      const subtitleEl = document.getElementById('sectionSubtitle');
+      const emojiEl = document.getElementById('sectionEmoji');
+      const chipsEl = document.getElementById('chipsContainer');
+      const gridEl = document.getElementById('reorderGrid');
+
+      if (currentMode === 'nuevo') {
+        emojiEl.innerText = '🔥';
+        titleEl.innerText = 'Los más vendidos';
+        subtitleEl.innerText = 'Productos populares en Los Bancos';
+        chipsEl.classList.add('hidden');
+        renderGridItems(DATA_MAS_VENDIDOS);
+      } 
+      else if (currentMode === 'pocos') {
+        emojiEl.innerText = '🔁';
+        titleEl.innerText = 'Comprar de nuevo';
+        subtitleEl.innerText = '4 productos que has pedido recientemente';
+        chipsEl.classList.add('hidden'); // Sin chips porque entran holgadamente en las 6 casillas
+        renderGridItems(DATA_HISTORIAL_POCOS);
+      } 
+      else if (currentMode === 'muchos') {
+        emojiEl.innerText = '🔁';
+        titleEl.innerText = 'Comprar de nuevo';
+        subtitleEl.innerText = 'Tus 9 productos habituales organizados por categoría';
+        chipsEl.classList.remove('hidden'); // Habilitar Chips porque hay >6 ítems
+        
+        // Generar Chips de categorías únicas
+        const categories = ['Todos', ...new Set(DATA_HISTORIAL_MUCHOS.map(i => i.cat))];
+        chipsEl.innerHTML = categories.map(cat => `
+          <button onclick="setChipFilter('${cat}')" class="px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition ${currentCategoryChip === cat ? 'bg-emerald-700 text-white shadow-sm' : 'bg-white text-gray-700 border border-emerald-200 hover:bg-emerald-100'}">
+            ${cat}
+          </button>
+        `).join('');
+
+        // Filtrar items según chip
+        const filtered = currentCategoryChip === 'Todos' 
+          ? DATA_HISTORIAL_MUCHOS 
+          : DATA_HISTORIAL_MUCHOS.filter(i => i.cat === currentCategoryChip);
+
+        renderGridItems(filtered.slice(0, 6));
+      }
+    }
+
+    function setChipFilter(cat) {
+      currentCategoryChip = cat;
+      renderReorderSection();
+    }
+
+    function renderGridItems(items) {
+      const gridEl = document.getElementById('reorderGrid');
+      gridEl.innerHTML = items.map(prod => `
+        <div class="bg-white rounded-xl p-2 border border-emerald-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+          <div>
+            <div class="aspect-square bg-gray-50 rounded-lg relative overflow-hidden flex items-center justify-center text-3xl mb-1">
+              ${prod.emoji}
+              ${prod.boughtCount ? `<span class="absolute top-1 left-1 bg-emerald-600 text-white text-[8px] font-bold px-1 rounded-full">${prod.boughtCount}x</span>` : ''}
+              ${prod.badge ? `<span class="absolute top-1 left-1 bg-amber-500 text-white text-[8px] font-bold px-1 rounded">${prod.badge}</span>` : ''}
+            </div>
+            <h4 class="text-[11px] font-semibold text-gray-800 line-clamp-2 leading-tight">${prod.name}</h4>
+          </div>
+          <div class="mt-2 pt-1 border-t border-gray-100">
+            <div class="text-xs font-black text-gray-900 text-center mb-1">$${prod.price.toFixed(2)}</div>
+            <button onclick="addToCart('${prod.name}', ${prod.price}, '${prod.emoji}')" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[11px] font-bold py-1 rounded-lg transition">
+              + Añadir
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // LÓGICA DEL CARRITO
+    function toggleCartDrawer() {
+      document.getElementById('cartDrawer').classList.toggle('hidden');
+    }
+
+    function addToCart(name, price, emoji) {
+      const existing = cart.find(i => i.name === name);
+      if (existing) existing.qty += 1;
+      else cart.push({ name, price, emoji, qty: 1 });
+      renderCart();
+    }
+
+    function renderCart() {
+      const list = document.getElementById('cartItemsList');
+      const totalCount = cart.reduce((acc, i) => acc + i.qty, 0);
+      const subtotal = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+
+      document.getElementById('cartCountBadge').innerText = totalCount;
+      document.getElementById('cartTotal').innerText = `$${subtotal.toFixed(2)}`;
+
+      const freeShipGoal = 15.00;
+      const pct = Math.min(100, Math.round((subtotal / freeShipGoal) * 100));
+      document.getElementById('freeShipBar').style.width = `${pct}%`;
+      document.getElementById('freeShipPercent').innerText = `${pct}%`;
+      document.getElementById('freeShipText').innerText = subtotal >= freeShipGoal ? '🎉 ¡Envío GRATIS Desbloqueado!' : `¡Faltan $${(freeShipGoal - subtotal).toFixed(2)} para Envío GRATIS!`;
+
+      const btnBtn = document.getElementById('btnCheckout');
+      if (cart.length > 0) {
+        btnBtn.removeAttribute('disabled');
+        btnBtn.className = "w-full bg-coupang-red hover:bg-coupang-darkRed text-white font-bold py-3.5 rounded-xl shadow-lg cursor-pointer";
+      } else {
+        btnBtn.setAttribute('disabled', 'true');
+        btnBtn.className = "w-full bg-gray-300 text-gray-500 font-bold py-3.5 rounded-xl";
+      }
+
+      if (cart.length === 0) {
+        list.innerHTML = `<div class="text-center py-10 text-gray-400">🛒 El carrito está vacío</div>`;
+        return;
+      }
+
+      list.innerHTML = cart.map(item => `
+        <div class="py-2.5 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">${item.emoji}</span>
+            <div>
+              <h5 class="text-xs font-bold text-gray-800 line-clamp-1">${item.name}</h5>
+              <div class="text-xs text-gray-500">$${item.price.toFixed(2)}</div>
+            </div>
+          </div>
+          <span class="text-xs font-bold bg-gray-100 px-2 py-1 rounded">Cant: ${item.qty}</span>
+        </div>
+      `).join('');
+    }
+
+    // Inicializar en modo cliente nuevo
+    renderReorderSection();
+  </script>
+</body>
+</html>
