@@ -302,6 +302,104 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
   )
 }
 
+// ── Tarjeta compacta para Comprar de Nuevo (Grid 3 columnas) ──────
+function FrecuenteCardCompacta({ p, onSelect }: { p: Producto; onSelect?: (p: Producto) => void }) {
+  const router = useRouter()
+  const [ok, setOk] = useState(false)
+  const [imageError, setImageError] = useState(false)
+  const [cantidad, setCantidad] = useState(() => {
+    return getCarrito().find(i => i.codigo === p.codigo)?.cantidad ?? 0
+  })
+
+  useEffect(() => {
+    const sync = () => {
+      setCantidad(getCarrito().find(i => i.codigo === p.codigo)?.cantidad ?? 0)
+    }
+    window.addEventListener('carrito-update', sync)
+    return () => window.removeEventListener('carrito-update', sync)
+  }, [p.codigo])
+
+  function addCart(e: React.MouseEvent) {
+    e.stopPropagation()
+    e.preventDefault()
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(15)
+    }
+    agregarItem(p)
+    setOk(true)
+    setTimeout(() => setOk(false), 1200)
+  }
+
+  function incCart(e: React.MouseEvent, delta: number) {
+    e.stopPropagation()
+    e.preventDefault()
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(10)
+    }
+    cambiarCantidad(p.codigo, cantidad + delta)
+  }
+
+  const tieneOferta = p.en_oferta && p.precio_oferta && p.precio_oferta < p.precio_publico
+  const precio = tieneOferta ? p.precio_oferta! : p.precio_publico
+
+  return (
+    <div onClick={() => {
+      if (USE_QUICK_VIEW && onSelect) {
+        onSelect(p)
+      } else {
+        router.push(`/producto/${encodeURIComponent(p.codigo)}`)
+      }
+    }}
+      className="bg-white rounded-xl border border-emerald-100/90 overflow-hidden shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer group p-1.5 sm:p-2">
+      <div>
+        <div className="relative bg-gray-50/90 rounded-lg aspect-square flex items-center justify-center text-2xl overflow-hidden mb-1.5">
+          {p.imagen_url && !imageError ? (
+            <img
+              src={p.imagen_url}
+              alt={p.descripcion}
+              onError={() => setImageError(true)}
+              className="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform"
+              loading="lazy"
+            />
+          ) : (
+            <span>{CAT_CONFIG[p.categoria]?.emoji || '📦'}</span>
+          )}
+          <span className="absolute top-1 left-1 bg-emerald-600 text-white text-[7.5px] font-black px-1.5 py-0.2 rounded-full shadow-2xs">
+            🔁 Habitual
+          </span>
+        </div>
+        <div className="text-[10.5px] font-bold text-gray-800 leading-tight line-clamp-2 min-h-[26px] group-hover:text-emerald-700 transition-colors">
+          {p.descripcion}
+        </div>
+      </div>
+
+      <div className="mt-1.5 pt-1 border-t border-gray-100 flex flex-col items-center">
+        <div className="text-xs font-black text-gray-900 mb-1">
+          {fmt(precio)}
+        </div>
+        {cantidad === 0 ? (
+          <button onClick={addCart}
+            className={`w-full py-1 rounded-lg text-[10.5px] font-extrabold flex items-center justify-center gap-1 transition-all duration-150 active:scale-95 cursor-pointer
+              ${ok ? 'bg-emerald-600 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'}`}>
+            <ShoppingCart size={10.5} className="stroke-[2.2]" />
+            {ok ? '✓ ¡Listo!' : '+ Añadir'}
+          </button>
+        ) : (
+          <div className="w-full flex items-center justify-between bg-emerald-600 text-white rounded-lg overflow-hidden h-[24px] shadow-2xs border border-emerald-700">
+            <button onClick={(e) => incCart(e, -1)} className="px-1.5 h-full text-white hover:bg-emerald-700 transition font-bold flex items-center justify-center">
+              <Minus size={9} className="stroke-[3]" />
+            </button>
+            <span className="text-[10.5px] font-black text-white select-none">{cantidad}</span>
+            <button onClick={(e) => incCart(e, 1)} className="px-1.5 h-full text-white hover:bg-emerald-700 transition font-bold flex items-center justify-center">
+              <Plus size={9} className="stroke-[3]" />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Botón agregar frecuente ──────────────────────────────────────
 function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
   const [cantidad, setCantidad] = useState(() => {
@@ -849,7 +947,7 @@ function HomeContent() {
               />
             )}
 
-            {/* ── 5. COMPRAR DE NUEVO ── */}
+            {/* ── 5. COMPRAR DE NUEVO (Grid de 3 Columnas) ── */}
             {frecuentes.length > 0 && (
               <section id="sec-frecuentes" className="bg-emerald-50/40 border border-emerald-100/60 rounded-2xl p-3.5">
                 <div className="flex items-center justify-between mb-2.5">
@@ -857,15 +955,15 @@ function HomeContent() {
                     <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-1.5">
                       🔄 Comprar de nuevo
                     </h2>
-                    <p className="text-[10px] text-gray-400 mt-0.5">Tus productos habituales listos para reordenar</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">Tus productos habituales listos para reordenar en 1 toque</p>
                   </div>
                   <Link href="/productos?frecuentes=true" className="text-xs text-green-700 font-extrabold flex items-center gap-0.5 hover:underline shrink-0 bg-white px-2.5 py-1 rounded-lg border border-green-100 shadow-2xs">
-                    Ver más <ChevronRight size={13} />
+                    Ver todos <ChevronRight size={13} />
                   </Link>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                  {frecuentes.slice(0, 4).map(p => (
-                    <ProdCard key={p.codigo} p={p} onSelect={(prod) => openQuickView(prod, frecuentes)} />
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-2 sm:gap-2.5">
+                  {frecuentes.slice(0, 6).map(p => (
+                    <FrecuenteCardCompacta key={p.codigo} p={p} onSelect={(prod) => openQuickView(prod, frecuentes)} />
                   ))}
                 </div>
               </section>
