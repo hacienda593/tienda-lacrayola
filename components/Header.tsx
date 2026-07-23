@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { ShoppingCart, Search, LayoutGrid, X, Home, ChevronDown, ChevronUp, Camera } from 'lucide-react'
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { getCarrito } from '@/lib/carrito'
 import { supabase } from '@/lib/supabase'
 import MenuDrawer from '@/components/MenuDrawer'
@@ -264,6 +264,9 @@ function HeaderSearch() {
   const [q, setQ] = useState('')
   const [tiendaNombre, setTiendaNombre] = useState('')
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [sugerencias, setSugerencias] = useState<{ label: string; cat: string; sub: string }[]>([])
+  const [inputFocused, setInputFocused] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleScanSuccess = async (barcode: string) => {
     setIsScannerOpen(false)
@@ -315,6 +318,59 @@ function HeaderSearch() {
     setQ(searchParams?.get('q') || '')
   }, [searchParamsStr])
 
+  // 4. Fila de refinamiento: sugerencias de subcategoría mientras el usuario escribe
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    const term = q.trim()
+    if (term.length < 2) {
+      setSugerencias([])
+      return
+    }
+    debounceRef.current = setTimeout(async () => {
+      let query = supabase
+        .from('ol_productos')
+        .select('categoria,subcategoria')
+        .ilike('descripcion', `%${term}%`)
+        .gt('stock', 0)
+        .limit(300)
+      if (esTienda) query = query.eq('tienda_id', activeTId)
+
+      const { data } = await query
+      if (!data) return
+
+      const conteo = new Map<string, { cat: string; sub: string; n: number }>()
+      data.forEach((d: { categoria: string; subcategoria: string }) => {
+        const etiqueta = d.subcategoria || d.categoria
+        if (!etiqueta) return
+        const key = etiqueta.toLowerCase()
+        const existente = conteo.get(key)
+        if (existente) existente.n++
+        else conteo.set(key, { cat: d.categoria, sub: d.subcategoria || '', n: 1 })
+      })
+
+      const lista = Array.from(conteo.entries())
+        .sort((a, b) => b[1].n - a[1].n)
+        .slice(0, 6)
+        .map(([, v]) => ({ label: v.sub || v.cat, cat: v.cat, sub: v.sub }))
+
+      setSugerencias(lista)
+    }, 300)
+
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [q, esTienda, activeTId])
+
+  function irASugerencia(s: { label: string; cat: string; sub: string }) {
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
+    if (q.trim()) params.set('q', q.trim())
+    if (s.cat) params.set('cat', s.cat)
+    if (s.sub) params.set('sub', s.sub)
+    setSugerencias([])
+    setInputFocused(false)
+    const destino = esTienda ? pathname : '/productos'
+    const qs = params.toString()
+    router.push(qs ? `${destino}?${qs}` : destino)
+  }
+
   // Limpiar el nombre para formato móvil compacto (ej: "Supermercado Tuti" -> "Tuti")
   function getNombreCorto(completo: string) {
     if (!completo) return ''
@@ -363,12 +419,14 @@ function HeaderSearch() {
   const prPadding = 'pr-10'
 
   return (
-    <form onSubmit={buscar} className="flex-1 max-w-xl">
+    <form onSubmit={buscar} className="flex-1 max-w-xl relative">
       <div className="relative">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
           value={q}
           onChange={e => manejarEscribir(e.target.value)}
+          onFocus={() => setInputFocused(true)}
+          onBlur={() => setTimeout(() => setInputFocused(false), 150)}
           placeholder={esTienda ? `Buscar en ${nombreTiendaCorto || 'la tienda'}...` : "Buscar productos, marcas, categorías..."}
           className={`w-full bg-gray-100 border border-gray-200 rounded-xl pl-9 ${prPadding} py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition`}
         />
@@ -391,6 +449,27 @@ function HeaderSearch() {
           </button>
         )}
       </div>
+
+      {inputFocused && sugerencias.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-2 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide px-1 mb-1.5">
+            Refinar búsqueda
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+            {sugerencias.map(s => (
+              <button
+                key={`${s.cat}-${s.sub}`}
+                type="button"
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => irASugerencia(s)}
+                className="shrink-0 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-emerald-50 hover:text-emerald-800 border border-gray-200 hover:border-emerald-200 px-3 py-1.5 rounded-lg transition whitespace-nowrap cursor-pointer"
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <BarcodeScannerModal
         isOpen={isScannerOpen}

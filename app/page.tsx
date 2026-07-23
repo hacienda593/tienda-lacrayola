@@ -39,42 +39,39 @@ const CAT_CONFIG: Record<string, { emoji: string; color: string; bg: string }> =
 
 const BANNERS = [
   {
-    titulo: 'OFERTAS RELÁMPAGO',
-    sub: 'Descuentos exclusivos en útiles y tecnología por tiempo limitado.',
+    titulo: 'Ofertas relámpago',
+    sub: 'Descuentos verificados en útiles y tecnología por tiempo limitado.',
     emoji: '⚡',
-    cta: 'Explorar Ofertas',
+    cta: 'Explorar ofertas',
     href: '#sec-ofertas',
-    bg: 'from-slate-900 via-rose-950 to-slate-950',
-    badge: '🔥 EXCLUSIVO',
+    badge: 'Exclusivo',
   },
   {
-    titulo: 'ENVÍO MULTI-TIENDA CONSOLIDADO',
-    sub: 'Junta útiles escolares + abarrotes + farmacia en una sola entrega.',
+    titulo: 'Envío multi-tienda consolidado',
+    sub: 'Junta útiles escolares, abarrotes y farmacia en una sola entrega.',
     emoji: '📦',
-    cta: 'Ver Comercios',
+    cta: 'Ver comercios',
     href: '/tiendas',
-    bg: 'from-slate-900 via-emerald-950 to-slate-900',
-    badge: '🚀 TIENLO EXPRESS',
+    badge: 'Tienlo Express',
   },
   {
-    titulo: 'PEDIDOS Y ATENCIÓN DIRECTA',
+    titulo: 'Pedidos con atención directa',
     sub: 'Confirmación instantánea de stock y envíos a todo Los Bancos.',
     emoji: '📍',
-    cta: 'Iniciar Pedido',
+    cta: 'Iniciar pedido',
     href: '/productos',
-    bg: 'from-slate-900 via-indigo-950 to-slate-900',
-    badge: '📍 LOS BANCOS',
+    badge: 'Los Bancos',
   },
   {
-    titulo: 'PRODUCTOS EXCLUSIVOS',
-    sub: 'Catálogo oficial directo de La Crayola a precios preferenciales.',
+    titulo: 'Catálogo Tienlo',
+    sub: 'Productos directos de tienda a precios preferenciales.',
     emoji: '⭐',
-    cta: 'Ver Catálogo',
+    cta: 'Ver catálogo',
     href: '#sec-exclusivos',
-    bg: 'from-slate-950 via-emerald-900 to-slate-900',
-    badge: '⭐ OFICIAL',
+    badge: 'Oficial',
   },
 ]
+const BANNER_BG = 'from-slate-900 via-emerald-950 to-slate-900'
 
 // ── Carrusel de banners ────────────────────────────────────────────
 function BannerCarrusel() {
@@ -99,7 +96,7 @@ function BannerCarrusel() {
 
   return (
     <div
-      className={`relative bg-gradient-to-br ${b.bg} text-white overflow-hidden transition-all duration-500 rounded-3xl shadow-md shadow-gray-200/60 border border-white/10`}
+      className={`relative bg-gradient-to-br ${BANNER_BG} text-white overflow-hidden transition-all duration-500 rounded-3xl shadow-md shadow-gray-200/60 border border-white/10`}
       onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
       onTouchEnd={e => {
         const dx = e.changedTouches[0].clientX - touchStartX.current
@@ -111,12 +108,12 @@ function BannerCarrusel() {
         <Link href={b.href} className="block">
           <div className="flex items-center justify-between px-4.5 h-[105px] relative">
             <div className="pr-3 z-10 flex flex-col justify-center flex-1 min-w-0">
-              <span className="inline-block bg-white/20 backdrop-blur-md border border-white/30 text-white text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-1 w-max shadow-2xs">
+              <span className="inline-block bg-white/15 border border-white/20 text-white/80 text-[9px] font-semibold tracking-wide px-2 py-0.5 rounded-md mb-1.5 w-max">
                 {b.badge}
               </span>
-              <h2 className="text-[13.5px] font-black leading-snug tracking-tight text-white drop-shadow-xs">{b.titulo}</h2>
-              <span className="text-[9.5px] text-white/90 font-extrabold mt-1.5 flex items-center gap-0.5 bg-white/15 backdrop-blur-xs px-2 py-0.5 rounded-md w-max border border-white/20">
-                {b.cta} <ChevronRight size={10} className="stroke-[3]" />
+              <h2 className="text-[14px] font-bold leading-snug tracking-tight text-white">{b.titulo}</h2>
+              <span className="text-[10px] text-white/70 font-medium mt-2 flex items-center gap-0.5">
+                {b.cta} <ChevronRight size={11} className="stroke-[2.5]" />
               </span>
             </div>
             <div className="text-5xl leading-none select-none shrink-0 z-10 drop-shadow-sm transition-transform duration-300 hover:scale-110">{b.emoji}</div>
@@ -128,13 +125,13 @@ function BannerCarrusel() {
       <div className="hidden md:block">
         <div className="max-w-5xl mx-auto px-6 py-8 flex flex-row items-center gap-6">
           <div className="flex-1">
-            <div className="inline-block bg-white/20 backdrop-blur-md border border-white/30 text-white text-xs font-black uppercase tracking-wider px-3.5 py-1 rounded-full mb-3 shadow-2xs">
+            <div className="inline-block bg-white/15 border border-white/20 text-white/80 text-[11px] font-semibold tracking-wide px-3 py-1 rounded-md mb-3">
               {b.badge}
             </div>
-            <h1 className="text-2xl md:text-3xl font-black leading-tight mb-2 tracking-tight text-white drop-shadow-xs">{b.titulo}</h1>
-            <p className="text-white/90 text-sm mb-4 max-w-md font-medium">{b.sub}</p>
+            <h1 className="text-2xl md:text-3xl font-bold leading-tight mb-2 tracking-tight text-white">{b.titulo}</h1>
+            <p className="text-white/80 text-sm mb-4 max-w-md font-normal">{b.sub}</p>
             <Link href={b.href}
-              className="bg-white text-gray-900 font-extrabold px-5 py-2.5 rounded-xl hover:bg-gray-50 hover:shadow-md active:scale-95 transition-all text-xs text-center inline-flex items-center gap-1.5 shadow-sm">
+              className="bg-white text-gray-900 font-semibold px-5 py-2.5 rounded-xl hover:bg-gray-50 hover:shadow-md active:scale-95 transition-all text-xs text-center inline-flex items-center gap-1.5 shadow-sm">
               {b.cta} <ChevronRight size={14} className="stroke-[2.5]" />
             </Link>
           </div>
@@ -242,13 +239,13 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
           <ClipboardList size={11.5} className="stroke-[2.2]" />
         </button>
         {tieneOferta && (
-          <span className="absolute top-1.5 left-1.5 text-[7.5px] font-black bg-gradient-to-r from-red-600 to-rose-600 text-white px-1.5 py-0.5 rounded-md z-10 shadow-2xs uppercase tracking-wider border border-red-400/20">
-            🔥 Oferta
+          <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold bg-rose-600 text-white px-1.5 py-0.5 rounded-md z-10 tracking-tight">
+            Oferta
           </span>
         )}
         {!tieneOferta && p.stock > 0 && p.stock < 5 && (
-          <span className="absolute top-1.5 left-1.5 text-[7.5px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-md z-10 shadow-2xs">
-            ⚡ Pocas
+          <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold bg-amber-600 text-white px-1.5 py-0.5 rounded-md z-10 tracking-tight">
+            Últimas unidades
           </span>
         )}
       </div>
