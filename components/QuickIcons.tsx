@@ -13,91 +13,26 @@ interface QuickIcon {
   iconColor: string
   bgColor: string
   borderColor: string
-  badge?: string
-  badgeBg?: string
+}
+
+// Un único acento neutro para todos los íconos — la diferenciación la da el ícono
+// y la etiqueta, no un arcoíris de colores. Los badges decorativos (HOT/TOP/NUEVO)
+// se quitaron: no aportan información real y leían como estética infantil.
+const ICON_STYLE = {
+  iconColor: 'text-gray-600 group-hover:text-emerald-700',
+  bgColor: 'bg-gray-50 hover:bg-gray-100',
+  borderColor: 'border-gray-200',
 }
 
 const ICONS: QuickIcon[] = [
-  { 
-    id: 'ofertas',    
-    label: 'Ofertas',    
-    scrollTo: 'sec-ofertas',    
-    icon: Flame,
-    iconColor: 'text-rose-600',
-    bgColor: 'bg-rose-500/10 hover:bg-rose-500/15',
-    borderColor: 'border-rose-500/20',
-    badge: 'HOT',
-    badgeBg: 'bg-rose-600 text-white'
-  },
-  { 
-    id: 'exclusivos', 
-    label: 'Exclusivos', 
-    scrollTo: 'sec-exclusivos', 
-    icon: Star,
-    iconColor: 'text-emerald-700',
-    bgColor: 'bg-emerald-600/10 hover:bg-emerald-600/15',
-    borderColor: 'border-emerald-600/20',
-    badge: 'TOP',
-    badgeBg: 'bg-emerald-700 text-white'
-  },
-  { 
-    id: 'tiendas',    
-    label: 'Tiendas',    
-    href: '/tiendas',           
-    icon: Store,
-    iconColor: 'text-slate-800',
-    bgColor: 'bg-slate-100 hover:bg-slate-200/70',
-    borderColor: 'border-slate-200/80'
-  },
-  { 
-    id: 'crayola',    
-    label: 'Crayola',    
-    href: '',                   
-    icon: Backpack,
-    iconColor: 'text-emerald-700',
-    bgColor: 'bg-emerald-600/10 hover:bg-emerald-600/15',
-    borderColor: 'border-emerald-600/25',
-    badge: 'OFICIAL',
-    badgeBg: 'bg-emerald-700 text-white'
-  },
-  { 
-    id: 'nuevos',     
-    label: 'Nuevos',     
-    scrollTo: 'sec-novedades',  
-    icon: Sparkles,
-    iconColor: 'text-amber-600',
-    bgColor: 'bg-amber-500/10 hover:bg-amber-500/15',
-    borderColor: 'border-amber-500/20',
-    badge: 'NUEVO',
-    badgeBg: 'bg-amber-600 text-white'
-  },
-  { 
-    id: 'miscompras', 
-    label: 'Recompra', 
-    scrollTo: 'sec-frecuentes', 
-    icon: Package,
-    iconColor: 'text-slate-800',
-    bgColor: 'bg-slate-100 hover:bg-slate-200/70',
-    borderColor: 'border-slate-200/80'
-  },
-  { 
-    id: 'marcas',     
-    label: 'Marcas',     
-    href: '/productos',          
-    icon: Tag,
-    iconColor: 'text-slate-800',
-    bgColor: 'bg-slate-100 hover:bg-slate-200/70',
-    borderColor: 'border-slate-200/80'
-  },
-  { 
-    id: 'favoritos',  
-    label: 'Favoritos',  
-    href: '/favoritos',          
-    icon: Heart,
-    iconColor: 'text-rose-600',
-    bgColor: 'bg-rose-500/10 hover:bg-rose-500/15',
-    borderColor: 'border-rose-500/20'
-  },
+  { id: 'ofertas',    label: 'Ofertas',    scrollTo: 'sec-ofertas',    icon: Flame,    ...ICON_STYLE },
+  { id: 'exclusivos', label: 'Exclusivos', scrollTo: 'sec-exclusivos', icon: Star,     ...ICON_STYLE },
+  { id: 'tiendas',    label: 'Tiendas',    href: '/tiendas',           icon: Store,    ...ICON_STYLE },
+  { id: 'crayola',    label: 'Crayola',    href: '',                   icon: Backpack, ...ICON_STYLE },
+  { id: 'nuevos',     label: 'Nuevos',     scrollTo: 'sec-novedades',  icon: Sparkles, ...ICON_STYLE },
+  { id: 'miscompras', label: 'Recompra',   scrollTo: 'sec-frecuentes', icon: Package,  ...ICON_STYLE },
+  { id: 'marcas',     label: 'Marcas',     href: '/productos',        icon: Tag,      ...ICON_STYLE },
+  { id: 'favoritos',  label: 'Favoritos',  href: '/favoritos',        icon: Heart,    ...ICON_STYLE },
 ]
 
 export default function QuickIcons() {
@@ -135,26 +70,16 @@ export default function QuickIcons() {
 
           const content = (
             <div className="flex flex-col items-center gap-1.5 w-[60px] group cursor-pointer select-none">
-              <div className="relative">
-                {/* Clean, professional squircle container */}
-                <div className={`w-12 h-12 rounded-2xl ${iconItem.bgColor} ${iconItem.borderColor} border
-                  flex items-center justify-center shadow-2xs
-                  group-hover:scale-105 group-active:scale-95
-                  transition-all duration-150 relative overflow-hidden`}
-                >
-                  <IconComp size={22} className={`${iconItem.iconColor} stroke-[2.2] transition-transform duration-150 group-hover:scale-110`} />
-                </div>
-
-                {/* Micro Badge */}
-                {iconItem.badge && (
-                  <span className={`absolute -top-1.5 -right-1 text-[7px] font-black tracking-wider uppercase px-1.2 py-0.2 rounded-md shadow-2xs border border-white ${iconItem.badgeBg}`}>
-                    {iconItem.badge}
-                  </span>
-                )}
+              <div className={`w-12 h-12 rounded-xl ${iconItem.bgColor} ${iconItem.borderColor} border
+                flex items-center justify-center
+                group-hover:scale-[1.03] group-active:scale-95
+                transition-all duration-150`}
+              >
+                <IconComp size={20} className={`${iconItem.iconColor} stroke-[1.75] transition-colors duration-150`} />
               </div>
 
               {/* Label */}
-              <span className="text-[10.5px] font-extrabold text-gray-700 group-hover:text-green-700 transition-colors leading-tight text-center truncate w-full tracking-tight">
+              <span className="text-[10.5px] font-semibold text-gray-600 group-hover:text-emerald-700 transition-colors leading-tight text-center truncate w-full">
                 {iconItem.label}
               </span>
             </div>

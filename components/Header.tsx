@@ -338,11 +338,28 @@ function HeaderSearch() {
       const { data } = await query
       if (!data) return
 
+      const normalizar = (s: string) => (s || '')
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .toLowerCase().trim().replace(/\s+/g, ' ')
+
+      const aTitleCase = (s: string) => s.replace(/\b\p{L}/gu, c => c.toUpperCase())
+
+      const termNorm = normalizar(term)
+
       const conteo = new Map<string, { cat: string; sub: string; n: number }>()
       data.forEach((d: { categoria: string; subcategoria: string }) => {
-        const etiqueta = d.subcategoria || d.categoria
-        if (!etiqueta) return
-        const key = etiqueta.toLowerCase()
+        // Preferimos subcategoria (más específica); solo caemos a categoria si no hay subcategoria
+        const etiquetaCruda = d.subcategoria || d.categoria
+        if (!etiquetaCruda) return
+
+        const key = normalizar(etiquetaCruda)
+        if (!key || key === termNorm) return // descarta vacíos y el chip redundante igual a lo escrito
+
+        // Solo cuenta si la etiqueta tiene relación real con lo buscado (evita ruido tipo
+        // "Alimento para perros" apareciendo en una búsqueda de "leche" solo porque la
+        // palabra aparece de casualidad en la descripción del producto)
+        if (!key.includes(termNorm)) return
+
         const existente = conteo.get(key)
         if (existente) existente.n++
         else conteo.set(key, { cat: d.categoria, sub: d.subcategoria || '', n: 1 })
@@ -351,7 +368,7 @@ function HeaderSearch() {
       const lista = Array.from(conteo.entries())
         .sort((a, b) => b[1].n - a[1].n)
         .slice(0, 6)
-        .map(([, v]) => ({ label: v.sub || v.cat, cat: v.cat, sub: v.sub }))
+        .map(([key, v]) => ({ label: aTitleCase(key), cat: v.cat, sub: v.sub }))
 
       setSugerencias(lista)
     }, 300)
@@ -451,18 +468,18 @@ function HeaderSearch() {
       </div>
 
       {inputFocused && sugerencias.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-2 animate-in fade-in slide-in-from-top-1 duration-150">
-          <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide px-1 mb-1.5">
+        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="text-[10px] font-semibold text-gray-400 tracking-wide px-0.5 mb-1.5">
             Refinar búsqueda
           </div>
-          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+          <div className="flex flex-wrap gap-1.5">
             {sugerencias.map(s => (
               <button
                 key={`${s.cat}-${s.sub}`}
                 type="button"
                 onMouseDown={e => e.preventDefault()}
                 onClick={() => irASugerencia(s)}
-                className="shrink-0 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-emerald-50 hover:text-emerald-800 border border-gray-200 hover:border-emerald-200 px-3 py-1.5 rounded-lg transition whitespace-nowrap cursor-pointer"
+                className="text-xs font-medium text-gray-700 bg-gray-50 hover:bg-emerald-50 hover:text-emerald-800 border border-gray-200 hover:border-emerald-200 px-3 py-1.5 rounded-lg transition cursor-pointer"
               >
                 {s.label}
               </button>
