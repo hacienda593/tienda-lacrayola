@@ -865,10 +865,10 @@ function HomeContent() {
               </div>
             )}
 
-            {/* Grid de productos de la categoría */}
+            {/* Grid de productos de la categoría (3 Columnas Móvil / 6 Desktop) */}
             {cargandoCatActive ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-2.5">
+                {[...Array(9)].map((_, i) => <SkeletonCard key={i} />)}
               </div>
             ) : prodsCatFiltrados.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center space-y-2">
@@ -883,7 +883,7 @@ function HomeContent() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-2.5">
                 {prodsCatFiltrados.map(p => (
                   <ProdCard
                     key={p.codigo}
@@ -921,7 +921,7 @@ function HomeContent() {
               />
             )}
 
-            {/* ── 4. PRODUCTOS NUEVOS (Grid de 3 Columnas x 2 Filas = 6 Productos con Fotos) ── */}
+            {/* ── 4. PRODUCTOS NUEVOS ── */}
             {(cargandoProds || novedades.length > 0) && (
               <ProductSection
                 id="sec-novedades"
@@ -931,8 +931,6 @@ function HomeContent() {
                 productos={novedades}
                 loading={cargandoProds}
                 onSelect={openQuickView}
-                maxItems={6}
-                gridCols="grid-cols-3 md:grid-cols-6"
                 verTodosHref="/productos"
               />
             )}
