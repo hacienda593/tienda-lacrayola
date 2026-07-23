@@ -1,6 +1,7 @@
 'use client'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
+import { X } from 'lucide-react'
 
 export interface CategoryTab {
   name: string
@@ -127,6 +128,25 @@ export default function HeaderCategoryTabs() {
           })}
         </div>
       </div>
+
+      {/* Sub-barra discreta pegada al Header estilo Almacenes Tía */}
+      {activeCat && (
+        <div className="bg-emerald-50/80 border-t border-emerald-100/80 py-1.5 px-3.5 flex items-center justify-between text-xs font-bold text-emerald-900 animate-in fade-in duration-150">
+          <div className="flex items-center gap-1.5 min-w-0 max-w-5xl mx-auto w-full justify-between">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-emerald-700 text-sm">📍</span>
+              <span className="truncate">Pasillo: <strong className="font-black text-emerald-800">{activeCat}</strong></span>
+            </div>
+            <button
+              onClick={() => selectTab('')}
+              className="flex items-center gap-1 text-[11px] font-extrabold text-emerald-700 hover:text-emerald-900 bg-white border border-emerald-200/80 px-2.5 py-0.5 rounded-lg shadow-2xs hover:bg-emerald-100/50 transition cursor-pointer shrink-0"
+            >
+              <X size={11} className="stroke-[3]" />
+              <span>Quitar filtro</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

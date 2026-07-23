@@ -833,23 +833,6 @@ function HomeContent() {
            ══════════════════════════════════════════════════════════════════ */}
         {activeCat ? (
           <div className="space-y-4 animate-in fade-in duration-200">
-            {/* Header de Categoría Discreto (Estilo Compacto) */}
-            <div className="flex items-center justify-between bg-slate-900 text-white px-3.5 py-2 rounded-xl shadow-xs border border-slate-800">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs font-black text-white tracking-tight truncate">{activeCat}</span>
-                <span className="text-[10px] font-bold text-slate-400 shrink-0">
-                  ({cargandoCatActive ? '...' : prodsCatFiltrados.length})
-                </span>
-              </div>
-
-              <button
-                onClick={limpiarCategoria}
-                className="flex items-center gap-1 text-[11px] font-extrabold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0"
-              >
-                <X size={12} className="stroke-[2.5]" />
-                <span>Quitar filtro</span>
-              </button>
-            </div>
 
             {/* Subcategorías (Chips de filtro) */}
             {subsCat.length > 0 && (
