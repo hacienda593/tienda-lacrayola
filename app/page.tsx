@@ -957,20 +957,20 @@ function HomeContent() {
             )}
 
             {/* ── 6. BANNER INTERMEDIO — Tiendas aliadas ── */}
-            <section className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 rounded-2xl p-5 md:p-6 text-white flex items-center gap-4 shadow-sm border border-slate-800">
+            <section className={`bg-gradient-to-r ${BANNER_BG} rounded-2xl p-5 md:p-6 text-white flex items-center gap-4 shadow-sm border border-emerald-900/60`}>
               <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-2xl shrink-0">
                 🏬
               </div>
               <div className="flex-1 min-w-0">
-                <span className="text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                  MULTICOMPRAS
+                <span className="text-[10px] font-semibold tracking-wide text-emerald-300/90 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                  Multicompras
                 </span>
-                <h3 className="text-sm md:text-lg font-black text-white tracking-tight mt-1">¿Necesitas algo de Tía o Tuti?</h3>
-                <p className="text-slate-300 text-[11px] md:text-xs mt-0.5 font-medium">Lo compramos por ti y te lo entregamos en un solo paquete consolidado.</p>
+                <h3 className="text-sm md:text-lg font-bold text-white tracking-tight mt-1">¿Necesitas algo de Tía o Tuti?</h3>
+                <p className="text-emerald-100/70 text-[11px] md:text-xs mt-0.5 font-normal">Lo compramos por ti y te lo entregamos en un solo paquete consolidado.</p>
               </div>
               <Link href="/tiendas"
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-4 py-2.5 rounded-xl transition text-xs shrink-0 shadow-sm border border-emerald-500/30">
-                Ver Comercios →
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-xs shrink-0 shadow-sm border border-emerald-500/30">
+                Ver comercios →
               </Link>
             </section>
 
