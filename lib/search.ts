@@ -162,3 +162,42 @@ export function customSearch(products: Producto[], queryText: string): Producto[
   // Ordenar de menor score (más relevante) a mayor score
   return results.sort((a, b) => a.score - b.score).map(r => r.item)
 }
+
+export interface SugerenciaBusqueda {
+  label: string
+  cat: string
+  sub: string
+}
+
+const aTitleCase = (s: string) => s.replace(/\b\p{L}/gu, c => c.toUpperCase())
+
+// Agrupa resultados de una búsqueda por subcategoria (o categoria como respaldo) para
+// ofrecer refinamientos tipo "leche" -> "Leche En Polvo", "Crema De Leche", etc.
+// Descarta candidatos sin relación de texto con lo buscado (evita ruido) y el chip
+// redundante idéntico al término ya escrito.
+export function sugerirCategorias(
+  productos: { categoria: string; subcategoria: string }[],
+  term: string,
+  max = 8
+): SugerenciaBusqueda[] {
+  const termNorm = normalizeText(term)
+  if (!termNorm) return []
+
+  const conteo = new Map<string, { cat: string; sub: string; n: number }>()
+  productos.forEach(p => {
+    const etiquetaCruda = p.subcategoria || p.categoria
+    if (!etiquetaCruda) return
+    const key = normalizeText(etiquetaCruda)
+    if (!key || key === termNorm) return
+    if (!key.includes(termNorm)) return
+
+    const existente = conteo.get(key)
+    if (existente) existente.n++
+    else conteo.set(key, { cat: p.categoria, sub: p.subcategoria || '', n: 1 })
+  })
+
+  return Array.from(conteo.entries())
+    .sort((a, b) => b[1].n - a[1].n)
+    .slice(0, max)
+    .map(([key, v]) => ({ label: aTitleCase(key), cat: v.cat, sub: v.sub }))
+}

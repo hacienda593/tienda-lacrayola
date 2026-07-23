@@ -3,7 +3,7 @@ import { useEffect, useState, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ChevronRight, ShoppingCart, ChevronLeft, Minus, Plus, ClipboardList, Filter, X } from 'lucide-react'
+import { ChevronRight, ShoppingCart, ChevronLeft, Minus, Plus, ClipboardList, Filter, X, Store } from 'lucide-react'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto } from '@/lib/types'
@@ -71,9 +71,9 @@ const BANNERS = [
     badge: 'Oficial',
   },
 ]
-// Gradiente oscuro anclado en el verde de marca (emerald), no en slate/azul —
-// el acento de marca debe reconocerse incluso en la variante oscura del banner.
-const BANNER_BG = 'from-emerald-950 via-emerald-900 to-emerald-950'
+// Verde de marca casi plano (2 paradas, vertical) — un degradado diagonal de 3 paradas
+// crea una mancha de luz difusa en el centro que se percibe como "fuera de foco".
+const BANNER_BG = 'bg-gradient-to-b from-emerald-900 to-emerald-950'
 
 // ── Carrusel de banners ────────────────────────────────────────────
 function BannerCarrusel() {
@@ -98,7 +98,7 @@ function BannerCarrusel() {
 
   return (
     <div
-      className={`relative bg-gradient-to-br ${BANNER_BG} text-white overflow-hidden transition-all duration-500 rounded-3xl shadow-md shadow-gray-200/60 border border-white/10`}
+      className={`relative ${BANNER_BG} text-white overflow-hidden transition-all duration-500 rounded-3xl shadow-lg shadow-emerald-950/25 border border-white/10`}
       onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
       onTouchEnd={e => {
         const dx = e.changedTouches[0].clientX - touchStartX.current
@@ -255,8 +255,9 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
         <div className="flex-1">
           {/* Micro-etiqueta de comercio origen */}
           <div className="flex items-center gap-1 mt-1 mb-0.5">
-            <span className="text-[10px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200/90 px-2 py-0.5 rounded-md shadow-2xs truncate max-w-full inline-flex items-center gap-0.5">
-              📍 {p.tienda?.nombre || 'La Crayola'}
+            <span className="text-[10px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200/90 px-2 py-0.5 rounded-md shadow-2xs truncate max-w-full inline-flex items-center gap-1">
+              <Store size={9} className="stroke-[2.5] shrink-0" />
+              {p.tienda?.nombre || 'La Crayola'}
             </span>
             {p.marca && (
               <span className="text-[9.5px] text-gray-400 font-extrabold truncate">{p.marca}</span>
@@ -277,8 +278,7 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
           <div className="scale-90 origin-right shrink-0">
             {cantidad === 0 ? (
               <button onClick={addCart}
-                className={`py-1 px-2.5 rounded-lg text-[11px] font-extrabold flex items-center justify-center gap-1 active:scale-[0.94] transition-all duration-150 cursor-pointer
-                  ${ok ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50/80 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 shadow-2xs'}`}>
+                className="py-1 px-2.5 rounded-lg text-[11px] font-extrabold flex items-center justify-center gap-1 active:scale-[0.94] transition-all duration-150 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs">
                 <ShoppingCart size={11} className="stroke-[2.2]" />
                 {ok ? '✓' : 'Agregar'}
               </button>
@@ -430,7 +430,7 @@ function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
   if (cantidad === 0) {
     return (
       <button onClick={add}
-        className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 active:scale-[0.94] transition-all shrink-0 cursor-pointer bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-600 hover:text-white hover:border-transparent shadow-2xs">
+        className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1 active:scale-[0.94] transition-all shrink-0 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs">
         <ShoppingCart size={10} className="stroke-[2.2]" />
         Agregar
       </button>
@@ -957,7 +957,7 @@ function HomeContent() {
             )}
 
             {/* ── 6. BANNER INTERMEDIO — Tiendas aliadas ── */}
-            <section className={`bg-gradient-to-r ${BANNER_BG} rounded-2xl p-5 md:p-6 text-white flex items-center gap-4 shadow-sm border border-emerald-900/60`}>
+            <section className={`${BANNER_BG} rounded-2xl p-5 md:p-6 text-white flex items-center gap-4 shadow-sm border border-emerald-900/60`}>
               <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-2xl shrink-0">
                 🏬
               </div>

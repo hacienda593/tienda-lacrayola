@@ -10,6 +10,7 @@ import CategoriasPanel from '@/components/CategoriasPanel'
 import CartDrawer from '@/components/CartDrawer'
 import BarcodeScannerModal from '@/components/BarcodeScannerModal'
 import HeaderCategoryTabs from '@/components/HeaderCategoryTabs'
+import { sugerirCategorias, type SugerenciaBusqueda } from '@/lib/search'
 
 function TopBar() {
   const pathname = usePathname()
@@ -264,7 +265,7 @@ function HeaderSearch() {
   const [q, setQ] = useState('')
   const [tiendaNombre, setTiendaNombre] = useState('')
   const [isScannerOpen, setIsScannerOpen] = useState(false)
-  const [sugerencias, setSugerencias] = useState<{ label: string; cat: string; sub: string }[]>([])
+  const [sugerencias, setSugerencias] = useState<SugerenciaBusqueda[]>([])
   const [inputFocused, setInputFocused] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -338,45 +339,13 @@ function HeaderSearch() {
       const { data } = await query
       if (!data) return
 
-      const normalizar = (s: string) => (s || '')
-        .normalize('NFD').replace(/[̀-ͯ]/g, '')
-        .toLowerCase().trim().replace(/\s+/g, ' ')
-
-      const aTitleCase = (s: string) => s.replace(/\b\p{L}/gu, c => c.toUpperCase())
-
-      const termNorm = normalizar(term)
-
-      const conteo = new Map<string, { cat: string; sub: string; n: number }>()
-      data.forEach((d: { categoria: string; subcategoria: string }) => {
-        // Preferimos subcategoria (más específica); solo caemos a categoria si no hay subcategoria
-        const etiquetaCruda = d.subcategoria || d.categoria
-        if (!etiquetaCruda) return
-
-        const key = normalizar(etiquetaCruda)
-        if (!key || key === termNorm) return // descarta vacíos y el chip redundante igual a lo escrito
-
-        // Solo cuenta si la etiqueta tiene relación real con lo buscado (evita ruido tipo
-        // "Alimento para perros" apareciendo en una búsqueda de "leche" solo porque la
-        // palabra aparece de casualidad en la descripción del producto)
-        if (!key.includes(termNorm)) return
-
-        const existente = conteo.get(key)
-        if (existente) existente.n++
-        else conteo.set(key, { cat: d.categoria, sub: d.subcategoria || '', n: 1 })
-      })
-
-      const lista = Array.from(conteo.entries())
-        .sort((a, b) => b[1].n - a[1].n)
-        .slice(0, 6)
-        .map(([key, v]) => ({ label: aTitleCase(key), cat: v.cat, sub: v.sub }))
-
-      setSugerencias(lista)
+      setSugerencias(sugerirCategorias(data, term, 6))
     }, 300)
 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [q, esTienda, activeTId])
 
-  function irASugerencia(s: { label: string; cat: string; sub: string }) {
+  function irASugerencia(s: SugerenciaBusqueda) {
     const params = new URLSearchParams(searchParams ? searchParams.toString() : '')
     if (q.trim()) params.set('q', q.trim())
     if (s.cat) params.set('cat', s.cat)
@@ -468,23 +437,19 @@ function HeaderSearch() {
       </div>
 
       {inputFocused && sugerencias.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
-          <div className="text-[10px] font-semibold text-gray-400 tracking-wide px-0.5 mb-1.5">
-            Refinar búsqueda
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {sugerencias.map(s => (
-              <button
-                key={`${s.cat}-${s.sub}`}
-                type="button"
-                onMouseDown={e => e.preventDefault()}
-                onClick={() => irASugerencia(s)}
-                className="text-xs font-medium text-gray-700 bg-gray-50 hover:bg-emerald-50 hover:text-emerald-800 border border-gray-200 hover:border-emerald-200 px-3 py-1.5 rounded-lg transition cursor-pointer"
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
+        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150 overflow-hidden">
+          {sugerencias.map(s => (
+            <button
+              key={`${s.cat}-${s.sub}`}
+              type="button"
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => irASugerencia(s)}
+              className="w-full flex items-center gap-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 hover:text-emerald-800 px-3.5 py-2 transition cursor-pointer"
+            >
+              <Search size={13} className="text-gray-300 shrink-0" />
+              <span className="truncate">{s.label}</span>
+            </button>
+          ))}
         </div>
       )}
 

@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { customSearch } from '@/lib/search'
+import { customSearch, sugerirCategorias } from '@/lib/search'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto, CAT_EMOJI } from '@/lib/types'
@@ -447,6 +447,22 @@ function ProductosContent() {
     return pool
   }, [base, query, cat, sub, tiendaId, crayolaId, marca, stockFiltro, orden, soloFrecuentes, frecuentesCodigos])
 
+  // Búsquedas relacionadas (estilo "연관검색어" de Coupang): fila horizontal debajo
+  // de los resultados, solo cuando hay un texto de búsqueda activo.
+  const busquedasRelacionadas = useMemo(() => {
+    const term = query.trim()
+    if (term.length < 2) return []
+    return sugerirCategorias(customSearch(base, term), term, 8)
+  }, [base, query])
+
+  function irABusquedaRelacionada(s: { cat: string; sub: string }) {
+    const paramsNew = new URLSearchParams()
+    if (query.trim()) paramsNew.set('q', query.trim())
+    if (s.cat) paramsNew.set('cat', s.cat)
+    if (s.sub) paramsNew.set('sub', s.sub)
+    router.push(`/productos?${paramsNew.toString()}`)
+  }
+
   const porTienda = useMemo(() => {
     if ((!query.trim() && !cat) || tiendaId) return null
     const groups: Record<string, Producto[]> = {}
@@ -691,6 +707,22 @@ function ProductosContent() {
               </div>
             </div>
           </div>
+
+          {/* Búsquedas relacionadas */}
+          {busquedasRelacionadas.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1 -mt-2">
+              <span className="text-xs text-gray-400 shrink-0">Relacionado:</span>
+              {busquedasRelacionadas.map(s => (
+                <button
+                  key={`${s.cat}-${s.sub}`}
+                  onClick={() => irABusquedaRelacionada(s)}
+                  className="shrink-0 text-xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 px-3 py-1.5 rounded-full transition cursor-pointer"
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Grid */}
           {loadingState ? (
