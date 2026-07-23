@@ -254,10 +254,15 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
       </div>
       <div className="p-2.5 flex-1 flex flex-col justify-between bg-white">
         <div className="flex-1">
-          <div className="text-[11px] font-extrabold text-gray-800 leading-snug line-clamp-2 min-h-[28px] mb-0.5 group-hover:text-emerald-700 transition-colors">{p.descripcion}</div>
-          {p.marca && (
-            <div className="text-[9.5px] text-gray-400 font-bold truncate tracking-tight">{p.marca}</div>
-          )}
+          {/* Micro-etiqueta de comercio origen */}
+          <div className="flex items-center gap-1 mt-0.5">
+            <span className="text-[8.5px] font-black text-slate-600 bg-slate-100 border border-slate-200/80 px-1.5 py-0.2 rounded-md truncate max-w-[110px]">
+              📍 {p.tienda?.nombre || 'La Crayola'}
+            </span>
+            {p.marca && (
+              <span className="text-[9px] text-gray-400 font-bold truncate">{p.marca}</span>
+            )}
+          </div>
         </div>
         <div className="mt-2 flex items-center justify-between gap-1">
           <div className="shrink-0">
@@ -828,24 +833,21 @@ function HomeContent() {
            ══════════════════════════════════════════════════════════════════ */}
         {activeCat ? (
           <div className="space-y-4 animate-in fade-in duration-200">
-            {/* Header de Categoría */}
-            <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 p-4 rounded-2xl">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">{cfgActiva.emoji}</span>
-                <div>
-                  <h1 className="text-lg font-black text-gray-900 leading-tight">{activeCat}</h1>
-                  <p className="text-xs text-gray-500 font-medium">
-                    {cargandoCatActive ? 'Cargando...' : `${prodsCatFiltrados.length} productos disponibles`}
-                  </p>
-                </div>
+            {/* Header de Categoría Discreto (Estilo Compacto) */}
+            <div className="flex items-center justify-between bg-slate-900 text-white px-3.5 py-2 rounded-xl shadow-xs border border-slate-800">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs font-black text-white tracking-tight truncate">{activeCat}</span>
+                <span className="text-[10px] font-bold text-slate-400 shrink-0">
+                  ({cargandoCatActive ? '...' : prodsCatFiltrados.length})
+                </span>
               </div>
 
               <button
                 onClick={limpiarCategoria}
-                className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-green-700 bg-white border border-gray-200 px-3 py-1.5 rounded-xl shadow-xs transition"
+                className="flex items-center gap-1 text-[11px] font-extrabold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0"
               >
-                <X size={13} />
-                Inicio
+                <X size={12} className="stroke-[2.5]" />
+                <span>Quitar filtro</span>
               </button>
             </div>
 
