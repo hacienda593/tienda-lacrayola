@@ -255,12 +255,12 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
       <div className="p-2.5 flex-1 flex flex-col justify-between bg-white">
         <div className="flex-1">
           {/* Micro-etiqueta de comercio origen */}
-          <div className="flex items-center gap-1 mt-0.5">
-            <span className="text-[8.5px] font-black text-slate-600 bg-slate-100 border border-slate-200/80 px-1.5 py-0.2 rounded-md truncate max-w-[110px]">
+          <div className="flex items-center gap-1 mt-1 mb-0.5">
+            <span className="text-[10px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200/90 px-2 py-0.5 rounded-md shadow-2xs truncate max-w-full inline-flex items-center gap-0.5">
               📍 {p.tienda?.nombre || 'La Crayola'}
             </span>
             {p.marca && (
-              <span className="text-[9px] text-gray-400 font-bold truncate">{p.marca}</span>
+              <span className="text-[9.5px] text-gray-400 font-extrabold truncate">{p.marca}</span>
             )}
           </div>
         </div>
@@ -651,14 +651,14 @@ function HomeContent() {
 
           // Exclusivos La Crayola
           supabase.from('ol_productos')
-            .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles,tienda_id')
+            .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles,tienda_id,tienda:ol_tiendas(id,nombre)')
             .eq('tienda_id', data.id)
             .gt('stock', 0)
             .gt('precio_publico', 0)
             .order('precio_publico', { ascending: false })
             .limit(10)
             .then(({ data: prods }) => {
-              if (prods) setExclusivos(prods as Producto[])
+              if (prods) setExclusivos(prods as unknown as Producto[])
               setCargandoExcl(false)
             })
         } else {
@@ -680,33 +680,33 @@ function HomeContent() {
 
     // Ofertas
     supabase.from('ol_productos')
-      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles,en_oferta,precio_oferta')
+      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles,en_oferta,precio_oferta,tienda_id,tienda:ol_tiendas(id,nombre)')
       .eq('en_oferta', true)
       .gt('stock', 0)
       .limit(10)
       .then(({ data }) => {
         if (data && data.length > 0) {
-          setOfertas(data as Producto[])
+          setOfertas(data as unknown as Producto[])
         }
         setCargandoOfertas(false)
       })
 
     // Destacados
     supabase.from('ol_productos')
-      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles')
+      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles,tienda_id,tienda:ol_tiendas(id,nombre)')
       .gt('stock', 0).gt('precio_publico', 5)
       .order('precio_publico', { ascending: false }).limit(8)
       .then(({ data }) => {
-        if (data) setDestacados(data as Producto[])
+        if (data) setDestacados(data as unknown as Producto[])
       })
 
     // Novedades
     supabase.from('ol_productos')
-      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles')
+      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles,tienda_id,tienda:ol_tiendas(id,nombre)')
       .gt('stock', 0).gt('precio_publico', 0)
       .order('codigo', { ascending: false }).limit(8)
       .then(({ data }) => {
-        if (data) setNovedades(data as Producto[])
+        if (data) setNovedades(data as unknown as Producto[])
         setCargandoProds(false)
       })
 
@@ -738,14 +738,15 @@ function HomeContent() {
     setCargandoCatActive(true)
 
     supabase.from('ol_productos')
-      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles,en_oferta,precio_oferta')
+      .select('codigo,descripcion,categoria,subcategoria,marca,stock,stock_minimo,precio_publico,precio_con_iva,imagen_url,detalles,en_oferta,precio_oferta,tienda_id,tienda:ol_tiendas(id,nombre)')
       .ilike('categoria', activeCat)
       .gt('stock', 0)
       .order('precio_publico', { ascending: true })
       .limit(60)
       .then(({ data }) => {
         if (data) {
-          const list = data as Producto[]
+          const list = data as unknown as Producto[]
+          setProdsCat(list)
           setProdsCat(list)
 
           // Extraer subcategorías únicas
