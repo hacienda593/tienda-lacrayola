@@ -71,7 +71,9 @@ const BANNERS = [
     badge: 'Oficial',
   },
 ]
-const BANNER_BG = 'from-slate-900 via-emerald-950 to-slate-900'
+// Gradiente oscuro anclado en el verde de marca (emerald), no en slate/azul —
+// el acento de marca debe reconocerse incluso en la variante oscura del banner.
+const BANNER_BG = 'from-emerald-950 via-emerald-900 to-emerald-950'
 
 // ── Carrusel de banners ────────────────────────────────────────────
 function BannerCarrusel() {
