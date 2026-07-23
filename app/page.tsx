@@ -452,10 +452,10 @@ function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
   )
 }
 
-// ── Sección Grid de productos (2x2 móvil / 4 cols desktop) ──────────────────────────────
+// ── Sección Grid de productos ──────────────────────────────
 function ProductSection({
   id, titulo, subtitulo, productos, loading, onSelect, showOffer, emoji,
-  verTodosHref, bgClass
+  verTodosHref, bgClass, maxItems = 4, gridCols = 'grid-cols-2 md:grid-cols-4'
 }: {
   id?: string
   titulo: string
@@ -467,8 +467,10 @@ function ProductSection({
   emoji?: string
   verTodosHref?: string
   bgClass?: string
+  maxItems?: number
+  gridCols?: string
 }) {
-  const displayProducts = productos.slice(0, 4)
+  const displayProducts = productos.slice(0, maxItems)
 
   return (
     <section id={id} className={`${bgClass || ''}`}>
@@ -490,11 +492,11 @@ function ProductSection({
         )}
       </div>
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-          {[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}
+        <div className={`grid ${gridCols} gap-2.5`}>
+          {[...Array(maxItems)].map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+        <div className={`grid ${gridCols} gap-2.5`}>
           {displayProducts.map(p => (
             <ProdCard key={p.codigo} p={p} showOffer={showOffer} onSelect={(prod) => onSelect(prod, productos)} />
           ))}
@@ -933,17 +935,19 @@ function HomeContent() {
               />
             )}
 
-            {/* ── 4. EXCLUSIVOS LA CRAYOLA ── */}
-            {(cargandoExcl || exclusivos.length > 0) && (
+            {/* ── 4. PRODUCTOS NUEVOS (Grid de 3 Columnas x 2 Filas = 6 Productos con Fotos) ── */}
+            {(cargandoProds || novedades.length > 0) && (
               <ProductSection
-                id="sec-exclusivos"
-                emoji="⭐"
-                titulo="Exclusivos Tienlo"
-                subtitulo="Catálogo directo de tienda oficial"
-                productos={exclusivos}
-                loading={cargandoExcl}
+                id="sec-novedades"
+                emoji="✨"
+                titulo="Productos Nuevos"
+                subtitulo="Últimos ingresos al catálogo con fotos verificadas"
+                productos={novedades}
+                loading={cargandoProds}
                 onSelect={openQuickView}
-                verTodosHref={crayolaId ? `/tiendas/${crayolaId}` : '/tiendas'}
+                maxItems={6}
+                gridCols="grid-cols-3 md:grid-cols-6"
+                verTodosHref="/productos"
               />
             )}
 
@@ -1027,17 +1031,19 @@ function HomeContent() {
               </section>
             )}
 
-            {/* ── 8. NOVEDADES ── */}
-            <ProductSection
-              id="sec-novedades"
-              emoji="✨"
-              titulo="Novedades"
-              subtitulo="Los últimos ingresos al catálogo"
-              productos={novedades}
-              loading={cargandoProds}
-              onSelect={openQuickView}
-              verTodosHref="/productos"
-            />
+            {/* ── 8. EXCLUSIVOS LA CRAYOLA (Pendiente cargar fotos) ── */}
+            {(cargandoExcl || exclusivos.length > 0) && (
+              <ProductSection
+                id="sec-exclusivos"
+                emoji="⭐"
+                titulo="Exclusivos Tienlo"
+                subtitulo="Catálogo oficial directo de tienda"
+                productos={exclusivos}
+                loading={cargandoExcl}
+                onSelect={openQuickView}
+                verTodosHref={crayolaId ? `/tiendas/${crayolaId}` : '/tiendas'}
+              />
+            )}
 
             {/* ── 9. CATEGORÍAS (Compactas) ── */}
             <section>
