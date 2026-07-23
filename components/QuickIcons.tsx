@@ -24,8 +24,8 @@ const ICONS: QuickIcon[] = [
     scrollTo: 'sec-ofertas',    
     icon: Flame,
     iconColor: 'text-rose-600',
-    bgColor: 'bg-rose-50 hover:bg-rose-100/80',
-    borderColor: 'border-rose-200/60',
+    bgColor: 'bg-rose-500/10 hover:bg-rose-500/15',
+    borderColor: 'border-rose-500/20',
     badge: 'HOT',
     badgeBg: 'bg-rose-600 text-white'
   },
@@ -34,20 +34,20 @@ const ICONS: QuickIcon[] = [
     label: 'Exclusivos', 
     scrollTo: 'sec-exclusivos', 
     icon: Star,
-    iconColor: 'text-amber-600',
-    bgColor: 'bg-amber-50 hover:bg-amber-100/80',
-    borderColor: 'border-amber-200/60',
+    iconColor: 'text-emerald-700',
+    bgColor: 'bg-emerald-600/10 hover:bg-emerald-600/15',
+    borderColor: 'border-emerald-600/20',
     badge: 'TOP',
-    badgeBg: 'bg-amber-600 text-white'
+    badgeBg: 'bg-emerald-700 text-white'
   },
   { 
     id: 'tiendas',    
     label: 'Tiendas',    
     href: '/tiendas',           
     icon: Store,
-    iconColor: 'text-blue-600',
-    bgColor: 'bg-blue-50 hover:bg-blue-100/80',
-    borderColor: 'border-blue-200/60'
+    iconColor: 'text-slate-800',
+    bgColor: 'bg-slate-100 hover:bg-slate-200/70',
+    borderColor: 'border-slate-200/80'
   },
   { 
     id: 'crayola',    
@@ -55,8 +55,8 @@ const ICONS: QuickIcon[] = [
     href: '',                   
     icon: Backpack,
     iconColor: 'text-emerald-700',
-    bgColor: 'bg-emerald-50 hover:bg-emerald-100/80',
-    borderColor: 'border-emerald-200/60',
+    bgColor: 'bg-emerald-600/10 hover:bg-emerald-600/15',
+    borderColor: 'border-emerald-600/25',
     badge: 'OFICIAL',
     badgeBg: 'bg-emerald-700 text-white'
   },
@@ -65,38 +65,38 @@ const ICONS: QuickIcon[] = [
     label: 'Nuevos',     
     scrollTo: 'sec-novedades',  
     icon: Sparkles,
-    iconColor: 'text-purple-600',
-    bgColor: 'bg-purple-50 hover:bg-purple-100/80',
-    borderColor: 'border-purple-200/60',
+    iconColor: 'text-amber-600',
+    bgColor: 'bg-amber-500/10 hover:bg-amber-500/15',
+    borderColor: 'border-amber-500/20',
     badge: 'NUEVO',
-    badgeBg: 'bg-purple-600 text-white'
+    badgeBg: 'bg-amber-600 text-white'
   },
   { 
     id: 'miscompras', 
     label: 'Recompra', 
     scrollTo: 'sec-frecuentes', 
     icon: Package,
-    iconColor: 'text-teal-600',
-    bgColor: 'bg-teal-50 hover:bg-teal-100/80',
-    borderColor: 'border-teal-200/60'
+    iconColor: 'text-slate-800',
+    bgColor: 'bg-slate-100 hover:bg-slate-200/70',
+    borderColor: 'border-slate-200/80'
   },
   { 
     id: 'marcas',     
     label: 'Marcas',     
     href: '/productos',          
     icon: Tag,
-    iconColor: 'text-gray-700',
-    bgColor: 'bg-gray-100 hover:bg-gray-200/80',
-    borderColor: 'border-gray-200'
+    iconColor: 'text-slate-800',
+    bgColor: 'bg-slate-100 hover:bg-slate-200/70',
+    borderColor: 'border-slate-200/80'
   },
   { 
     id: 'favoritos',  
     label: 'Favoritos',  
     href: '/favoritos',          
     icon: Heart,
-    iconColor: 'text-rose-500',
-    bgColor: 'bg-rose-50/60 hover:bg-rose-100/80',
-    borderColor: 'border-rose-200/50'
+    iconColor: 'text-rose-600',
+    bgColor: 'bg-rose-500/10 hover:bg-rose-500/15',
+    borderColor: 'border-rose-500/20'
   },
 ]
 
