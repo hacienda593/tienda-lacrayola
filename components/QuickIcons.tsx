@@ -19,9 +19,9 @@ interface QuickIcon {
 // y la etiqueta, no un arcoíris de colores. Los badges decorativos (HOT/TOP/NUEVO)
 // se quitaron: no aportan información real y leían como estética infantil.
 const ICON_STYLE = {
-  iconColor: 'text-gray-600 group-hover:text-emerald-700',
-  bgColor: 'bg-gray-50 hover:bg-gray-100',
-  borderColor: 'border-gray-200',
+  iconColor: 'text-ink group-hover:text-pine-deep',
+  bgColor: 'bg-surface-2 hover:bg-line/50',
+  borderColor: 'border-line',
 }
 
 const ICONS: QuickIcon[] = [
@@ -79,7 +79,7 @@ export default function QuickIcons() {
               </div>
 
               {/* Label */}
-              <span className="text-[10.5px] font-semibold text-gray-600 group-hover:text-emerald-700 transition-colors leading-tight text-center truncate w-full">
+              <span className="text-[9px] font-price font-medium tracking-wide uppercase text-ink-soft group-hover:text-pine-deep transition-colors leading-tight text-center truncate w-full">
                 {iconItem.label}
               </span>
             </div>

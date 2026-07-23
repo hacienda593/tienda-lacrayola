@@ -3,7 +3,7 @@ import { useEffect, useState, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ChevronRight, ShoppingCart, ChevronLeft, Minus, Plus, ClipboardList, Filter, X, Store } from 'lucide-react'
+import { ChevronRight, ShoppingCart, ChevronLeft, Minus, Plus, ClipboardList, Filter, X, Zap, Package, MapPin, Star } from 'lucide-react'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto } from '@/lib/types'
@@ -39,25 +39,25 @@ const CAT_CONFIG: Record<string, { emoji: string; color: string; bg: string }> =
 
 const BANNERS = [
   {
-    titulo: 'Ofertas relámpago',
+    titulo: 'Ofertas de la semana',
     sub: 'Descuentos verificados en útiles y tecnología por tiempo limitado.',
-    emoji: '⚡',
+    icon: Zap,
     cta: 'Explorar ofertas',
     href: '#sec-ofertas',
     badge: 'Exclusivo',
   },
   {
-    titulo: 'Envío multi-tienda consolidado',
-    sub: 'Junta útiles escolares, abarrotes y farmacia en una sola entrega.',
-    emoji: '📦',
-    cta: 'Ver comercios',
+    titulo: 'Todo Los Bancos, en una sola entrega',
+    sub: 'Combina útiles escolares, abarrotes y farmacia en un solo pedido.',
+    icon: Package,
+    cta: 'Ver comercios aliados',
     href: '/tiendas',
-    badge: 'Tienlo Express',
+    badge: 'Multitienda · Tienlo Express',
   },
   {
     titulo: 'Pedidos con atención directa',
     sub: 'Confirmación instantánea de stock y envíos a todo Los Bancos.',
-    emoji: '📍',
+    icon: MapPin,
     cta: 'Iniciar pedido',
     href: '/productos',
     badge: 'Los Bancos',
@@ -65,15 +65,15 @@ const BANNERS = [
   {
     titulo: 'Catálogo Tienlo',
     sub: 'Productos directos de tienda a precios preferenciales.',
-    emoji: '⭐',
+    icon: Star,
     cta: 'Ver catálogo',
     href: '#sec-exclusivos',
     badge: 'Oficial',
   },
 ]
-// Verde de marca casi plano (2 paradas, vertical) — un degradado diagonal de 3 paradas
-// crea una mancha de luz difusa en el centro que se percibe como "fuera de foco".
-const BANNER_BG = 'bg-gradient-to-b from-emerald-900 to-emerald-950'
+// Verde de marca casi plano, sin degradado diagonal — el "signage" del sistema
+// aprobado sobre el mockup: fondo pine-deep, tipografía de sección, sin brillos.
+const BANNER_BG = 'bg-pine-deep'
 
 // ── Carrusel de banners ────────────────────────────────────────────
 function BannerCarrusel() {
@@ -95,10 +95,11 @@ function BannerCarrusel() {
   function ir(n: number) { setIdx((idx + n + BANNERS.length) % BANNERS.length); resetTimer() }
 
   const b = BANNERS[idx]
+  const Icon = b.icon
 
   return (
     <div
-      className={`relative ${BANNER_BG} text-white overflow-hidden transition-all duration-500 rounded-3xl shadow-lg shadow-emerald-950/25 border border-white/10`}
+      className={`relative ${BANNER_BG} text-white overflow-hidden transition-all duration-500 rounded-2xl border border-white/10 font-ui`}
       onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
       onTouchEnd={e => {
         const dx = e.changedTouches[0].clientX - touchStartX.current
@@ -108,17 +109,17 @@ function BannerCarrusel() {
       {/* Móvil */}
       <div className="block md:hidden">
         <Link href={b.href} className="block">
-          <div className="flex items-center justify-between px-4.5 h-[105px] relative">
+          <div className="flex items-center justify-between px-4.5 h-[112px] relative">
             <div className="pr-3 z-10 flex flex-col justify-center flex-1 min-w-0">
-              <span className="inline-block bg-white/15 border border-white/20 text-white/80 text-[9px] font-semibold tracking-wide px-2 py-0.5 rounded-md mb-1.5 w-max">
+              <span className="font-price text-[9px] font-medium tracking-wide uppercase text-white/60 mb-1.5">
                 {b.badge}
               </span>
-              <h2 className="text-[14px] font-bold leading-snug tracking-tight text-white">{b.titulo}</h2>
-              <span className="text-[10px] text-white/70 font-medium mt-2 flex items-center gap-0.5">
+              <h2 className="font-display text-[17px] font-bold leading-snug tracking-tight text-white text-balance">{b.titulo}</h2>
+              <span className="text-[11px] text-white/70 font-medium mt-2 underline underline-offset-2 flex items-center gap-0.5 w-max">
                 {b.cta} <ChevronRight size={11} className="stroke-[2.5]" />
               </span>
             </div>
-            <div className="text-5xl leading-none select-none shrink-0 z-10 drop-shadow-sm transition-transform duration-300 hover:scale-110">{b.emoji}</div>
+            <Icon size={30} strokeWidth={1.5} className="text-white/70 shrink-0 z-10" />
           </div>
         </Link>
       </div>
@@ -127,27 +128,27 @@ function BannerCarrusel() {
       <div className="hidden md:block">
         <div className="max-w-5xl mx-auto px-6 py-8 flex flex-row items-center gap-6">
           <div className="flex-1">
-            <div className="inline-block bg-white/15 border border-white/20 text-white/80 text-[11px] font-semibold tracking-wide px-3 py-1 rounded-md mb-3">
+            <div className="font-price text-[11px] font-medium tracking-wide uppercase text-white/60 mb-3">
               {b.badge}
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold leading-tight mb-2 tracking-tight text-white">{b.titulo}</h1>
-            <p className="text-white/80 text-sm mb-4 max-w-md font-normal">{b.sub}</p>
+            <h1 className="font-display text-2xl md:text-3xl font-bold leading-tight mb-2 tracking-tight text-white text-balance">{b.titulo}</h1>
+            <p className="text-white/70 text-sm mb-4 max-w-md font-normal">{b.sub}</p>
             <Link href={b.href}
-              className="bg-white text-gray-900 font-semibold px-5 py-2.5 rounded-xl hover:bg-gray-50 hover:shadow-md active:scale-95 transition-all text-xs text-center inline-flex items-center gap-1.5 shadow-sm">
+              className="text-white font-semibold text-sm underline underline-offset-4 hover:text-white/80 transition-colors inline-flex items-center gap-1.5">
               {b.cta} <ChevronRight size={14} className="stroke-[2.5]" />
             </Link>
           </div>
-          <div className="text-[84px] leading-none select-none drop-shadow-md transition-transform duration-300 hover:scale-105">{b.emoji}</div>
+          <Icon size={64} strokeWidth={1.25} className="text-white/60 shrink-0" />
         </div>
       </div>
 
       {/* Controles desktop */}
       <button onClick={() => ir(-1)}
-        className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/25 hover:bg-white/40 backdrop-blur-md rounded-full hidden md:flex items-center justify-center transition active:scale-90 shadow-sm">
+        className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full hidden md:flex items-center justify-center transition active:scale-90">
         <ChevronLeft size={18} className="text-white stroke-[2.5]" />
       </button>
       <button onClick={() => ir(+1)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/25 hover:bg-white/40 backdrop-blur-md rounded-full hidden md:flex items-center justify-center transition active:scale-90 shadow-sm">
+        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full hidden md:flex items-center justify-center transition active:scale-90">
         <ChevronRight size={18} className="text-white stroke-[2.5]" />
       </button>
 
@@ -155,7 +156,7 @@ function BannerCarrusel() {
       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
         {BANNERS.map((_, i) => (
           <button key={i} onClick={() => { setIdx(i); resetTimer() }}
-            className={`rounded-full transition-all duration-300 ${i === idx ? 'w-5 h-1.5 bg-white shadow-xs' : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/60'}`} />
+            className={`rounded-full transition-all duration-300 ${i === idx ? 'w-5 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/30 hover:bg-white/50'}`} />
         ))}
       </div>
     </div>
@@ -211,6 +212,7 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
   }
 
   const tieneOferta = showOffer && p.en_oferta && p.precio_oferta && p.precio_oferta < p.precio_publico
+  const descuentoPct = tieneOferta ? Math.round((1 - p.precio_oferta! / p.precio_publico) * 100) : 0
 
   return (
     <div onClick={() => {
@@ -220,8 +222,8 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
         router.push(`/producto/${encodeURIComponent(p.codigo)}`)
       }
     }}
-      className="bg-white rounded-2xl border border-gray-100/90 overflow-hidden shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.09)] hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer group w-full relative">
-      <div className="relative bg-gradient-to-b from-gray-50/90 via-gray-50/40 to-white h-28 sm:h-32 flex items-center justify-center text-3xl overflow-hidden group-hover:from-emerald-50/40 transition-colors w-full">
+      className="bg-white rounded-xl border border-line overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer group w-full relative font-ui">
+      <div className="relative bg-pine-tint h-28 sm:h-32 flex items-center justify-center text-3xl overflow-hidden w-full">
         {p.imagen_url && !imageError ? (
           <img
             src={p.imagen_url}
@@ -231,36 +233,35 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
             loading="lazy"
           />
         ) : (
-          <span className="group-hover:scale-110 transition-transform duration-300">{CAT_CONFIG[p.categoria]?.emoji || '📦'}</span>
+          <span className="opacity-85 group-hover:scale-110 transition-transform duration-300">{CAT_CONFIG[p.categoria]?.emoji || '📦'}</span>
         )}
         <button onClick={toggleFav}
-          className={`absolute top-1.5 right-1.5 w-6.5 h-6.5 rounded-full flex items-center justify-center shadow-xs z-10 transition backdrop-blur-xs
-            ${fav ? 'bg-emerald-600 text-white shadow-emerald-600/30' : 'bg-white/90 text-gray-400 hover:text-emerald-700 hover:bg-white'}`}
+          className={`absolute top-1.5 right-1.5 w-6.5 h-6.5 rounded-full flex items-center justify-center z-10 transition
+            ${fav ? 'bg-pine text-white' : 'bg-white/90 text-ink-faint hover:text-pine-deep hover:bg-white'}`}
           title={fav ? "Quitar de la lista" : "Añadir a la lista de compras"}
         >
           <ClipboardList size={11.5} className="stroke-[2.2]" />
         </button>
         {tieneOferta && (
-          <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold bg-rose-600 text-white px-1.5 py-0.5 rounded-md z-10 tracking-tight">
-            Oferta
+          <span className="absolute top-1.5 left-1.5 font-price text-[10px] font-semibold text-sale z-10 tracking-tight">
+            -{descuentoPct}%
           </span>
         )}
         {!tieneOferta && p.stock > 0 && p.stock < 5 && (
-          <span className="absolute top-1.5 left-1.5 text-[9px] font-semibold bg-amber-600 text-white px-1.5 py-0.5 rounded-md z-10 tracking-tight">
-            Últimas unidades
+          <span className="absolute top-1.5 left-1.5 font-price text-[9.5px] font-semibold text-wheat z-10 tracking-tight">
+            Quedan {p.stock}
           </span>
         )}
       </div>
       <div className="p-2.5 flex-1 flex flex-col justify-between bg-white">
         <div className="flex-1">
           {/* Micro-etiqueta de comercio origen */}
-          <div className="flex items-center gap-1 mt-1 mb-0.5">
-            <span className="text-[10px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200/90 px-2 py-0.5 rounded-md shadow-2xs truncate max-w-full inline-flex items-center gap-1">
-              <Store size={9} className="stroke-[2.5] shrink-0" />
-              {p.tienda?.nombre || 'La Crayola'}
+          <div className="flex items-center gap-1.5 mt-1 mb-0.5">
+            <span className="font-price text-[8.5px] font-medium tracking-wide uppercase text-ink-faint truncate max-w-full">
+              {p.tienda?.nombre || 'Tienlo'}
             </span>
             {p.marca && (
-              <span className="text-[9.5px] text-gray-400 font-extrabold truncate">{p.marca}</span>
+              <span className="text-[9.5px] text-ink-faint font-semibold truncate">· {p.marca}</span>
             )}
           </div>
         </div>
@@ -268,32 +269,32 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
           <div className="shrink-0">
             {tieneOferta ? (
               <div className="flex flex-col">
-                <span className="text-[9.5px] text-gray-400 line-through font-semibold">{fmt(p.precio_publico)}</span>
-                <span className="text-sm font-black text-rose-600 tracking-tight">{fmt(p.precio_oferta!)}</span>
+                <span className="font-price text-[9.5px] text-ink-faint line-through font-medium">{fmt(p.precio_publico)}</span>
+                <span className="font-price text-sm font-semibold text-sale tracking-tight">{fmt(p.precio_oferta!)}</span>
               </div>
             ) : (
-              <div className="text-sm font-black text-gray-900 tracking-tight">{fmt(p.precio_publico)}</div>
+              <div className="font-price text-sm font-semibold text-ink tracking-tight">{fmt(p.precio_publico)}</div>
             )}
           </div>
           <div className="scale-90 origin-right shrink-0">
             {cantidad === 0 ? (
               <button onClick={addCart}
-                className="py-1 px-2.5 rounded-lg text-[11px] font-extrabold flex items-center justify-center gap-1 active:scale-[0.94] transition-all duration-150 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs">
+                className="py-1 px-2.5 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 active:scale-[0.94] transition-all duration-150 cursor-pointer bg-pine hover:bg-pine-deep text-white">
                 <ShoppingCart size={11} className="stroke-[2.2]" />
                 {ok ? '✓' : 'Agregar'}
               </button>
             ) : (
-              <div className="flex items-center justify-between bg-emerald-600 text-white rounded-lg overflow-hidden h-[26px] w-[68px] shadow-xs border border-emerald-700">
-                <button 
+              <div className="flex items-center justify-between bg-pine text-white rounded-lg overflow-hidden h-[26px] w-[68px]">
+                <button
                   onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad - 1); }}
-                  className="px-1.5 h-full text-white hover:bg-emerald-700 transition font-bold active:scale-[0.90] flex items-center justify-center cursor-pointer"
+                  className="px-1.5 h-full text-white hover:bg-pine-deep transition font-bold active:scale-[0.90] flex items-center justify-center cursor-pointer"
                 >
                   <Minus size={9.5} className="stroke-[3]" />
                 </button>
-                <span className="text-white text-[11px] font-black select-none">{cantidad}</span>
-                <button 
+                <span className="font-price text-white text-[11px] font-semibold select-none">{cantidad}</span>
+                <button
                   onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad + 1); }}
-                  className="px-1.5 h-full text-white hover:bg-emerald-700 transition font-bold active:scale-[0.90] flex items-center justify-center cursor-pointer"
+                  className="px-1.5 h-full text-white hover:bg-pine-deep transition font-bold active:scale-[0.90] flex items-center justify-center cursor-pointer"
                 >
                   <Plus size={9.5} className="stroke-[3]" />
                 </button>
@@ -354,9 +355,9 @@ function FrecuenteCardCompacta({ p, onSelect }: { p: Producto; onSelect?: (p: Pr
         router.push(`/producto/${encodeURIComponent(p.codigo)}`)
       }
     }}
-      className="bg-white rounded-xl border border-emerald-100/90 overflow-hidden shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer group p-1.5 sm:p-2">
+      className="bg-white rounded-xl border border-line overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer group p-1.5 sm:p-2 font-ui">
       <div>
-        <div className="relative bg-gray-50/90 rounded-lg aspect-square flex items-center justify-center text-2xl overflow-hidden mb-1.5">
+        <div className="relative bg-pine-tint rounded-lg aspect-square flex items-center justify-center text-2xl overflow-hidden mb-1.5">
           {p.imagen_url && !imageError ? (
             <img
               src={p.imagen_url}
@@ -366,35 +367,34 @@ function FrecuenteCardCompacta({ p, onSelect }: { p: Producto; onSelect?: (p: Pr
               loading="lazy"
             />
           ) : (
-            <span>{CAT_CONFIG[p.categoria]?.emoji || '📦'}</span>
+            <span className="opacity-85">{CAT_CONFIG[p.categoria]?.emoji || '📦'}</span>
           )}
-          <span className="absolute top-1 left-1 bg-emerald-600 text-white text-[7.5px] font-black px-1.5 py-0.2 rounded-full shadow-2xs">
-            🔁 Habitual
+          <span className="absolute top-1 left-1 font-price text-[8px] font-medium tracking-wide uppercase text-pine-deep bg-white/85 px-1.5 py-0.5 rounded-md">
+            Habitual
           </span>
         </div>
-        <div className="text-[10.5px] font-bold text-gray-800 leading-tight line-clamp-2 min-h-[26px] group-hover:text-emerald-700 transition-colors">
+        <div className="text-[10.5px] font-semibold text-ink leading-tight line-clamp-2 min-h-[26px] group-hover:text-pine-deep transition-colors">
           {p.descripcion}
         </div>
       </div>
 
-      <div className="mt-1.5 pt-1 border-t border-gray-100 flex flex-col items-center">
-        <div className="text-xs font-black text-gray-900 mb-1">
+      <div className="mt-1.5 pt-1 border-t border-line flex flex-col items-center">
+        <div className="font-price text-xs font-semibold text-ink mb-1">
           {fmt(precio)}
         </div>
         {cantidad === 0 ? (
           <button onClick={addCart}
-            className={`w-full py-1 rounded-lg text-[10.5px] font-extrabold flex items-center justify-center gap-1 transition-all duration-150 active:scale-95 cursor-pointer
-              ${ok ? 'bg-emerald-600 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'}`}>
+            className="w-full py-1 rounded-lg text-[10.5px] font-semibold flex items-center justify-center gap-1 transition-all duration-150 active:scale-95 cursor-pointer bg-pine hover:bg-pine-deep text-white">
             <ShoppingCart size={10.5} className="stroke-[2.2]" />
-            {ok ? '✓ ¡Listo!' : '+ Añadir'}
+            {ok ? '✓ Listo' : 'Añadir'}
           </button>
         ) : (
-          <div className="w-full flex items-center justify-between bg-emerald-600 text-white rounded-lg overflow-hidden h-[24px] shadow-2xs border border-emerald-700">
-            <button onClick={(e) => incCart(e, -1)} className="px-1.5 h-full text-white hover:bg-emerald-700 transition font-bold flex items-center justify-center">
+          <div className="w-full flex items-center justify-between bg-pine text-white rounded-lg overflow-hidden h-[24px]">
+            <button onClick={(e) => incCart(e, -1)} className="px-1.5 h-full text-white hover:bg-pine-deep transition font-bold flex items-center justify-center">
               <Minus size={9} className="stroke-[3]" />
             </button>
-            <span className="text-[10.5px] font-black text-white select-none">{cantidad}</span>
-            <button onClick={(e) => incCart(e, 1)} className="px-1.5 h-full text-white hover:bg-emerald-700 transition font-bold flex items-center justify-center">
+            <span className="font-price text-[10.5px] font-semibold text-white select-none">{cantidad}</span>
+            <button onClick={(e) => incCart(e, 1)} className="px-1.5 h-full text-white hover:bg-pine-deep transition font-bold flex items-center justify-center">
               <Plus size={9} className="stroke-[3]" />
             </button>
           </div>
@@ -478,19 +478,15 @@ function ProductSection({
 
   return (
     <section id={id} className={`${bgClass || ''}`}>
-      <div className="flex items-center justify-between mb-3 px-0.5">
-        <div className="flex items-center gap-2">
-          <div className="w-1 h-4 bg-emerald-600 rounded-full shrink-0" />
-          <div>
-            <h2 className="text-base font-black text-gray-900 tracking-tight flex items-center gap-1.5">
-              {emoji && <span>{emoji}</span>}
-              {titulo}
-            </h2>
-            {subtitulo && <p className="text-[10px] font-medium text-gray-400 mt-0.5">{subtitulo}</p>}
-          </div>
+      <div className="flex items-end justify-between mb-3 px-0.5">
+        <div>
+          {subtitulo && <span className="font-price text-[10px] font-medium tracking-wide uppercase text-ink-faint block mb-0.5">{subtitulo}</span>}
+          <h2 className="font-display text-[19px] font-bold text-ink tracking-tight">
+            {titulo}
+          </h2>
         </div>
         {verTodosHref && (
-          <Link href={verTodosHref} className="text-xs text-emerald-700 font-extrabold flex items-center gap-0.5 hover:bg-emerald-100/60 transition shrink-0 bg-emerald-50/90 px-3 py-1 rounded-full border border-emerald-200/60 shadow-2xs">
+          <Link href={verTodosHref} className="font-ui text-xs text-pine font-semibold flex items-center gap-0.5 hover:text-pine-deep transition shrink-0">
             Ver más <ChevronRight size={13} className="stroke-[2.5]" />
           </Link>
         )}
@@ -836,13 +832,13 @@ function HomeContent() {
 
             {/* Subcategorías (Chips de filtro) */}
             {subsCat.length > 0 && (
-              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1 font-ui">
                 <button
                   onClick={() => selectSub('')}
-                  className={`shrink-0 text-xs font-extrabold px-3 py-1.5 rounded-xl transition cursor-pointer border
+                  className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg transition cursor-pointer border
                     ${!activeSub
-                      ? 'bg-green-600 text-white border-green-600 shadow-sm'
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                      ? 'bg-pine text-white border-pine'
+                      : 'bg-white text-ink-soft border-line hover:bg-surface-2'}`}
                 >
                   Todos
                 </button>
@@ -852,10 +848,10 @@ function HomeContent() {
                     <button
                       key={s}
                       onClick={() => selectSub(s)}
-                      className={`shrink-0 text-xs font-extrabold px-3 py-1.5 rounded-xl transition cursor-pointer border
+                      className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg transition cursor-pointer border
                         ${esSubActiva
-                          ? 'bg-green-600 text-white border-green-600 shadow-sm'
-                          : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                          ? 'bg-pine text-white border-pine'
+                          : 'bg-white text-ink-soft border-line hover:bg-surface-2'}`}
                     >
                       {s}
                     </button>
@@ -870,13 +866,12 @@ function HomeContent() {
                 {[...Array(9)].map((_, i) => <SkeletonCard key={i} />)}
               </div>
             ) : prodsCatFiltrados.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center space-y-2">
-                <div className="text-4xl">🔍</div>
-                <h3 className="text-sm font-bold text-gray-700">No hay productos en este pasillo</h3>
-                <p className="text-xs text-gray-400">Intenta seleccionar otra subcategoría o regresa a Inicio</p>
+              <div className="bg-white rounded-2xl border border-line p-8 text-center space-y-2 font-ui">
+                <h3 className="font-display text-base font-bold text-ink">No hay productos en este pasillo</h3>
+                <p className="text-xs text-ink-faint">Intenta seleccionar otra subcategoría o regresa a Inicio</p>
                 <button
                   onClick={limpiarCategoria}
-                  className="inline-block mt-2 bg-green-600 text-white text-xs font-bold px-4 py-2 rounded-xl"
+                  className="inline-block mt-2 bg-pine hover:bg-pine-deep text-white text-xs font-semibold px-4 py-2 rounded-xl transition"
                 >
                   Volver a Inicio
                 </button>
@@ -936,15 +931,15 @@ function HomeContent() {
 
             {/* ── 5. COMPRAR DE NUEVO (Grid de 3 Columnas) ── */}
             {frecuentes.length > 0 && (
-              <section id="sec-frecuentes" className="bg-slate-900/5 border border-slate-200/80 rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-3">
+              <section id="sec-frecuentes" className="bg-surface-2 border border-line rounded-2xl p-4">
+                <div className="flex items-end justify-between mb-3">
                   <div>
-                    <h2 className="text-base font-black text-slate-900 flex items-center gap-2 tracking-tight">
-                      <span>🔄</span> Recompra Frecuente
+                    <span className="font-price text-[10px] font-medium tracking-wide uppercase text-ink-faint block mb-0.5">Listo para reordenar en 1 toque</span>
+                    <h2 className="font-display text-[19px] font-bold text-ink tracking-tight">
+                      Recompra frecuente
                     </h2>
-                    <p className="text-[10.5px] font-bold text-slate-500 mt-0.5">Tus productos habituales listos para reordenar en 1 toque</p>
                   </div>
-                  <Link href="/productos?frecuentes=true" className="text-xs text-emerald-700 font-extrabold flex items-center gap-0.5 hover:underline shrink-0 bg-white px-3 py-1 rounded-xl border border-slate-200/80 shadow-2xs">
+                  <Link href="/productos?frecuentes=true" className="font-ui text-xs text-pine font-semibold flex items-center gap-0.5 hover:text-pine-deep shrink-0">
                     Ver todos <ChevronRight size={13} />
                   </Link>
                 </div>
@@ -957,19 +952,17 @@ function HomeContent() {
             )}
 
             {/* ── 6. BANNER INTERMEDIO — Tiendas aliadas ── */}
-            <section className={`${BANNER_BG} rounded-2xl p-5 md:p-6 text-white flex items-center gap-4 shadow-sm border border-emerald-900/60`}>
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-2xl shrink-0">
-                🏬
-              </div>
+            <section className={`${BANNER_BG} rounded-2xl p-5 md:p-6 text-white flex items-center gap-4 border border-white/10 font-ui`}>
+              <Package size={26} strokeWidth={1.5} className="text-white/70 shrink-0" />
               <div className="flex-1 min-w-0">
-                <span className="text-[10px] font-semibold tracking-wide text-emerald-300/90 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                <span className="font-price text-[10px] font-medium tracking-wide uppercase text-white/60">
                   Multicompras
                 </span>
-                <h3 className="text-sm md:text-lg font-bold text-white tracking-tight mt-1">¿Necesitas algo de Tía o Tuti?</h3>
-                <p className="text-emerald-100/70 text-[11px] md:text-xs mt-0.5 font-normal">Lo compramos por ti y te lo entregamos en un solo paquete consolidado.</p>
+                <h3 className="font-display text-base md:text-lg font-bold text-white tracking-tight mt-0.5">¿Necesitas algo de Tía o Tuti?</h3>
+                <p className="text-white/70 text-[11px] md:text-xs mt-0.5 font-normal">Lo compramos por ti y te lo entregamos en un solo paquete consolidado.</p>
               </div>
               <Link href="/tiendas"
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2.5 rounded-xl transition text-xs shrink-0 shadow-sm border border-emerald-500/30">
+                className="text-white font-semibold text-xs underline underline-offset-4 hover:text-white/80 transition-colors shrink-0 whitespace-nowrap">
                 Ver comercios →
               </Link>
             </section>
@@ -977,15 +970,15 @@ function HomeContent() {
             {/* ── 7. TIENDAS (Compactas — logos horizontales) ── */}
             {tiendas.length > 0 && (
               <section>
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-                    <span>🏪</span> Comercios Aliados
+                <div className="flex items-end justify-between mb-3">
+                  <h2 className="font-display text-[19px] font-bold text-ink tracking-tight">
+                    Comercios aliados
                   </h2>
-                  <Link href="/tiendas" className="text-xs text-emerald-700 font-extrabold flex items-center gap-0.5 hover:underline bg-emerald-50/80 px-3 py-1 rounded-xl border border-emerald-200/60">
+                  <Link href="/tiendas" className="font-ui text-xs text-pine font-semibold flex items-center gap-0.5 hover:text-pine-deep">
                     Todas <ChevronRight size={13} />
                   </Link>
                 </div>
-                <div 
+                <div
                   onTouchStart={(e) => e.stopPropagation()}
                   onTouchEnd={(e) => e.stopPropagation()}
                   className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide"
@@ -999,14 +992,14 @@ function HomeContent() {
                     }
                     return (
                       <Link key={t.id} href={getHref(t.id)}
-                        className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-2xs hover:shadow-md hover:border-emerald-500/40 transition-all flex flex-col items-center gap-1.5 text-center group shrink-0 w-[80px]">
-                        <div className="w-11 h-11 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
+                        className="bg-white border border-line rounded-xl p-3 hover:shadow-md hover:border-pine/40 transition-all flex flex-col items-center gap-1.5 text-center group shrink-0 w-[80px] font-ui">
+                        <div className="w-11 h-11 bg-surface-2 border border-line rounded-lg flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
                           {t.logo_url
                             ? <img src={t.logo_url} alt={t.nombre} className="w-8 h-8 object-contain" />
                             : (CAT_TIENDA[t.categoria ?? 'otros'] ?? '🏪')
                           }
                         </div>
-                        <span className="text-[10px] font-bold text-slate-800 leading-tight truncate w-full tracking-tight">{t.nombre}</span>
+                        <span className="text-[10px] font-semibold text-ink leading-tight truncate w-full tracking-tight">{t.nombre}</span>
                       </Link>
                     )
                   })}
@@ -1028,11 +1021,14 @@ function HomeContent() {
               />
             )}
 
-            {/* ── 9. CATEGORÍAS (Compactas) ── */}
+            {/* ── 9. CATEGORÍAS (Compactas) ──
+                 Nota: los íconos de categoría siguen usando el motor de emoji existente
+                 (CAT_CONFIG) — reemplazarlo por un sistema de íconos propio es un trabajo
+                 aparte (toca decenas de componentes), señalado pero no incluido en esta pasada. */}
             <section>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-base font-extrabold text-gray-900">📂 Categorías</h2>
-                <Link href="/productos" className="text-xs text-green-600 font-semibold flex items-center gap-0.5 hover:underline">
+              <div className="flex items-end justify-between mb-3">
+                <h2 className="font-display text-[19px] font-bold text-ink tracking-tight">Categorías</h2>
+                <Link href="/productos" className="font-ui text-xs text-pine font-semibold flex items-center gap-0.5 hover:text-pine-deep">
                   Ver todo <ChevronRight size={13} />
                 </Link>
               </div>

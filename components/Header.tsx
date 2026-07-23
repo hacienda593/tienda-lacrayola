@@ -45,27 +45,27 @@ function TopBar() {
 
   if (esTienda) {
     return (
-      <div className="bg-green-700 text-white text-[11px] md:text-xs text-center py-1.5 px-4 font-medium flex items-center justify-center gap-2 animate-fade-in select-none">
-        <span>🏪 Comprando en <strong className="font-extrabold text-green-100">{tiendaNombre || 'la tienda'}</strong></span>
+      <div className="bg-surface-2 border-b border-line text-ink-soft text-[10px] md:text-[11px] font-ui font-medium tracking-wide uppercase text-center py-1.5 px-4 flex items-center justify-center gap-2 animate-fade-in select-none">
+        <span>Comprando en <strong className="font-semibold text-ink normal-case">{tiendaNombre || 'la tienda'}</strong></span>
         <span className="opacity-40">·</span>
-        <Link href="/" className="underline hover:text-green-200 transition font-bold flex items-center gap-0.5">
-          🏠 Ir al Inicio
+        <Link href="/" className="hover:text-pine transition font-semibold">
+          Ir al inicio
         </Link>
         <span className="opacity-40">·</span>
         <button
           onClick={compartirActual}
-          className="underline hover:text-green-200 transition font-bold flex items-center gap-0.5 cursor-pointer bg-transparent border-none text-white p-0"
+          className="hover:text-pine transition font-semibold cursor-pointer bg-transparent border-none text-ink-soft p-0"
           title="Compartir tienda"
         >
-          🔗 Compartir
+          Compartir
         </button>
       </div>
     )
   }
 
   return (
-    <div className="bg-green-700 text-white text-[11px] md:text-xs text-center py-1.5 px-4 font-medium select-none">
-      🚚 Envíos a domicilio en Los Bancos · Respaldado por La Crayola
+    <div className="bg-surface-2 border-b border-line text-ink-soft text-[10px] md:text-[11px] font-ui font-medium tracking-wide uppercase text-center py-1.5 px-4 select-none">
+      Envíos a domicilio en Los Bancos · <span className="text-pine font-semibold">Respaldado por La Crayola</span>
     </div>
   )
 }
@@ -407,20 +407,20 @@ function HeaderSearch() {
   return (
     <form onSubmit={buscar} className="flex-1 max-w-xl relative">
       <div className="relative">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
         <input
           value={q}
           onChange={e => manejarEscribir(e.target.value)}
           onFocus={() => setInputFocused(true)}
           onBlur={() => setTimeout(() => setInputFocused(false), 150)}
           placeholder={esTienda ? `Buscar en ${nombreTiendaCorto || 'la tienda'}...` : "Buscar productos, marcas, categorías..."}
-          className={`w-full bg-gray-100 border border-gray-200 rounded-xl pl-9 ${prPadding} py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition`}
+          className={`w-full font-ui bg-surface-2 border border-line rounded-xl pl-9 ${prPadding} py-2.5 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-pine focus:bg-white transition`}
         />
         {q ? (
           <button
             type="button"
             onClick={limpiar}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink cursor-pointer"
           >
             <X size={14} />
           </button>
@@ -428,7 +428,7 @@ function HeaderSearch() {
           <button
             type="button"
             onClick={() => setIsScannerOpen(true)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600 active:scale-90 transition cursor-pointer border-none bg-transparent"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-pine active:scale-90 transition cursor-pointer border-none bg-transparent"
             title="Escanear código de barras"
           >
             <Camera size={15} />
@@ -437,16 +437,16 @@ function HeaderSearch() {
       </div>
 
       {inputFocused && sugerencias.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150 overflow-hidden">
+        <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-line rounded-xl shadow-lg z-50 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150 overflow-hidden font-ui">
           {sugerencias.map(s => (
             <button
               key={`${s.cat}-${s.sub}`}
               type="button"
               onMouseDown={e => e.preventDefault()}
               onClick={() => irASugerencia(s)}
-              className="w-full flex items-center gap-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 hover:text-emerald-800 px-3.5 py-2 transition cursor-pointer"
+              className="w-full flex items-center gap-2.5 text-left text-sm text-ink hover:bg-surface-2 hover:text-pine-deep px-3.5 py-2 transition cursor-pointer"
             >
-              <Search size={13} className="text-gray-300 shrink-0" />
+              <Search size={13} className="text-ink-faint shrink-0" />
               <span className="truncate">{s.label}</span>
             </button>
           ))}
@@ -512,7 +512,7 @@ export default function Header() {
       <CategoriasPanel open={catOpen}  onClose={() => setCatOpen(false)} />
       <CartDrawer isOpen={cartDrawerOpen} onClose={() => setCartDrawerOpen(false)} />
 
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white border-b border-line shadow-sm font-ui">
         {/* Top bar */}
         <TopBar />
 
@@ -520,13 +520,13 @@ export default function Header() {
           {/* Hamburguesa */}
           <button
             onClick={() => setDrawerOpen(true)}
-            className="flex items-center justify-center w-9 h-9 rounded-xl hover:bg-gray-100 transition shrink-0"
+            className="flex items-center justify-center w-9 h-9 rounded-xl hover:bg-surface-2 transition shrink-0"
             aria-label="Abrir menú"
           >
             <span className="flex flex-col gap-[5px]">
-              <span className="block w-5 h-[2px] bg-gray-700 rounded" />
-              <span className="block w-5 h-[2px] bg-gray-700 rounded" />
-              <span className="block w-5 h-[2px] bg-gray-700 rounded" />
+              <span className="block w-5 h-[2px] bg-ink rounded" />
+              <span className="block w-5 h-[2px] bg-ink rounded" />
+              <span className="block w-5 h-[2px] bg-ink rounded" />
             </span>
           </button>
 
@@ -537,15 +537,15 @@ export default function Header() {
               alt="Tienlo Logo"
               className="h-9 md:h-11 w-auto object-contain bg-white rounded-lg p-0.5"
             />
-            <div className="hidden md:flex items-center gap-2 pl-2 border-l border-gray-200">
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                Una marca de La Crayola
+            <div className="hidden md:flex items-center gap-2 pl-2.5 border-l border-line">
+              <span className="text-[9px] font-price font-medium tracking-wide uppercase text-ink-faint">
+                La Crayola
               </span>
             </div>
           </Link>
 
           {/* Buscador */}
-          <Suspense fallback={<div className="flex-1 max-w-xl h-10 bg-gray-100 rounded-xl" />}>
+          <Suspense fallback={<div className="flex-1 max-w-xl h-10 bg-surface-2 rounded-xl" />}>
             <HeaderSearch />
           </Suspense>
 
@@ -553,12 +553,12 @@ export default function Header() {
           <button
             id="global-cart-btn"
             onClick={() => setCartDrawerOpen(true)}
-            className="relative flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white px-3.5 py-2.5 rounded-xl transition shrink-0 active:scale-[0.96] cursor-pointer"
+            className="relative flex items-center gap-1.5 bg-surface-2 hover:bg-line/60 border border-line text-ink px-3 py-2.5 rounded-xl transition shrink-0 active:scale-[0.96] cursor-pointer"
           >
             <ShoppingCart size={18} />
             <span className="text-sm font-semibold hidden sm:block">Carrito</span>
             {n > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+              <span className="absolute -top-1.5 -right-1.5 bg-ink text-white text-[10px] font-price font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                 {n > 99 ? '99+' : n}
               </span>
             )}

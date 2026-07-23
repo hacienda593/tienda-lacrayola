@@ -98,7 +98,7 @@ export default function HeaderCategoryTabs() {
   }
 
   return (
-    <div className="w-full bg-white border-b border-gray-100 shadow-2xs z-30 sticky top-[56px]">
+    <div className="w-full bg-white border-b border-line shadow-2xs z-30 sticky top-[56px] font-ui">
       <div className="max-w-5xl mx-auto px-2">
         <div
           ref={containerRef}
@@ -118,30 +118,29 @@ export default function HeaderCategoryTabs() {
                 }}
                 className={`relative shrink-0 flex items-center justify-center py-2 transition-colors duration-150 cursor-pointer border-none bg-transparent
                   ${isActive
-                    ? 'text-emerald-700 font-semibold'
-                    : 'text-gray-500 hover:text-gray-800 font-medium'
+                    ? 'text-pine-deep font-semibold'
+                    : 'text-ink-faint hover:text-ink font-medium'
                   }`}
               >
                 <span>{tab.name}</span>
                 <span className={`absolute left-0 right-0 -bottom-px h-[2px] rounded-full transition-colors
-                  ${isActive ? 'bg-emerald-600' : 'bg-transparent'}`} />
+                  ${isActive ? 'bg-pine' : 'bg-transparent'}`} />
               </button>
             )
           })}
         </div>
       </div>
 
-      {/* Sub-barra discreta pegada al Header estilo Almacenes Tía */}
+      {/* Sub-barra discreta pegada al Header */}
       {activeCat && (
-        <div className="bg-emerald-50/80 border-t border-emerald-100/80 py-1.5 px-3.5 flex items-center justify-between text-xs font-bold text-emerald-900 animate-in fade-in duration-150">
+        <div className="bg-pine-tint border-t border-line py-1.5 px-3.5 flex items-center justify-between text-xs font-semibold text-pine-deep animate-in fade-in duration-150">
           <div className="flex items-center gap-1.5 min-w-0 max-w-5xl mx-auto w-full justify-between">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-emerald-700 text-sm">📍</span>
-              <span className="truncate">Pasillo: <strong className="font-black text-emerald-800">{activeCat}</strong></span>
+              <span className="truncate">Pasillo: <strong className="font-bold">{activeCat}</strong></span>
             </div>
             <button
               onClick={() => selectTab('')}
-              className="flex items-center gap-1 text-[11px] font-extrabold text-emerald-700 hover:text-emerald-900 bg-white border border-emerald-200/80 px-2.5 py-0.5 rounded-lg shadow-2xs hover:bg-emerald-100/50 transition cursor-pointer shrink-0"
+              className="flex items-center gap-1 text-[11px] font-semibold text-pine-deep hover:text-ink bg-white border border-line px-2.5 py-0.5 rounded-lg shadow-2xs transition cursor-pointer shrink-0"
             >
               <X size={11} className="stroke-[3]" />
               <span>Quitar filtro</span>
