@@ -615,68 +615,25 @@ function ProductosContent() {
         <div className="flex-1 min-w-0 space-y-4">
 
 
-          {/* Filtros móvil — pills compactos, sin emoji, máxima densidad visible */}
-          <div className="md:hidden space-y-1.5 w-full max-w-full overflow-hidden">
-            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-              {(['disponible','todos'] as const).map(v => (
-                <button key={v} onClick={() => setStockFiltro(v)}
-                  className={`shrink-0 px-2.5 py-1 rounded-md text-[11px] font-medium border transition
-                    ${stockFiltro === v ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200'}`}>
-                  {v === 'disponible' ? 'Con stock' : 'Todos'}
-                </button>
-              ))}
-              <span className="w-px bg-gray-200 shrink-0 my-0.5" />
-              {catsCtx.slice(0, 8).map(([c]) => (
-                <button key={c} onClick={() => { setCat(cat === c ? '' : c); setMarca(''); setVisibles(40) }}
-                  className={`shrink-0 px-2.5 py-1 rounded-md text-[11px] font-medium border transition
-                    ${cat === c ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200'}`}>
-                  {c}
-                </button>
-              ))}
-            </div>
-            {marcasCtx.length > 1 && (query.trim() || cat) && (
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-                {marcasCtx.slice(0, 10).map(([m]) => (
-                  <button key={m} onClick={() => { setMarca(marca === m ? '' : m); setVisibles(40) }}
-                    className={`shrink-0 px-2.5 py-1 rounded-md text-[11px] font-medium border transition
-                      ${marca === m ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-500 border-gray-200'}`}>
-                    {m}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Barra estado + ordenamiento — chips de filtro activo en un solo tono neutro */}
+          {/* Barra estado + ordenamiento — los chips de categoría/marca/stock se quitaron:
+              quedaban redundantes con la fila de "Relacionado" y ocupaban demasiado espacio
+              antes del primer producto visible. La única señal de filtro activo que queda
+              es el enlace "Quitar filtro", minimalista. */}
           <div className="flex items-center justify-between flex-wrap gap-1.5">
             <div className="flex items-center gap-1.5 flex-wrap">
-              {soloFrecuentes && (
-                <span className="flex items-center gap-1 bg-gray-100 text-gray-700 text-[11px] font-medium px-2 py-1 rounded-md">
-                  Frecuentes
-                  <button onClick={() => {
+              {(soloFrecuentes || cat || sub || marca) && (
+                <button
+                  onClick={() => {
+                    setCat(''); setSub(''); setMarca('')
                     const paramsNew = new URLSearchParams(params.toString())
-                    paramsNew.delete('frecuentes')
+                    paramsNew.delete('frecuentes'); paramsNew.delete('cat'); paramsNew.delete('sub'); paramsNew.delete('marca')
                     router.push(`/productos?${paramsNew.toString()}`)
-                  }}><X size={11} /></button>
-                </span>
-              )}
-              {cat && (
-                <span className="flex items-center gap-1 bg-gray-100 text-gray-700 text-[11px] font-medium px-2 py-1 rounded-md">
-                  {cat}
-                  <button onClick={() => { setCat(''); setSub('') }}><X size={11} /></button>
-                </span>
-              )}
-              {sub && (
-                <span className="flex items-center gap-1 bg-gray-100 text-gray-700 text-[11px] font-medium px-2 py-1 rounded-md">
-                  {sub}
-                  <button onClick={() => setSub('')}><X size={11} /></button>
-                </span>
-              )}
-              {marca && (
-                <span className="flex items-center gap-1 bg-gray-100 text-gray-700 text-[11px] font-medium px-2 py-1 rounded-md">
-                  {marca}
-                  <button onClick={() => setMarca('')}><X size={11} /></button>
-                </span>
+                  }}
+                  className="flex items-center gap-1 text-[11px] font-medium text-gray-500 hover:text-gray-800 transition"
+                >
+                  {[cat, sub, marca].filter(Boolean).join(' · ') || 'Frecuentes'}
+                  <X size={11} />
+                </button>
               )}
             </div>
             <div className="flex items-center gap-2 ml-auto">
