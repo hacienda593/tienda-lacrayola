@@ -61,7 +61,7 @@ export default function QuickIcons() {
       onTouchEnd={(e) => e.stopPropagation()}
       className="w-full overflow-x-auto scrollbar-hide py-1 px-0.5"
     >
-      <div className="flex gap-3 justify-start md:justify-center min-w-max px-1">
+      <div className="flex gap-1 justify-start md:justify-center min-w-max px-1">
         {ICONS.map(iconItem => {
           const IconComp = iconItem.icon
           const href = iconItem.id === 'crayola'
@@ -69,13 +69,13 @@ export default function QuickIcons() {
             : iconItem.href
 
           const content = (
-            <div className="flex flex-col items-center gap-1.5 w-[60px] group cursor-pointer select-none">
-              <div className={`w-12 h-12 rounded-xl ${iconItem.bgColor} ${iconItem.borderColor} border
+            <div className="flex flex-col items-center gap-1 w-[52px] group cursor-pointer select-none">
+              <div className={`w-10 h-10 rounded-lg ${iconItem.bgColor} ${iconItem.borderColor} border
                 flex items-center justify-center
                 group-hover:scale-[1.03] group-active:scale-95
                 transition-all duration-150`}
               >
-                <IconComp size={20} className={`${iconItem.iconColor} stroke-[1.75] transition-colors duration-150`} />
+                <IconComp size={17} className={`${iconItem.iconColor} stroke-[1.75] transition-colors duration-150`} />
               </div>
 
               {/* Label */}

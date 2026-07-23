@@ -34,15 +34,16 @@ function SkeletonCard() {
 }
 
 // ── Badge de producto ──────────────────────────────────────────────
-function Badge({ tipo }: { tipo: 'nuevo' | 'oferta' | 'popular' | 'ultimas' }) {
+// Solo señales reales (oferta verificada, stock bajo real) — sin "Popular" sintético:
+// una insignia que no corresponde a un dato real es justo el tipo de decoración que
+// resta seriedad y confianza a la tienda.
+function Badge({ tipo }: { tipo: 'oferta' | 'ultimas' }) {
   const cfg = {
-    nuevo:   { label: '✨ Nuevo',   cls: 'bg-blue-500 text-white' },
-    oferta:  { label: '🏷️ Oferta',  cls: 'bg-red-500 text-white' },
-    popular: { label: '🔥 Popular', cls: 'bg-orange-500 text-white' },
-    ultimas: { label: '⚡ Últimas', cls: 'bg-yellow-500 text-white' },
+    oferta:  { label: 'Oferta',            cls: 'bg-rose-600 text-white' },
+    ultimas: { label: 'Últimas unidades',  cls: 'bg-amber-600 text-white' },
   }[tipo]
   return (
-    <span className={`absolute top-2 left-2 text-[9px] font-bold px-2 py-0.5 rounded-full z-10 ${cfg.cls}`}>
+    <span className={`absolute top-2 left-2 text-[9px] font-semibold px-1.5 py-0.5 rounded-md z-10 tracking-tight ${cfg.cls}`}>
       {cfg.label}
     </span>
   )
@@ -86,7 +87,7 @@ function BtnAgregar({ prod }: { prod: Producto }) {
   if (cantidad === 0) {
     return (
       <button onClick={agregar}
-        className="w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 active:scale-[0.96] transition-transform duration-75 bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent">
+        className="w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 active:scale-[0.96] transition-transform duration-75 bg-green-600 hover:bg-green-700 text-white">
         <ShoppingCart size={12} /> Agregar
       </button>
     )
@@ -134,11 +135,12 @@ function BtnFavorito({ prod }: { prod: Producto }) {
 }
 
 // ── Card de producto ───────────────────────────────────────────────
-function ProductCard({ p, badge, onSelect, tiendasMap }: { p: Producto; badge?: 'nuevo' | 'oferta' | 'popular' | 'ultimas'; onSelect?: (p: Producto) => void; tiendasMap?: Record<string, { nombre: string; logo_url?: string | null }> }) {
+function ProductCard({ p, onSelect, tiendasMap }: { p: Producto; onSelect?: (p: Producto) => void; tiendasMap?: Record<string, { nombre: string; logo_url?: string | null }> }) {
   const router = useRouter()
   const [imageError, setImageError] = useState(false)
   const agotado = p.stock <= 0
-  const badgeTipo = agotado ? undefined : (p.stock < 5 ? 'ultimas' : badge)
+  const tieneOferta = p.en_oferta && p.precio_oferta && p.precio_oferta < p.precio_publico
+  const badgeTipo = agotado ? undefined : (tieneOferta ? 'oferta' : (p.stock < 5 ? 'ultimas' : undefined))
 
   const [cantidad, setCantidad] = useState(() => {
     return getCarrito().find(i => i.codigo === p.codigo)?.cantidad ?? 0
@@ -241,8 +243,15 @@ function ProductCard({ p, badge, onSelect, tiendasMap }: { p: Producto; badge?: 
 
         <div className="mt-2 space-y-1.5">
           {/* Precio */}
-          <div className="text-sm font-black text-gray-900">{fmt(p.precio_publico)}</div>
-          
+          {tieneOferta ? (
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-sm font-black text-rose-600 tracking-tight">{fmt(p.precio_oferta!)}</span>
+              <span className="text-[10px] text-gray-400 line-through font-semibold">{fmt(p.precio_publico)}</span>
+            </div>
+          ) : (
+            <div className="text-sm font-black text-gray-900">{fmt(p.precio_publico)}</div>
+          )}
+
           {/* Stepper de cantidad solo si cantidad > 0 */}
           {cantidad > 0 && (
             <div className="w-full animate-fade-in">
@@ -530,11 +539,6 @@ function ProductosContent() {
 
   const hayFiltros = !!(query || cat || sub || marca || soloFrecuentes || stockFiltro !== 'disponible' || orden !== 'relevancia')
 
-  // Asignar badges: primeros 4 = popular, últimos en stock = ultimas (ya en ProductCard)
-  function badgePara(_: Producto, idx: number): 'popular' | undefined {
-    return idx < 4 ? 'popular' : undefined
-  }
-
   const ORDENES: { key: Orden; label: string }[] = [
     { key: 'relevancia',  label: 'Relevancia' },
     { key: 'precio_asc',  label: 'Menor precio' },
@@ -581,7 +585,7 @@ function ProductosContent() {
                     <button key={c} onClick={() => { setCat(activa ? '' : c); setMarca(''); setVisibles(40) }}
                       className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition flex justify-between items-center
                         ${activa ? 'bg-green-50 text-green-700 font-semibold border border-green-200' : 'text-gray-600 hover:bg-gray-100'}`}>
-                      <span className="flex items-center gap-1.5">{CAT_EMOJI[c] && <span>{CAT_EMOJI[c]}</span>}{c}</span>
+                      <span>{c}</span>
                       <span className="text-xs text-gray-400">{n}</span>
                     </button>
                   )
@@ -611,30 +615,31 @@ function ProductosContent() {
         <div className="flex-1 min-w-0 space-y-4">
 
 
-          {/* Filtros móvil */}
-          <div className="md:hidden space-y-2 w-full max-w-full overflow-hidden">
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {/* Filtros móvil — pills compactos, sin emoji, máxima densidad visible */}
+          <div className="md:hidden space-y-1.5 w-full max-w-full overflow-hidden">
+            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
               {(['disponible','todos'] as const).map(v => (
                 <button key={v} onClick={() => setStockFiltro(v)}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition
-                    ${stockFiltro === v ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-200'}`}>
-                  {v === 'disponible' ? '✅ Con stock' : '📦 Todos'}
+                  className={`shrink-0 px-2.5 py-1 rounded-md text-[11px] font-medium border transition
+                    ${stockFiltro === v ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200'}`}>
+                  {v === 'disponible' ? 'Con stock' : 'Todos'}
                 </button>
               ))}
+              <span className="w-px bg-gray-200 shrink-0 my-0.5" />
               {catsCtx.slice(0, 8).map(([c]) => (
                 <button key={c} onClick={() => { setCat(cat === c ? '' : c); setMarca(''); setVisibles(40) }}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition
-                    ${cat === c ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-200'}`}>
-                  {CAT_EMOJI[c] || ''} {c}
+                  className={`shrink-0 px-2.5 py-1 rounded-md text-[11px] font-medium border transition
+                    ${cat === c ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200'}`}>
+                  {c}
                 </button>
               ))}
             </div>
             {marcasCtx.length > 1 && (query.trim() || cat) && (
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
                 {marcasCtx.slice(0, 10).map(([m]) => (
                   <button key={m} onClick={() => { setMarca(marca === m ? '' : m); setVisibles(40) }}
-                    className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition
-                      ${marca === m ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200'}`}>
+                    className={`shrink-0 px-2.5 py-1 rounded-md text-[11px] font-medium border transition
+                      ${marca === m ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-500 border-gray-200'}`}>
                     {m}
                   </button>
                 ))}
@@ -642,12 +647,12 @@ function ProductosContent() {
             )}
           </div>
 
-          {/* Barra estado + ordenamiento */}
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2 flex-wrap">
+          {/* Barra estado + ordenamiento — chips de filtro activo en un solo tono neutro */}
+          <div className="flex items-center justify-between flex-wrap gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               {soloFrecuentes && (
-                <span className="flex items-center gap-1 bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                  🔄 Frecuentes
+                <span className="flex items-center gap-1 bg-gray-100 text-gray-700 text-[11px] font-medium px-2 py-1 rounded-md">
+                  Frecuentes
                   <button onClick={() => {
                     const paramsNew = new URLSearchParams(params.toString())
                     paramsNew.delete('frecuentes')
@@ -656,37 +661,34 @@ function ProductosContent() {
                 </span>
               )}
               {cat && (
-                <span className="flex items-center gap-1 bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                  {CAT_EMOJI[cat] || ''} {cat}
+                <span className="flex items-center gap-1 bg-gray-100 text-gray-700 text-[11px] font-medium px-2 py-1 rounded-md">
+                  {cat}
                   <button onClick={() => { setCat(''); setSub('') }}><X size={11} /></button>
                 </span>
               )}
               {sub && (
-                <span className="flex items-center gap-1 bg-teal-100 text-teal-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                  🛍️ {sub}
+                <span className="flex items-center gap-1 bg-gray-100 text-gray-700 text-[11px] font-medium px-2 py-1 rounded-md">
+                  {sub}
                   <button onClick={() => setSub('')}><X size={11} /></button>
                 </span>
               )}
               {marca && (
-                <span className="flex items-center gap-1 bg-purple-100 text-purple-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+                <span className="flex items-center gap-1 bg-gray-100 text-gray-700 text-[11px] font-medium px-2 py-1 rounded-md">
                   {marca}
                   <button onClick={() => setMarca('')}><X size={11} /></button>
                 </span>
               )}
             </div>
-            {(cat || sub || marca || query) && (
-              <button onClick={compartirFiltros} className="flex items-center justify-center bg-[#25D366] hover:bg-[#20c05a] text-white w-9 h-9 rounded-xl shadow-sm transition shrink-0 relative group" title="Compartir sección por WhatsApp">
-                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                </svg>
-                <div className="absolute -top-1 -right-1 bg-white text-[#25D366] rounded-full p-0.5 border border-green-500 shadow-sm flex items-center justify-center">
-                  <Share2 size={8} className="stroke-[3]" />
-                </div>
-              </button>
-            )}
             <div className="flex items-center gap-2 ml-auto">
               {!loadingState && (
                 <p className="text-xs text-gray-400">{filtrados.length.toLocaleString()} productos</p>
+              )}
+              {(cat || sub || marca || query) && (
+                <button onClick={compartirFiltros} className="flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:text-[#25D366] hover:bg-gray-50 transition shrink-0" title="Compartir sección por WhatsApp">
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                  </svg>
+                </button>
               )}
               {/* Ordenar (móvil + desktop) */}
               <div className="relative md:hidden">
@@ -762,11 +764,10 @@ function ProductosContent() {
 
                     {/* Fila Horizontal de Productos */}
                     <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2">
-                      {group.productos.slice(0, 15).map((p, idx) => (
+                      {group.productos.slice(0, 15).map((p) => (
                         <div key={p.codigo} className="w-[145px] md:w-[170px] shrink-0">
                           <ProductCard
                             p={p}
-                            badge={badgePara(p, idx)}
                             tiendasMap={tiendasMap}
                             onSelect={(prod) => openQuickView(prod, group.productos.slice(0, 15))}
                           />
@@ -780,8 +781,8 @@ function ProductosContent() {
           ) : (
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-4">
-                {filtrados.slice(0, visibles).map((p, idx) => (
-                  <ProductCard key={p.codigo} p={p} badge={badgePara(p, idx)} tiendasMap={tiendasMap} onSelect={(prod) => openQuickView(prod, filtrados.slice(0, visibles))} />
+                {filtrados.slice(0, visibles).map((p) => (
+                  <ProductCard key={p.codigo} p={p} tiendasMap={tiendasMap} onSelect={(prod) => openQuickView(prod, filtrados.slice(0, visibles))} />
                 ))}
               </div>
               {visibles < filtrados.length && (

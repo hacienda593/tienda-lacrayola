@@ -102,7 +102,7 @@ export default function HeaderCategoryTabs() {
       <div className="max-w-5xl mx-auto px-2">
         <div
           ref={containerRef}
-          className="flex items-center gap-4 overflow-x-auto scrollbar-hide text-xs md:text-sm select-none px-1"
+          className="flex items-center gap-3.5 overflow-x-auto scrollbar-hide text-xs md:text-sm select-none px-1"
         >
           {MAIN_CATEGORY_TABS.map((tab) => {
             const tabKey = tab.cat || 'inicio'
@@ -116,7 +116,7 @@ export default function HeaderCategoryTabs() {
                   e.stopPropagation()
                   selectTab(tab.cat)
                 }}
-                className={`relative shrink-0 flex items-center justify-center py-2.5 transition-colors duration-150 cursor-pointer border-none bg-transparent
+                className={`relative shrink-0 flex items-center justify-center py-2 transition-colors duration-150 cursor-pointer border-none bg-transparent
                   ${isActive
                     ? 'text-emerald-700 font-semibold'
                     : 'text-gray-500 hover:text-gray-800 font-medium'
