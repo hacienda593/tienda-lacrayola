@@ -1,11 +1,13 @@
--- ─────────────────────────────────────────────────────────────────────────
--- Sistema de corrección de búsqueda: diccionario de variantes + registro
--- de búsquedas sin resultado. Ejecutar una sola vez en el SQL Editor de
+-- Sistema de correccion de busqueda: diccionario de variantes + registro
+-- de busquedas sin resultado. Ejecutar una sola vez en el SQL Editor de
 -- Supabase (Project > SQL Editor > New query > pegar todo > Run).
--- ─────────────────────────────────────────────────────────────────────────
+--
+-- IMPORTANTE: pega este archivo en una consulta NUEVA y vacia (Ctrl+A y
+-- borra cualquier texto anterior antes de pegar), para evitar que quede
+-- mezclado con contenido previo en el editor.
 
 -- 1) Diccionario: variante (como la escribe el cliente, con o sin falta
---    ortográfica) -> término correcto que sí existe en el catálogo.
+--    ortografica) -> termino correcto que si existe en el catalogo.
 create table if not exists ol_productos_terminos_busqueda (
   id bigserial primary key,
   variante text not null unique,
@@ -19,7 +21,7 @@ drop policy if exists "lectura publica terminos" on ol_productos_terminos_busque
 create policy "lectura publica terminos" on ol_productos_terminos_busqueda
   for select using (true);
 
--- 2) Registro de búsquedas que no encontraron ningún producto, para que
+-- 2) Registro de busquedas que no encontraron ningun producto, para que
 --    puedas revisarlas manualmente en Supabase y decidir si agregar una
 --    variante nueva al diccionario de arriba.
 create table if not exists ol_productos_busquedas_sin_resultado (
@@ -45,7 +47,7 @@ drop policy if exists "lectura publica busquedas fallidas" on ol_productos_busqu
 create policy "lectura publica busquedas fallidas" on ol_productos_busquedas_sin_resultado
   for select using (true);
 
--- 3) Función que la app llama en cada búsqueda sin resultado: si el término
+-- 3) Funcion que la app llama en cada busqueda sin resultado: si el termino
 --    ya existe, suma 1 a veces_buscado; si no, lo crea.
 create or replace function registrar_busqueda_fallida(termino text)
 returns void
@@ -62,10 +64,10 @@ $$;
 
 grant execute on function registrar_busqueda_fallida(text) to anon, authenticated;
 
--- 4) Semilla inicial: variantes fonéticas frecuentes en la costa ecuatoriana
---    (seseo z/c->s, confusión b/v, h muda, etc.) para los productos más
---    buscados de tu catálogo actual. Esto es un punto de partida — la tabla
---    de búsquedas sin resultado (#2) es la que te dirá qué más falta.
+-- 4) Semilla inicial: variantes foneticas frecuentes en la costa ecuatoriana
+--    (seseo z/c->s, confusion b/v, h muda, etc.) para los productos mas
+--    buscados de tu catalogo actual. Esto es un punto de partida -- la tabla
+--    de busquedas sin resultado (#2) es la que te dira que mas falta.
 insert into ol_productos_terminos_busqueda (variante, termino_correcto) values
   ('asucar', 'azucar'),
   ('azukar', 'azucar'),
@@ -86,7 +88,7 @@ insert into ol_productos_terminos_busqueda (variante, termino_correcto) values
   ('quezo', 'queso'),
   ('keso', 'queso'),
   ('uevos', 'huevos'),
-  ('güevos', 'huevos'),
+  ('guevos', 'huevos'),
   ('arros', 'arroz'),
   ('avena', 'avena'),
   ('mayonesa', 'mayonesa'),
