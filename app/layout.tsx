@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-paper text-ink antialiased">
         <AuthProvider>
           <Header />
-          <main className="min-h-screen pb-20 md:pb-6 w-full max-w-full overflow-x-hidden">
+          <main className="min-h-screen pb-20 md:pb-6 w-full max-w-full overflow-x-clip">
             {children}
           </main>
           <Footer />
