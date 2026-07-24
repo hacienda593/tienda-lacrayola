@@ -5,7 +5,7 @@ import {
   X, User, Tag, Settings, HelpCircle,
   ChevronRight, ClipboardList, Package,
   MessageCircle, Star, Trophy, Loader2, ShoppingCart, Printer, Smartphone,
-  Store, ShoppingBasket, Pill, BookOpen,
+  Store, ShoppingBasket, Pill, BookOpen, RotateCw,
 } from 'lucide-react'
 import { getPuntos, progresoNivel } from '@/lib/puntos'
 import { getPuntosCloud, EstadoPuntosCloud } from '@/lib/puntosCloud'
@@ -13,10 +13,17 @@ import { getPerfil } from '@/lib/perfil'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { OlTienda } from '@/lib/types'
+import { TIENDAS_VIRTUALES, hrefServicioVirtual } from '@/lib/tiendasVirtuales'
 
 const STORE_ICONO: Record<string, React.ElementType> = {
   supermercado: ShoppingBasket, farmacia: Pill, libreria: BookOpen,
   abarrotes: ShoppingBasket, tecnologia: Package, ropa: Package, otros: Store,
+}
+
+const ICONO_SERVICIO: Record<string, React.ElementType> = {
+  'recargas-servicios': Smartphone,
+  'impresion-servicios': Printer,
+  'frecuentes-servicios': RotateCw,
 }
 
 type Tab = 'explorar' | 'cuenta'
@@ -71,7 +78,7 @@ export default function MenuDrawer({ open, onClose }: Props) {
       .order('orden')
       .then(({ data }) => {
         if (data) {
-          const list = data as OlTienda[]
+          const list = [...(data as OlTienda[]), ...TIENDAS_VIRTUALES]
           setTiendas(list)
 
           // Detectar tienda activa desde la URL
@@ -229,11 +236,12 @@ export default function MenuDrawer({ open, onClose }: Props) {
                   <p className="font-price text-[10px] font-medium tracking-wide uppercase text-ink-faint mb-2">Tiendas disponibles</p>
                   <div className="space-y-1.5">
                     {tiendas.map(tienda => {
-                      const FallbackIcon = STORE_ICONO[tienda.categoria ?? 'otros'] || Store
+                      const hrefServicio = hrefServicioVirtual(tienda.id)
+                      const FallbackIcon = ICONO_SERVICIO[tienda.id] || STORE_ICONO[tienda.categoria ?? 'otros'] || Store
                       return (
                         <button
                           key={tienda.id}
-                          onClick={() => setTiendaSeleccionada(tienda)}
+                          onClick={() => hrefServicio ? navegar(hrefServicio) : setTiendaSeleccionada(tienda)}
                           className="w-full flex items-center gap-3 px-3 py-2 bg-surface-2 border border-line hover:border-pine/40 hover:bg-pine-tint rounded-lg transition text-left group"
                         >
                           <span className="w-7 h-7 rounded-md bg-pine-tint text-pine-deep flex items-center justify-center shrink-0">

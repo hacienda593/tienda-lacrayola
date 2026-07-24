@@ -3,6 +3,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { OlTienda } from '@/lib/types'
+import { TIENDAS_VIRTUALES } from '@/lib/tiendasVirtuales'
 import { Loader2, Store, ChevronRight, MapPin, Pill, BookOpen, ShoppingBasket, Cpu, Shirt, Smartphone, Printer, RotateCw } from 'lucide-react'
 
 const CAT_CFG: Record<string, { icon: React.ElementType }> = {
@@ -36,39 +37,7 @@ function TiendasContent() {
       .order('orden')
       .then(({ data }) => {
         const list = (data ?? []) as OlTienda[]
-        const virtuales: OlTienda[] = [
-          {
-            id: 'frecuentes-servicios',
-            nombre: 'Productos Frecuentes',
-            descripcion: 'Tus productos más comprados y favoritos para agregarlos al carrito al instante.',
-            categoria: 'otros',
-            logo_url: null,
-            activa: true,
-            orden: 97,
-            direccion: 'Tu Historial'
-          },
-          {
-            id: 'impresion-servicios',
-            nombre: 'Centro de Impresiones',
-            descripcion: 'Sube tus documentos, PDF y tareas escolares para entrega a domicilio express.',
-            categoria: 'libreria',
-            logo_url: null,
-            activa: true,
-            orden: 98,
-            direccion: 'Servicio Express'
-          },
-          {
-            id: 'recargas-servicios',
-            nombre: 'Recargas y Servicios Básicos',
-            descripcion: 'Recarga combos Claro/Movistar/Tuenti y paga tus planillas de Luz, Agua e Internet.',
-            categoria: 'tecnologia',
-            logo_url: null,
-            activa: true,
-            orden: 99,
-            direccion: 'Servicio en Línea (WhatsApp)'
-          }
-        ]
-        setTiendas([...list, ...virtuales])
+        setTiendas([...list, ...TIENDAS_VIRTUALES])
         setCargando(false)
       })
   }, [])
