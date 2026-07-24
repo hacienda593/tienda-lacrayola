@@ -11,6 +11,7 @@ import CartDrawer from '@/components/CartDrawer'
 import BarcodeScannerModal from '@/components/BarcodeScannerModal'
 import HeaderCategoryTabs from '@/components/HeaderCategoryTabs'
 import { sugerirCategorias, type SugerenciaBusqueda } from '@/lib/search'
+import { corregirTermino } from '@/lib/diccionarioBusqueda'
 
 function TopBar() {
   const pathname = usePathname()
@@ -328,10 +329,12 @@ function HeaderSearch() {
       return
     }
     debounceRef.current = setTimeout(async () => {
+      const termCorregido = await corregirTermino(term)
+
       let query = supabase
         .from('ol_productos')
         .select('categoria,subcategoria')
-        .ilike('descripcion', `%${term}%`)
+        .ilike('descripcion', `%${termCorregido}%`)
         .gt('stock', 0)
         .limit(300)
       if (esTienda) query = query.eq('tienda_id', activeTId)
@@ -339,7 +342,7 @@ function HeaderSearch() {
       const { data } = await query
       if (!data) return
 
-      setSugerencias(sugerirCategorias(data, term, 6))
+      setSugerencias(sugerirCategorias(data, termCorregido, 6))
     }, 300)
 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }

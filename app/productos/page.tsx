@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { customSearch, sugerirCategorias } from '@/lib/search'
+import { corregirTermino, registrarBusquedaFallida } from '@/lib/diccionarioBusqueda'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto, CAT_EMOJI } from '@/lib/types'
@@ -292,6 +293,7 @@ function ProductosContent() {
   const [base, setBase]             = useState<Producto[]>([])
   const [loadingState, setLoading]  = useState(true)
   const [query, setQuery]           = useState(queryInicial)
+  const [queryCorregido, setQueryCorregido] = useState(queryInicial)
   const [cat, setCat]               = useState(catInicial)
   const [sub, setSub]               = useState(subInicial)
   const [tiendaId, setTiendaId]     = useState(params.get('tienda_id') || '')
@@ -376,6 +378,17 @@ function ProductosContent() {
     setVisibles(40)
   }, [paramsStr])
 
+  // Corregir faltas ortográficas frecuentes (asucar -> azucar, aseite -> aceite, etc.)
+  // usando el diccionario de variantes antes de buscar. Si una palabra no está
+  // catalogada, se deja igual — customSearch ya tolera errores menores.
+  useEffect(() => {
+    let vigente = true
+    const q = query.trim()
+    if (!q) { setQueryCorregido(''); return }
+    corregirTermino(q).then(corregido => { if (vigente) setQueryCorregido(corregido) })
+    return () => { vigente = false }
+  }, [query])
+
   // Cargar códigos frecuentes
   useEffect(() => {
     async function cargarFrecuentes() {
@@ -432,7 +445,7 @@ function ProductosContent() {
   }, [])
 
   const filtrados = useMemo(() => {
-    const q = query.trim()
+    const q = queryCorregido.trim()
     let pool = q.length >= 2 ? customSearch(base, q) : [...base]
     pool = pool.filter(p => {
       if (soloFrecuentes && !frecuentesCodigos.includes(p.codigo)) return false
@@ -454,15 +467,25 @@ function ProductosContent() {
     if (orden === 'precio_desc') pool.sort((a, b) => b.precio_publico - a.precio_publico)
     if (orden === 'nombre_asc')  pool.sort((a, b) => a.descripcion.localeCompare(b.descripcion))
     return pool
-  }, [base, query, cat, sub, tiendaId, crayolaId, marca, stockFiltro, orden, soloFrecuentes, frecuentesCodigos])
+  }, [base, queryCorregido, cat, sub, tiendaId, crayolaId, marca, stockFiltro, orden, soloFrecuentes, frecuentesCodigos])
 
   // Búsquedas relacionadas (estilo "연관검색어" de Coupang): fila horizontal debajo
   // de los resultados, solo cuando hay un texto de búsqueda activo.
   const busquedasRelacionadas = useMemo(() => {
-    const term = query.trim()
+    const term = queryCorregido.trim()
     if (term.length < 2) return []
     return sugerirCategorias(customSearch(base, term), term, 8)
-  }, [base, query])
+  }, [base, queryCorregido])
+
+  // Si ni siquiera con la corrección de faltas ortográficas hubo resultados,
+  // se registra para revisión manual (tabla ol_busquedas_sin_resultado).
+  useEffect(() => {
+    const q = query.trim()
+    if (loadingState || q.length < 2) return
+    if (filtrados.length === 0) {
+      registrarBusquedaFallida(q)
+    }
+  }, [filtrados.length, query, loadingState])
 
   function irABusquedaRelacionada(s: { cat: string; sub: string }) {
     const paramsNew = new URLSearchParams()
@@ -492,7 +515,7 @@ function ProductosContent() {
   }, [filtrados, query, cat, tiendaId, tiendasMap, crayolaId])
 
   const catsCtx = useMemo(() => {
-    const q = query.trim()
+    const q = queryCorregido.trim()
     let pool = q.length >= 2 ? customSearch(base, q) : base
     if (soloFrecuentes) {
       pool = pool.filter(p => frecuentesCodigos.includes(p.codigo))
@@ -506,10 +529,10 @@ function ProductosContent() {
     const map = new Map<string, number>()
     pool.forEach(p => { if (p.categoria) map.set(p.categoria, (map.get(p.categoria) || 0) + 1) })
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
-  }, [base, query, tiendaId, crayolaId, marca, stockFiltro, soloFrecuentes, frecuentesCodigos])
+  }, [base, queryCorregido, tiendaId, crayolaId, marca, stockFiltro, soloFrecuentes, frecuentesCodigos])
 
   const marcasCtx = useMemo(() => {
-    const q = query.trim()
+    const q = queryCorregido.trim()
     let pool = q.length >= 2 ? customSearch(base, q) : base
     if (soloFrecuentes) {
       pool = pool.filter(p => frecuentesCodigos.includes(p.codigo))
@@ -523,7 +546,7 @@ function ProductosContent() {
     const map = new Map<string, number>()
     pool.forEach(p => { if (p.marca) map.set(p.marca, (map.get(p.marca) || 0) + 1) })
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
-  }, [base, query, cat, tiendaId, crayolaId, stockFiltro, soloFrecuentes, frecuentesCodigos])
+  }, [base, queryCorregido, cat, tiendaId, crayolaId, stockFiltro, soloFrecuentes, frecuentesCodigos])
 
   function limpiar() {
     setQuery('')
