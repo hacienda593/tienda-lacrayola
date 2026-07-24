@@ -469,10 +469,27 @@ export default function Header() {
   const router = useRouter()
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
-  
+  const headerRef = useRef<HTMLElement>(null)
+
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Expone la altura real del header como variable CSS (--header-h) — varía
+  // según el contexto (dentro de una tienda, con/sin franja de pasillos),
+  // así cualquier barra "sticky" debajo del header puede anclarse justo
+  // después sin necesitar un valor fijo en px.
+  useEffect(() => {
+    const el = headerRef.current
+    if (!el) return
+    const actualizar = () => {
+      document.documentElement.style.setProperty('--header-h', `${el.offsetHeight}px`)
+    }
+    actualizar()
+    const observer = new ResizeObserver(actualizar)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [pathname])
 
   const [n, setN]                   = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -515,7 +532,7 @@ export default function Header() {
       <CategoriasPanel open={catOpen}  onClose={() => setCatOpen(false)} />
       <CartDrawer isOpen={cartDrawerOpen} onClose={() => setCartDrawerOpen(false)} />
 
-      <header className="sticky top-0 z-50 bg-white border-b border-line shadow-sm font-ui">
+      <header ref={headerRef} className="sticky top-0 z-50 bg-white border-b border-line shadow-sm font-ui">
         {/* Top bar */}
         <TopBar />
 

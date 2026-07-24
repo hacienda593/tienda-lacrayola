@@ -690,9 +690,13 @@ function ProductosContent() {
             </div>
           </div>
 
-          {/* Búsquedas relacionadas */}
+          {/* Búsquedas relacionadas — pegada justo debajo del header al hacer
+              scroll, para que el cliente siga refinando sin subir de nuevo */}
           {busquedasRelacionadas.length > 0 && (
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1 -mt-2">
+            <div
+              className="sticky z-30 flex items-center gap-2 overflow-x-auto scrollbar-hide py-2 -mx-3 px-3 md:mx-0 md:px-0 bg-paper/95 backdrop-blur-sm -mt-2"
+              style={{ top: 'var(--header-h, 96px)' }}
+            >
               <span className="text-xs text-gray-400 shrink-0">Relacionado:</span>
               {busquedasRelacionadas.map(s => (
                 <button
