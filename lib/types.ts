@@ -14,6 +14,7 @@ export interface Producto {
   detalles?:     string | null
   en_oferta?:    boolean
   precio_oferta?: number | null
+  grupo_busqueda?: string | null
 }
 
 export interface OlTienda {

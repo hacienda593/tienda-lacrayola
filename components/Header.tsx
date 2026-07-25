@@ -333,7 +333,7 @@ function HeaderSearch() {
 
       let query = supabase
         .from('ol_productos')
-        .select('categoria,subcategoria')
+        .select('categoria,subcategoria,grupo_busqueda')
         .ilike('descripcion', `%${termCorregido}%`)
         .gt('stock', 0)
         .limit(300)

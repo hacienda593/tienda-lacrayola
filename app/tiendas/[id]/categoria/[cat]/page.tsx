@@ -45,9 +45,9 @@ function ProductCard({ p, tiendaId, tiendaNombre, onSelect }: { p: Producto; tie
   return (
     <div 
       onClick={() => onSelect(p)}
-      className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm flex flex-col relative cursor-pointer"
+      className="bg-white rounded-xl border border-line overflow-hidden shadow-sm flex flex-col relative cursor-pointer"
     >
-      <div className="relative bg-gray-50 aspect-square flex items-center justify-center overflow-hidden">
+      <div className="relative bg-surface-2 aspect-square flex items-center justify-center overflow-hidden">
         <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} />
         {agotado && (
           <div className="absolute inset-0 bg-white/75 flex items-center justify-center">
@@ -55,12 +55,12 @@ function ProductCard({ p, tiendaId, tiendaNombre, onSelect }: { p: Producto; tie
           </div>
         )}
         {!agotado && qty === 0 && (
-          <button onClick={agregar} className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center shadow border-none cursor-pointer active:scale-90 transition">
+          <button onClick={agregar} className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-pine text-white flex items-center justify-center shadow border-none cursor-pointer active:scale-90 transition">
             <Plus size={14} strokeWidth={3} />
           </button>
         )}
         {!agotado && qty > 0 && (
-          <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 bg-green-600 rounded-full px-1.5 py-0.5 shadow">
+          <div className="absolute bottom-1.5 right-1.5 flex items-center gap-0.5 bg-pine rounded-full px-1.5 py-0.5 shadow">
             <button onClick={quitar} className="w-5 h-5 flex items-center justify-center text-white border-none bg-transparent cursor-pointer"><Minus size={11} strokeWidth={3} /></button>
             <span className="text-white text-[11px] font-extrabold min-w-[14px] text-center">{qty}</span>
             <button onClick={agregar} className="w-5 h-5 flex items-center justify-center text-white border-none bg-transparent cursor-pointer"><Plus size={11} strokeWidth={3} /></button>
@@ -68,9 +68,9 @@ function ProductCard({ p, tiendaId, tiendaNombre, onSelect }: { p: Producto; tie
         )}
       </div>
       <div className="p-2 flex flex-col gap-0.5 flex-1">
-        <p className="text-[10px] text-gray-700 font-semibold leading-tight line-clamp-2">{p.descripcion}</p>
-        {p.marca && <p className="text-[9px] text-gray-400 uppercase tracking-wide truncate">{p.marca}</p>}
-        <p className="text-xs font-extrabold text-green-700 mt-auto">{fmt(p.precio_publico)}</p>
+        <p className="text-[10px] text-ink-soft font-semibold leading-tight line-clamp-2">{p.descripcion}</p>
+        {p.marca && <p className="text-[9px] text-ink-faint uppercase tracking-wide truncate">{p.marca}</p>}
+        <p className="text-xs font-extrabold text-pine-deep mt-auto">{fmt(p.precio_publico)}</p>
       </div>
     </div>
   )
@@ -111,7 +111,7 @@ function CategoriaContent() {
     const endY = cartRect.top + cartRect.height / 2
 
     const element = document.createElement('div')
-    element.className = 'fixed z-[9999] pointer-events-none w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold shadow-lg text-lg transition-all duration-700 ease-out'
+    element.className = 'fixed z-[9999] pointer-events-none w-8 h-8 rounded-full bg-pine text-white flex items-center justify-center font-bold shadow-lg text-lg transition-all duration-700 ease-out'
     element.innerText = emojiOrText
     element.style.left = `${startX - 16}px`
     element.style.top = `${startY - 16}px`
@@ -272,7 +272,7 @@ function CategoriaContent() {
 
   if (cargando) return (
     <div className="min-h-dvh bg-white flex items-center justify-center">
-      <Loader2 size={32} className="animate-spin text-green-500" />
+      <Loader2 size={32} className="animate-spin text-pine" />
     </div>
   )
 
@@ -282,21 +282,21 @@ function CategoriaContent() {
       {escaner && <BarcodeScanner onDetected={onBarcodeDetected} onClose={() => setEscaner(false)} />}
 
       {/* ── HEADER ESTILO TIPTI ── */}
-      <div className="fixed top-0 left-0 right-0 bg-white border-b border-gray-100 z-30 shadow-xs">
+      <div className="fixed top-0 left-0 right-0 bg-white border-b border-line z-30 shadow-xs">
         {buscando ? (
           <div className="flex items-center gap-2 px-3 py-2.5">
             <button onClick={() => { setBuscando(false); setQ('') }}
               className="p-1.5 border-none bg-transparent cursor-pointer active:scale-90 transition shrink-0">
-              <ArrowLeft size={20} className="text-gray-700" />
+              <ArrowLeft size={20} className="text-ink-soft" />
             </button>
             <div className="flex-1 relative">
               <input value={q} onChange={e => setQ(e.target.value)}
                 placeholder={`Buscar en ${cat}...`} autoFocus
-                className="w-full bg-gray-100 rounded-xl pl-3 pr-16 py-2 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 border-none transition" />
+                className="w-full bg-surface-2 rounded-xl pl-3 pr-16 py-2 text-xs text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-pine/40 border-none transition" />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                {q && <button onClick={() => setQ('')} className="w-6 h-6 flex items-center justify-center text-gray-400 border-none bg-transparent cursor-pointer"><X size={13} /></button>}
+                {q && <button onClick={() => setQ('')} className="w-6 h-6 flex items-center justify-center text-ink-faint border-none bg-transparent cursor-pointer"><X size={13} /></button>}
                 <button onClick={() => { setEscaner(true); setBuscando(false) }}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-green-600 text-white border-none cursor-pointer active:scale-90 transition">
+                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-pine text-white border-none cursor-pointer active:scale-90 transition">
                   <ScanLine size={14} />
                 </button>
               </div>
@@ -306,24 +306,24 @@ function CategoriaContent() {
           <div className="flex items-center px-2 py-2.5 gap-1">
             <button onClick={() => router.push(`/tiendas/${id}`)}
               className="p-1.5 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition">
-              <ArrowLeft size={20} className="text-gray-700" />
+              <ArrowLeft size={20} className="text-ink-soft" />
             </button>
-            <h1 className="flex-1 text-[13px] font-extrabold text-gray-800 text-center truncate px-1">
+            <h1 className="flex-1 text-[13px] font-extrabold text-ink text-center truncate px-1">
               {CAT_EMOJI[cat] || '📦'} {cat}
             </h1>
             <button onClick={() => setBuscando(true)}
-              className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-gray-600 hover:text-green-600">
+              className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-ink-soft hover:text-pine">
               <Search size={19} />
             </button>
             <button onClick={() => setEscaner(true)}
-              className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-green-600"
+              className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-pine"
               title="Escanear código de barras">
               <ScanLine size={19} />
             </button>
             <button 
               data-cart-button-tipti
               onClick={() => setCartOpen(true)}
-              className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-gray-600 hover:text-green-600 relative">
+              className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-ink-soft hover:text-pine relative">
               <ShoppingCart size={19} />
               {n > 0 && (
                 <span className="absolute top-1 right-1 w-4.5 h-4.5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] font-black leading-none shadow-sm">
@@ -336,26 +336,26 @@ function CategoriaContent() {
 
         {/* Tabs subcategorías con indicador verde */}
         {!buscando && subcats.length > 0 && (
-          <div ref={tabsRef} className="overflow-x-auto scrollbar-hide flex border-t border-gray-100">
+          <div ref={tabsRef} className="overflow-x-auto scrollbar-hide flex border-t border-line">
             <button data-tab onClick={() => cambiarSub('', 0)}
-              className={`shrink-0 px-4 py-2.5 text-[11px] font-extrabold relative whitespace-nowrap border-none bg-transparent cursor-pointer transition-colors ${!sub ? 'text-green-600' : 'text-gray-500 hover:text-gray-700'}`}>
+              className={`shrink-0 px-4 py-2.5 text-[11px] font-extrabold relative whitespace-nowrap border-none bg-transparent cursor-pointer transition-colors ${!sub ? 'text-pine' : 'text-ink-faint hover:text-ink-soft'}`}>
               Todos los productos
-              {!sub && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-green-600 rounded-t-full" />}
+              {!sub && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-pine rounded-t-full" />}
             </button>
             {subcats.map(([s], idx) => (
               <button key={s} data-tab onClick={() => cambiarSub(s, idx + 1)}
-                className={`shrink-0 px-4 py-2.5 text-[11px] font-extrabold relative whitespace-nowrap border-none bg-transparent cursor-pointer transition-colors ${sub === s ? 'text-green-600' : 'text-gray-500 hover:text-gray-700'}`}>
+                className={`shrink-0 px-4 py-2.5 text-[11px] font-extrabold relative whitespace-nowrap border-none bg-transparent cursor-pointer transition-colors ${sub === s ? 'text-pine' : 'text-ink-faint hover:text-ink-soft'}`}>
                 {s}
-                {sub === s && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-green-600 rounded-t-full" />}
+                {sub === s && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-pine rounded-t-full" />}
               </button>
             ))}
           </div>
         )}
 
         {q.length >= 2 && (
-          <div className="px-3 py-1.5 border-t border-gray-100 flex items-center gap-2">
-            <Search size={11} className="text-green-600 shrink-0" />
-            <span className="text-[10px] font-black text-gray-500 flex-1">
+          <div className="px-3 py-1.5 border-t border-line flex items-center gap-2">
+            <Search size={11} className="text-pine shrink-0" />
+            <span className="text-[10px] font-black text-ink-faint flex-1">
               {filtrados.length} resultado{filtrados.length !== 1 ? 's' : ''} para &quot;{q}&quot;
             </span>
           </div>
@@ -363,13 +363,13 @@ function CategoriaContent() {
 
         {/* Burbuja flotante de marca activa */}
         {!buscando && marcaFiltro && (
-          <div className="px-3 py-1.5 bg-green-50 border-t border-gray-100 flex items-center justify-between animate-fade-in shrink-0">
-            <span className="flex items-center gap-1 text-[10px] font-black text-green-700 bg-white border border-green-200 px-2 py-0.5 rounded-full">
+          <div className="px-3 py-1.5 bg-pine-tint border-t border-line flex items-center justify-between animate-fade-in shrink-0">
+            <span className="flex items-center gap-1 text-[10px] font-black text-pine-deep bg-white border border-pine/30 px-2 py-0.5 rounded-full">
               🏷️ Marca: {marcaFiltro}
             </span>
             <button
               onClick={() => cambiarMarcaFiltro('')}
-              className="text-[9px] font-extrabold text-green-700 bg-green-100 hover:bg-green-200 px-2.5 py-1 rounded-lg border-none cursor-pointer flex items-center gap-1 active:scale-95 transition"
+              className="text-[9px] font-extrabold text-pine-deep bg-pine-tint hover:bg-pine/20 px-2.5 py-1 rounded-lg border-none cursor-pointer flex items-center gap-1 active:scale-95 transition"
             >
               Quitar filtro <X size={10} strokeWidth={3} />
             </button>
@@ -387,7 +387,7 @@ function CategoriaContent() {
         onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}
       >
         {filtrados.length === 0 ? (
-          <div className="text-center py-20 text-gray-400 text-xs italic">
+          <div className="text-center py-20 text-ink-faint text-xs italic">
             {q.length >= 2 ? `Sin resultados para "${q}"` : 'Sin productos en esta sección'}
           </div>
         ) : (
@@ -405,7 +405,7 @@ function CategoriaContent() {
             </div>
             {filtrados.length > visibles && (
               <button onClick={() => setVisibles(v => v + 60)}
-                className="w-full mt-4 py-2.5 rounded-xl border border-green-200 text-green-700 text-[11px] font-extrabold hover:bg-green-50 transition cursor-pointer bg-transparent">
+                className="w-full mt-4 py-2.5 rounded-xl border border-pine/30 text-pine-deep text-[11px] font-extrabold hover:bg-pine-tint transition cursor-pointer bg-transparent">
                 Ver más ({filtrados.length - visibles} restantes)
               </button>
             )}
@@ -438,14 +438,14 @@ function CategoriaContent() {
             onClick={() => setMarcasOpen(false)}
             className="fixed inset-0 bg-black/60 z-[190] animate-fade-in"
           />
-          <div className="fixed inset-x-0 bottom-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-md w-full bg-white rounded-t-[30px] md:rounded-3xl shadow-2xl z-[200] p-6 animate-slide-in-up md:animate-fade-in flex flex-col font-sans select-none border-t md:border border-gray-100 max-h-[75vh]">
+          <div className="fixed inset-x-0 bottom-0 md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-md w-full bg-white rounded-t-[30px] md:rounded-3xl shadow-2xl z-[200] p-6 animate-slide-in-up md:animate-fade-in flex flex-col font-sans select-none border-t md:border border-line max-h-[75vh]">
             <div 
               onClick={() => setMarcasOpen(false)}
-              className="md:hidden w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4 cursor-pointer"
+              className="md:hidden w-12 h-1.5 bg-line rounded-full mx-auto mb-4 cursor-pointer"
             />
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100 shrink-0">
-              <span className="text-xs font-black text-gray-800 uppercase tracking-wider">Filtrar por Marca</span>
-              <button onClick={() => setMarcasOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 bg-transparent border-none cursor-pointer"><X size={16} /></button>
+            <div className="flex items-center justify-between pb-3 border-b border-line shrink-0">
+              <span className="text-xs font-black text-ink uppercase tracking-wider">Filtrar por Marca</span>
+              <button onClick={() => setMarcasOpen(false)} className="text-ink-faint hover:text-ink-soft p-1 bg-transparent border-none cursor-pointer"><X size={16} /></button>
             </div>
 
             <div className="overflow-y-auto py-4 flex flex-wrap gap-2 max-h-[40vh] scrollbar-hide">
@@ -453,8 +453,8 @@ function CategoriaContent() {
                 onClick={() => { cambiarMarcaFiltro(''); setMarcasOpen(false) }}
                 className={`px-3.5 py-2 rounded-xl text-[10px] font-extrabold border cursor-pointer transition-all
                   ${!marcaFiltro 
-                    ? 'bg-green-50 border-green-600 text-green-700 font-extrabold shadow-inner' 
-                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+                    ? 'bg-pine-tint border-pine text-pine-deep font-extrabold shadow-inner' 
+                    : 'bg-surface-2 border-line text-ink-soft hover:bg-surface-2'}`}
               >
                 Todas las marcas
               </button>
@@ -466,8 +466,8 @@ function CategoriaContent() {
                     onClick={() => { cambiarMarcaFiltro(m); setMarcasOpen(false) }}
                     className={`px-3.5 py-2 rounded-xl text-[10px] font-bold border cursor-pointer transition-all
                       ${esActivo 
-                        ? 'bg-green-50 border-green-600 text-green-700 font-extrabold shadow-inner' 
-                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+                        ? 'bg-pine-tint border-pine text-pine-deep font-extrabold shadow-inner' 
+                        : 'bg-surface-2 border-line text-ink-soft hover:bg-surface-2'}`}
                   >
                     {m} ({count})
                   </button>
@@ -485,7 +485,7 @@ export default function CategoriaPage() {
   return (
     <Suspense fallback={
       <div className="min-h-dvh bg-white flex items-center justify-center">
-        <Loader2 size={28} className="animate-spin text-green-500" />
+        <Loader2 size={28} className="animate-spin text-pine" />
       </div>
     }>
       <CategoriaContent />

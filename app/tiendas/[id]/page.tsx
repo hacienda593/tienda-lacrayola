@@ -56,15 +56,15 @@ function TiendaProductCard({ p, tienda, onSelect }: { p: Producto; tienda: OlTie
           router.push(`/producto/${encodeURIComponent(p.codigo)}`)
         }
       }}
-      className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group"
+      className="bg-white rounded-xl border border-line overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col cursor-pointer shrink-0 w-[145px] relative group"
     >
-      <div className="relative bg-gray-50 h-40 flex items-center justify-center text-2xl overflow-hidden group-hover:bg-green-50/50 transition-colors w-full">
+      <div className="relative bg-surface-2 h-40 flex items-center justify-center text-2xl overflow-hidden group-hover:bg-pine-tint transition-colors w-full">
         <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
         <BtnFavorito prod={p} />
         {cantidad === 0 && p.stock > 0 && (
           <button
             onClick={agregar}
-            className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-90 transition z-20 cursor-pointer border border-white/60"
+            className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-pine hover:bg-pine-deep text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-90 transition z-20 cursor-pointer border border-white/60"
             aria-label="Agregar al carrito"
           >
             <Plus size={16} className="stroke-[3]" />
@@ -78,13 +78,13 @@ function TiendaProductCard({ p, tienda, onSelect }: { p: Producto; tienda: OlTie
       </div>
       <div className="p-1.5 flex-1 min-w-0 flex flex-col justify-between">
         <div>
-          <div className="text-[10px] md:text-[11px] font-bold text-gray-800 leading-tight md:leading-snug line-clamp-2 min-h-[24px] md:min-h-[32px] mb-0.5">{p.descripcion}</div>
+          <div className="text-[10px] md:text-[11px] font-bold text-ink leading-tight md:leading-snug line-clamp-2 min-h-[24px] md:min-h-[32px] mb-0.5">{p.descripcion}</div>
           {p.marca && (
-            <div className="text-[8px] md:text-[9px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+            <div className="text-[8px] md:text-[9px] text-ink-faint font-bold truncate mb-0.5">{p.marca}</div>
           )}
         </div>
         <div className="mt-2 space-y-1.5">
-          <div className="text-[11px] md:text-xs font-black text-gray-900">{fmt(p.precio_publico)}</div>
+          <div className="text-[11px] md:text-xs font-black text-ink">{fmt(p.precio_publico)}</div>
           {cantidad > 0 && (
             <div className="w-full animate-fade-in">
               <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
@@ -132,9 +132,9 @@ function TiendaVerticalProductCard({ p, tienda, onSelect }: { p: Producto; tiend
           router.push(`/producto/${encodeURIComponent(p.codigo)}`)
         }
       }}
-      className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group"
+      className="bg-white rounded-2xl border border-line overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col cursor-pointer group"
     >
-      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-48 md:h-36 flex items-center justify-center text-4xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
+      <div className="relative bg-pine-tint h-48 md:h-36 flex items-center justify-center text-4xl overflow-hidden transition-colors w-full">
         <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
         <BtnFavorito prod={p} />
         {p.stock > 0 && p.stock < 5 && (
@@ -145,7 +145,7 @@ function TiendaVerticalProductCard({ p, tienda, onSelect }: { p: Producto; tiend
         {cantidad === 0 && p.stock > 0 && (
           <button
             onClick={agregar}
-            className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-90 transition z-20 cursor-pointer border border-white/60"
+            className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-pine hover:bg-pine-deep text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-90 transition z-20 cursor-pointer border border-white/60"
             aria-label="Agregar al carrito"
           >
             <Plus size={16} className="stroke-[3]" />
@@ -159,13 +159,13 @@ function TiendaVerticalProductCard({ p, tienda, onSelect }: { p: Producto; tiend
       </div>
       <div className="p-1.5 flex-1 flex flex-col justify-between">
         <div className="flex-1">
-          <div className="text-[11px] md:text-xs font-bold text-gray-800 leading-tight md:leading-snug line-clamp-2 min-h-[26px] md:min-h-[32px] mb-0.5">{p.descripcion}</div>
+          <div className="text-[11px] md:text-xs font-bold text-ink leading-tight md:leading-snug line-clamp-2 min-h-[26px] md:min-h-[32px] mb-0.5">{p.descripcion}</div>
           {p.marca && (
-            <div className="text-[9px] md:text-[10px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+            <div className="text-[9px] md:text-[10px] text-ink-faint font-bold truncate mb-0.5">{p.marca}</div>
           )}
         </div>
         <div className="mt-2 space-y-1.5">
-          <div className="text-sm font-black text-gray-900">{fmt(p.precio_publico)}</div>
+          <div className="text-sm font-black text-ink">{fmt(p.precio_publico)}</div>
           {cantidad > 0 && (
             <div className="w-full animate-fade-in">
               <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
@@ -214,16 +214,16 @@ function BtnAgregar({ prod, tiendaId, tiendaNombre }: { prod: Producto; tiendaId
 
   if (cantidad === 0) return (
     <button onClick={agregar}
-      className="w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent active:scale-[0.96] transition-transform duration-75">
+      className="w-full py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 bg-pine-tint text-pine-deep border border-pine/30 hover:bg-pine hover:text-white hover:border-transparent active:scale-[0.96] transition-transform duration-75">
       <ShoppingCart size={12} /> Agregar
     </button>
   )
 
   return (
-    <div className="flex items-center justify-between bg-green-600 rounded-lg overflow-hidden">
-      <button onClick={e => cambiar(e, -1)} className="px-3 py-2 text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75"><Minus size={12} /></button>
+    <div className="flex items-center justify-between bg-pine rounded-lg overflow-hidden">
+      <button onClick={e => cambiar(e, -1)} className="px-3 py-2 text-white hover:bg-pine-deep transition font-bold active:scale-[0.96] transition-transform duration-75"><Minus size={12} /></button>
       <span className="text-white text-xs font-bold">{cantidad}</span>
-      <button onClick={e => cambiar(e, +1)} className="px-3 py-2 text-white hover:bg-green-700 transition font-bold active:scale-[0.96] transition-transform duration-75"><Plus size={12} /></button>
+      <button onClick={e => cambiar(e, +1)} className="px-3 py-2 text-white hover:bg-pine-deep transition font-bold active:scale-[0.96] transition-transform duration-75"><Plus size={12} /></button>
     </div>
   )
 }
@@ -242,7 +242,7 @@ function BtnFavorito({ prod }: { prod: Producto }) {
   return (
     <button onClick={toggle}
       className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm z-10 transition
-        ${fav ? 'bg-green-600 text-white' : 'bg-white/90 text-gray-400 hover:text-green-600'}`}
+        ${fav ? 'bg-pine text-white' : 'bg-white/90 text-ink-faint hover:text-pine'}`}
       title={fav ? "Quitar de la lista" : "Añadir a la lista de compras"}
     >
       <ClipboardList size={13} />
@@ -250,38 +250,9 @@ function BtnFavorito({ prod }: { prod: Producto }) {
   )
 }
 
-const CAT_COLORS: Record<string, { from: string; to: string; text: string; bg: string }> = {
-  'Escolar':      { from: 'from-blue-50/70',      to: 'to-blue-100/50',      text: 'text-blue-600',      bg: 'bg-blue-50' },
-  'Arte':         { from: 'from-purple-50/70',    to: 'to-purple-100/50',    text: 'text-purple-600',    bg: 'bg-purple-50' },
-  'Oficina':      { from: 'from-gray-50/70',      to: 'to-gray-150',         text: 'text-gray-600',      bg: 'bg-gray-100' },
-  'Tecnologia':   { from: 'from-indigo-50/70',    to: 'to-indigo-100/50',    text: 'text-indigo-600',    bg: 'bg-indigo-50' },
-  'Juguetes':     { from: 'from-orange-50/70',    to: 'to-orange-100/50',    text: 'text-orange-600',    bg: 'bg-orange-50' },
-  'Manualidades': { from: 'from-pink-50/70',      to: 'to-pink-100/50',      text: 'text-pink-600',      bg: 'bg-pink-50' },
-  'Libros':       { from: 'from-amber-50/70',     to: 'to-amber-100/50',     text: 'text-amber-600',     bg: 'bg-amber-50' },
-  'Pintura':      { from: 'from-red-50/70',       to: 'to-red-100/50',       text: 'text-red-600',       bg: 'bg-red-50' },
-  'Papeleria':    { from: 'from-teal-50/70',      to: 'to-teal-100/50',      text: 'text-teal-600',      bg: 'bg-teal-50' },
-  'Alimentos':    { from: 'from-emerald-50/70',   to: 'to-emerald-100/50',   text: 'text-emerald-600',   bg: 'bg-emerald-50' },
-  'Bebidas':      { from: 'from-cyan-50/70',      to: 'to-cyan-100/50',      text: 'text-cyan-600',      bg: 'bg-cyan-50' },
-  'Limpieza':     { from: 'from-sky-50/70',       to: 'to-sky-100/50',       text: 'text-sky-600',       bg: 'bg-sky-50' },
-  'Higiene':      { from: 'from-rose-50/70',      to: 'to-rose-100/50',      text: 'text-rose-600',      bg: 'bg-rose-50' },
-  'Farmacia':     { from: 'from-rose-100/30',     to: 'to-red-100/30',       text: 'text-red-600',       bg: 'bg-red-50' },
-  'Abarrotes':    { from: 'from-emerald-50/70',   to: 'to-green-100/50',     text: 'text-green-600',     bg: 'bg-green-50' },
-  'Bebidas y Licores': { from: 'from-cyan-50/70', to: 'to-blue-100/50',      text: 'text-cyan-600',      bg: 'bg-cyan-50' },
-  'Congelados y Refrigerados': { from: 'from-blue-50/70', to: 'to-cyan-100/30', text: 'text-blue-500',   bg: 'bg-blue-50' },
-  'Golosinas y Snacks': { from: 'from-amber-50/70', to: 'to-yellow-100/50',  text: 'text-amber-600',     bg: 'bg-amber-50' },
-  'Panadería':    { from: 'from-yellow-50/70',    to: 'to-amber-100/40',     text: 'text-yellow-700',    bg: 'bg-yellow-50' },
-  'Cuidado Personal': { from: 'from-rose-50/70',  to: 'to-pink-100/40',      text: 'text-rose-600',      bg: 'bg-rose-50' },
-  'Hogar y Limpieza': { from: 'from-sky-50/70',   to: 'to-indigo-100/30',    text: 'text-sky-600',       bg: 'bg-sky-50' },
-  'Mascotas':     { from: 'from-amber-50/70',     to: 'to-orange-100/30',    text: 'text-amber-700',     bg: 'bg-amber-50' },
-  'Huevos Lácteos y Leches': { from: 'from-yellow-50/40', to: 'to-blue-50/30', text: 'text-yellow-600', bg: 'bg-yellow-50' },
-}
-
-const DEFAULT_COLOR = { from: 'from-green-50/70', to: 'to-green-100/50', text: 'text-green-600', bg: 'bg-green-50' }
-
 function ImagenProducto({ src, categoria, alt, descripcion }: { src?: string | null; categoria: string; alt: string; descripcion?: string }) {
   const [error, setError] = useState(false)
   const emoji = CAT_EMOJI[categoria] || '📦'
-  const colors = CAT_COLORS[categoria] || DEFAULT_COLOR
 
   const presVal = useMemo(() => {
     if (!descripcion) return ''
@@ -296,15 +267,8 @@ function ImagenProducto({ src, categoria, alt, descripcion }: { src?: string | n
   let content;
   if (!src || error) {
     content = (
-      <div className={`w-full h-full bg-gradient-to-br ${colors.from} ${colors.to} flex flex-col items-center justify-center relative select-none overflow-hidden transition-transform duration-300`}>
-        {/* Decoraciones suaves de fondo flotantes */}
-        <div className="absolute w-24 h-24 rounded-full bg-white/40 blur-md -top-7 -left-7" />
-        <div className="absolute w-16 h-16 rounded-full bg-white/20 blur-sm -bottom-5 -right-5" />
-        
-        {/* Contenedor de Emoji estilo tarjeta glassmorphic */}
-        <div className="w-14 h-14 rounded-2xl bg-white/80 backdrop-blur-sm shadow-sm flex items-center justify-center text-3xl transform group-hover:rotate-6 transition-transform duration-300 relative z-10 border border-white/60">
-          {emoji}
-        </div>
+      <div className="w-full h-full bg-pine-tint flex items-center justify-center select-none overflow-hidden">
+        <span className="text-3xl opacity-85">{emoji}</span>
       </div>
     )
   } else {
@@ -421,7 +385,7 @@ function TiendaContent() {
     const endY = cartRect.top + cartRect.height / 2
 
     const element = document.createElement('div')
-    element.className = 'fixed z-[9999] pointer-events-none w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold shadow-lg text-lg transition-all duration-700 ease-out'
+    element.className = 'fixed z-[9999] pointer-events-none w-8 h-8 rounded-full bg-pine text-white flex items-center justify-center font-bold shadow-lg text-lg transition-all duration-700 ease-out'
     element.innerText = emojiOrText
     element.style.left = `${startX - 16}px`
     element.style.top = `${startY - 16}px`
@@ -735,39 +699,39 @@ function TiendaContent() {
 
   if (cargando) return (
     <div className="max-w-5xl mx-auto px-4 py-16 flex justify-center">
-      <Loader2 size={28} className="animate-spin text-green-500" />
+      <Loader2 size={28} className="animate-spin text-pine" />
     </div>
   )
 
   if (!tienda) return (
     <div className="max-w-lg mx-auto px-4 py-16 text-center">
-      <Store size={48} className="text-gray-200 mx-auto mb-3" />
-      <p className="text-gray-500">Tienda no encontrada</p>
-      <button onClick={() => router.back()} className="mt-4 text-green-600 text-sm underline">← Volver</button>
+      <Store size={48} className="text-line mx-auto mb-3" />
+      <p className="text-ink-faint">Tienda no encontrada</p>
+      <button onClick={() => router.back()} className="mt-4 text-pine text-sm underline">← Volver</button>
     </div>
   )
 
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-3.5 space-y-5 md:px-4 md:py-5 md:space-y-5 md:h-auto flex flex-col md:overflow-visible bg-white md:bg-transparent">
+    <div className="max-w-5xl mx-auto px-4 py-3.5 space-y-5 md:px-4 md:py-5 md:space-y-5 md:h-auto flex flex-col md:overflow-visible bg-white md:bg-transparent font-ui">
 
       {/* Header tienda (Solo visible en desktop) */}
-      <div className="hidden md:flex sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 py-3.5 -mx-4 px-4 items-center justify-between gap-3 shadow-sm md:shadow-none md:border-none md:relative md:top-auto md:z-auto md:bg-transparent md:py-0 md:mx-0 md:px-0">
+      <div className="hidden md:flex sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-line py-3.5 -mx-4 px-4 items-center justify-between gap-3 shadow-sm md:shadow-none md:border-none md:relative md:top-auto md:z-auto md:bg-transparent md:py-0 md:mx-0 md:px-0">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-xl transition shrink-0">
-            <ArrowLeft size={18} className="text-gray-600" />
+          <button onClick={() => router.back()} className="p-2 hover:bg-surface-2 rounded-xl transition shrink-0">
+            <ArrowLeft size={18} className="text-ink-soft" />
           </button>
-          <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-2xl shrink-0">
+          <div className="w-12 h-12 bg-pine-tint rounded-xl flex items-center justify-center text-2xl shrink-0">
             {tienda.logo_url
               ? <img src={tienda.logo_url} alt={tienda.nombre} className="w-9 h-9 object-contain" />
               : '🏪'
             }
           </div>
           <div className="min-w-0">
-            <h1 className="font-extrabold text-gray-800 text-lg truncate">{tienda.nombre}</h1>
-            {tienda.descripcion && <p className="text-xs text-gray-400 truncate">{tienda.descripcion}</p>}
+            <h1 className="font-display font-bold text-ink text-lg truncate">{tienda.nombre}</h1>
+            {tienda.descripcion && <p className="text-xs text-ink-faint truncate">{tienda.descripcion}</p>}
             {tienda.direccion && (
-              <div className="flex items-center gap-1 text-[10px] text-gray-400 mt-0.5">
+              <div className="flex items-center gap-1 text-[10px] text-ink-faint mt-0.5">
                 <MapPin size={9} /> {tienda.direccion}
               </div>
             )}
@@ -779,7 +743,7 @@ function TiendaContent() {
           {/* Botón de Filtros (solo móvil, en desktop ya se muestra el sidebar) */}
           <button
             onClick={() => window.dispatchEvent(new Event('open-categorias-global'))}
-            className="md:hidden w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-500 hover:text-green-600 hover:bg-green-50 transition cursor-pointer animate-fade-in"
+            className="md:hidden w-8 h-8 rounded-xl bg-surface-2 border border-line flex items-center justify-center text-ink-faint hover:text-pine hover:bg-pine-tint transition cursor-pointer animate-fade-in"
             title="Ver pasillos y categorías"
           >
             <SlidersHorizontal size={14} />
@@ -788,7 +752,7 @@ function TiendaContent() {
           {/* Botón de Compartir Tienda */}
           <button
             onClick={compartirTienda}
-            className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-500 hover:text-green-600 hover:bg-green-50 transition cursor-pointer"
+            className="w-8 h-8 rounded-xl bg-surface-2 border border-line flex items-center justify-center text-ink-faint hover:text-pine hover:bg-pine-tint transition cursor-pointer"
             title="Compartir enlace de la tienda"
           >
             <Share2 size={14} />
@@ -799,8 +763,8 @@ function TiendaContent() {
             onClick={() => setInfoOpen(!infoOpen)}
             className={`w-8 h-8 rounded-xl border flex items-center justify-center transition cursor-pointer ${
               infoOpen
-                ? 'bg-green-500 border-transparent text-white'
-                : 'bg-gray-50 border-gray-100 text-gray-500 hover:text-green-600 hover:bg-green-50'
+                ? 'bg-pine border-transparent text-white'
+                : 'bg-surface-2 border-line text-ink-faint hover:text-pine hover:bg-pine-tint'
             }`}
             title="Información de la tienda"
           >
@@ -811,8 +775,8 @@ function TiendaContent() {
 
       {/* Información detallada de la tienda */}
       {infoOpen && (
-        <div className="bg-green-50/70 border border-green-100 rounded-2xl p-4 text-xs text-green-800 space-y-2 animate-fade-in">
-          <div className="font-extrabold text-green-950 flex items-center gap-1">
+        <div className="bg-pine-tint/70 border border-line rounded-2xl p-4 text-xs text-pine-deep space-y-2 animate-fade-in">
+          <div className="font-extrabold text-pine-deep flex items-center gap-1">
             🏪 {tienda.nombre}
           </div>
           <p className="leading-relaxed">{tienda.descripcion || 'Esta tienda aliada ofrece excelentes productos seleccionados para ti.'}</p>
@@ -834,24 +798,24 @@ function TiendaContent() {
 
       <div className="flex-1 flex flex-row md:gap-6 md:items-start overflow-hidden">
         {/* ── SIDEBAR pasillos (móvil y desktop) ── */}
-        <aside className="hidden md:flex md:w-52 shrink-0 h-full md:h-auto bg-gray-50 md:bg-white border-r md:border border-gray-100 md:rounded-2xl p-4 md:shadow-sm overflow-y-auto flex flex-col select-none">
+        <aside className="hidden md:flex md:w-52 shrink-0 h-full md:h-auto bg-surface-2 md:bg-white border-r md:border border-line md:rounded-2xl p-4 md:shadow-sm overflow-y-auto flex flex-col select-none">
           {/* DESKTOP: El aside tradicional */}
           <div className="space-y-5">
             {!cat ? (
               // Nivel 1: Lista de Categorías
               <div className="space-y-1">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Selecciona un Pasillo</p>
+                <p className="text-[10px] font-bold text-ink-faint uppercase tracking-wider mb-2">Selecciona un Pasillo</p>
                 {cats.map(([c, count]) => (
                   <button
                     key={c}
                     onClick={() => irACategoria(c)}
-                    className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:bg-green-50 hover:text-green-700 transition flex items-center justify-between border border-transparent hover:border-green-100"
+                    className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-ink-soft hover:bg-pine-tint hover:text-pine-deep transition flex items-center justify-between border border-transparent hover:border-line"
                   >
                     <span className="flex items-center gap-2">
                       <span className="text-sm">{CAT_EMOJI[c] || '📦'}</span>
                       <span className="truncate max-w-[100px]">{c}</span>
                     </span>
-                    <span className="text-[9px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold">{count}</span>
+                    <span className="text-[9px] bg-surface-2 text-ink-faint px-2 py-0.5 rounded-full font-bold">{count}</span>
                   </button>
                 ))}
               </div>
@@ -861,15 +825,15 @@ function TiendaContent() {
                 {/* Botón Volver */}
                 <button
                   onClick={() => updateFiltersUrl({ cat: '', sub: '', marca: '' })}
-                  className="w-full py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5"
+                  className="w-full py-2 bg-surface-2 hover:bg-surface-2 text-ink-soft border border-line rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5"
                 >
                   ← Todos los pasillos
                 </button>
 
                 {/* Pasillo Activo */}
                 <div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Pasillo seleccionado</span>
-                  <div className="text-xs font-black text-green-700 bg-green-50 border border-green-100 rounded-xl px-3 py-2 flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-ink-faint uppercase tracking-wider block mb-1">Pasillo seleccionado</span>
+                  <div className="text-xs font-black text-pine-deep bg-pine-tint border border-line rounded-xl px-3 py-2 flex items-center gap-2">
                     <span>{CAT_EMOJI[cat] || '📦'}</span>
                     <span className="truncate">{cat}</span>
                   </div>
@@ -878,7 +842,7 @@ function TiendaContent() {
                 {/* Lista de Subcategorías (si hay) */}
                 {subcats.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Subcategorías</p>
+                    <p className="text-[10px] font-bold text-ink-faint uppercase tracking-wider mb-2">Subcategorías</p>
                     <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
                       {subcats.map(([s, count]) => {
                         const esActiva = sub === s
@@ -887,12 +851,12 @@ function TiendaContent() {
                             key={s}
                             onClick={() => updateFiltersUrl({ sub: esActiva ? '' : s })}
                             className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-between border
-                              ${esActiva 
-                                ? 'bg-teal-50 border-teal-200 text-teal-700' 
-                                : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
+                              ${esActiva
+                                ? 'bg-pine-tint border-pine text-pine-deep'
+                                : 'bg-white border-line text-ink-soft hover:bg-surface-2'}`}
                           >
-                            <span className="truncate max-w-[100px]">🛍️ {s}</span>
-                            <span className="text-[9px] font-bold text-gray-400">({count})</span>
+                            <span className="truncate max-w-[100px]">{s}</span>
+                            <span className="text-[9px] font-bold text-ink-faint">({count})</span>
                           </button>
                         )
                       })}
@@ -903,7 +867,7 @@ function TiendaContent() {
                 {/* Lista de Marcas (si hay) */}
                 {marcas.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Marcas</p>
+                    <p className="text-[10px] font-bold text-ink-faint uppercase tracking-wider mb-2">Marcas</p>
                     <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
                       {marcas.map(([m, count]) => {
                         const esActiva = marca === m
@@ -914,10 +878,10 @@ function TiendaContent() {
                             className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-between border
                               ${esActiva 
                                 ? 'bg-purple-50 border-purple-200 text-purple-700' 
-                                : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50'}`}
+                                : 'bg-white border-line text-ink-soft hover:bg-surface-2'}`}
                           >
                             <span className="truncate max-w-[100px]">🏷️ {m}</span>
-                            <span className="text-[9px] font-bold text-gray-400">({count})</span>
+                            <span className="text-[9px] font-bold text-ink-faint">({count})</span>
                           </button>
                         )
                       })}
@@ -934,14 +898,14 @@ function TiendaContent() {
           
           {/* Subcategorías horizontal chips - SOLO MÓVIL - ocultar cuando hay tabs Tipti activos */}
           {cat && subcats.length > 0 && false && (
-            <div className="md:hidden p-3 pb-1 border-b border-gray-50 shrink-0 bg-white z-10">
+            <div className="md:hidden p-3 pb-1 border-b border-line shrink-0 bg-white z-10">
               <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-hide">
                 <button
                   onClick={() => updateFiltersUrl({ sub: '' })}
                   className={`px-3 py-1.5 rounded-full text-[10px] font-bold shrink-0 transition active:scale-95 cursor-pointer
                     ${!sub 
-                      ? 'bg-green-600 text-white shadow-sm shadow-green-600/10' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                      ? 'bg-pine text-white shadow-sm shadow-pine/10' 
+                      : 'bg-surface-2 text-ink-soft hover:bg-line/50'}`}
                 >
                   Todo 🛍️
                 </button>
@@ -954,8 +918,8 @@ function TiendaContent() {
                       onClick={() => updateFiltersUrl({ sub: s })}
                       className={`px-3 py-1.5 rounded-full text-[10px] font-bold shrink-0 transition active:scale-95 cursor-pointer flex items-center gap-1
                         ${esActiva 
-                          ? 'bg-green-600 text-white shadow-sm shadow-green-600/10' 
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                          ? 'bg-pine text-white shadow-sm shadow-pine/10' 
+                          : 'bg-surface-2 text-ink-soft hover:bg-line/50'}`}
                     >
                       <span>{emoji}</span>
                       <span>{s}</span>
@@ -970,7 +934,7 @@ function TiendaContent() {
           {/* Listado de Productos (Scrollable vertical independiente en móvil) */}
           <div
             className={esBusquedaOMovilPasillo 
-              ? 'flex-1 md:h-auto overflow-y-auto md:overflow-visible p-3 md:p-0 space-y-4 bg-gray-50/30' 
+              ? 'flex-1 md:h-auto overflow-y-auto md:overflow-visible p-3 md:p-0 space-y-4 bg-surface-2/30' 
               : 'space-y-6 md:p-0'
             }
           >
@@ -991,7 +955,7 @@ function TiendaContent() {
                   <button onClick={() => updateFiltersUrl({ marca: '' })} className="hover:text-purple-950 font-bold"><X size={12} /></button>
                 </span>
               )}
-              <button onClick={limpiarFiltros} className="text-[10px] text-gray-400 hover:text-gray-600 underline">
+              <button onClick={limpiarFiltros} className="text-[10px] text-ink-faint hover:text-ink-soft underline">
                 Limpiar todos
               </button>
             </div>
@@ -999,12 +963,12 @@ function TiendaContent() {
 
           {/* Productos Frecuentes (Comprar de nuevo) */}
           {tienda && frecuentes.length > 0 && !cat && !q && !sub && !marca && (
-            <div className="w-full max-w-full overflow-hidden space-y-3 bg-green-50/40 border border-green-100/60 rounded-2xl p-4 animate-fade-in">
+            <div className="w-full max-w-full overflow-hidden space-y-3 bg-pine-tint/40 border border-line rounded-2xl p-4 animate-fade-in">
               <div className="flex items-center justify-between">
-                <h3 className="font-extrabold text-gray-900 text-sm flex items-center gap-1.5">
+                <h3 className="font-extrabold text-ink text-sm flex items-center gap-1.5">
                   🔄 Comprar de nuevo
                 </h3>
-                <span className="text-[10px] text-green-700 bg-green-100/60 px-2.5 py-0.5 rounded-full font-bold">
+                <span className="text-[10px] text-pine-deep bg-pine-tint px-2.5 py-0.5 rounded-full font-bold">
                   Tus habituales
                 </span>
               </div>
@@ -1023,8 +987,8 @@ function TiendaContent() {
 
           {/* ── Subcategorías Rejilla de 5 Columnas (Antes de mostrar productos - Estilo Pinduoduo) ── */}
           {cat && !sub && subcats.length > 0 && (
-            <div className="w-full bg-white border border-gray-100/50 rounded-2xl p-4.5 shadow-xs mb-4.5 animate-in fade-in slide-in-from-top-4 duration-200">
-              <div className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-3">Subcategorías del Pasillo</div>
+            <div className="w-full bg-white border border-line/50 rounded-2xl p-4.5 shadow-xs mb-4.5 animate-in fade-in slide-in-from-top-4 duration-200">
+              <div className="text-[10px] font-black text-ink-faint uppercase tracking-wider mb-3">Subcategorías del Pasillo</div>
               <div className="grid grid-cols-5 gap-y-4 gap-x-1.5 justify-items-center">
                 {[...subcats].sort((a,b) => a[0].localeCompare(b[0])).map(([s, count]) => {
                   const emoji = obtenerEmojiSubcategoria(s, cat)
@@ -1035,7 +999,7 @@ function TiendaContent() {
                       onClick={() => updateFiltersUrl({ sub: s })}
                       className="flex flex-col items-center group relative transition active:scale-95 duration-100 cursor-pointer"
                     >
-                      <div className="w-11 h-11 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-xl shadow-xs hover:bg-white group-hover:border-green-200 overflow-hidden transition relative">
+                      <div className="w-11 h-11 rounded-full bg-surface-2 border border-line flex items-center justify-center text-xl shadow-xs hover:bg-white group-hover:border-pine/30 overflow-hidden transition relative">
                         {imgSrc ? (
                           <img 
                             src={imgSrc} 
@@ -1053,7 +1017,7 @@ function TiendaContent() {
                           emoji
                         )}
                       </div>
-                      <span className="text-[9px] font-extrabold text-gray-600 text-center mt-1.5 leading-tight line-clamp-2 max-w-[64px] group-hover:text-green-700">
+                      <span className="text-[9px] font-extrabold text-ink-soft text-center mt-1.5 leading-tight line-clamp-2 max-w-[64px] group-hover:text-pine-deep">
                         {s}
                       </span>
                     </button>
@@ -1068,21 +1032,21 @@ function TiendaContent() {
             <div className="w-full flex flex-col gap-2 mb-4 animate-in fade-in duration-200">
               <button
                 onClick={() => updateFiltersUrl({ sub: '', marca: '' })}
-                className="self-start text-[10px] font-extrabold text-green-600 flex items-center gap-1 hover:underline cursor-pointer bg-transparent border-none p-0"
+                className="self-start text-[10px] font-extrabold text-pine flex items-center gap-1 hover:underline cursor-pointer bg-transparent border-none p-0"
               >
                 ← Volver a pasillo {cat} (Ver subcategorías)
               </button>
 
               {/* Barra Horizontal de Marcas */}
               {marcas.length > 0 && (
-                <div className="w-full overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide border-b border-gray-100">
+                <div className="w-full overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide border-b border-line">
                   <div className="flex gap-4.5 whitespace-nowrap text-xs font-bold items-center py-1">
                     <button
                       onClick={() => updateFiltersUrl({ marca: '' })}
                       className={`pb-2.5 transition-all relative shrink-0 cursor-pointer
                         ${!marca 
-                          ? 'text-green-700 font-extrabold border-b-2 border-green-700' 
-                          : 'text-gray-500 hover:text-gray-700'}`}
+                          ? 'text-pine-deep font-extrabold border-b-2 border-pine-deep' 
+                          : 'text-ink-faint hover:text-ink-soft'}`}
                     >
                       🏷️ Todo {sub}
                     </button>
@@ -1094,8 +1058,8 @@ function TiendaContent() {
                           onClick={() => updateFiltersUrl({ marca: esActiva ? '' : m })}
                           className={`pb-2.5 transition-all relative shrink-0 cursor-pointer
                             ${esActiva 
-                              ? 'text-green-700 font-extrabold border-b-2 border-green-700' 
-                              : 'text-gray-500 hover:text-gray-700'}`}
+                              ? 'text-pine-deep font-extrabold border-b-2 border-pine-deep' 
+                              : 'text-ink-faint hover:text-ink-soft'}`}
                         >
                           {m}
                         </button>
@@ -1108,14 +1072,14 @@ function TiendaContent() {
           )}
 
           {/* Contador */}
-          <p className="text-xs text-gray-400">{filtrados.length} productos disponibles</p>
+          <p className="text-xs text-ink-faint">{filtrados.length} productos disponibles</p>
 
           {/* Grid productos / Rows de Subcategorías / Rows de Categorías */}
           {filtrados.length === 0 ? (
             <div className="text-center py-16 space-y-2">
               <div className="text-5xl">🔍</div>
-              <p className="text-gray-500 font-medium">Sin productos con ese filtro</p>
-              <button onClick={() => { setQ(''); limpiarFiltros() }} className="text-sm text-green-600 underline border-none bg-transparent cursor-pointer">Limpiar</button>
+              <p className="text-ink-faint font-medium">Sin productos con ese filtro</p>
+              <button onClick={() => { setQ(''); limpiarFiltros() }} className="text-sm text-pine underline border-none bg-transparent cursor-pointer">Limpiar</button>
             </div>
           ) : cat && !sub ? (
             /* Vista agrupada por subcategoría en horizontal (tipo Tipti) */
@@ -1134,7 +1098,7 @@ function TiendaContent() {
                       </button>
                       <button
                         onClick={() => updateFiltersUrl({ sub: s })}
-                        className="text-xs text-green-700 font-bold flex items-center gap-0.5 hover:underline"
+                        className="text-xs text-pine-deep font-bold flex items-center gap-0.5 hover:underline"
                       >
                         Ver más <ChevronRight size={12} />
                       </button>
@@ -1159,7 +1123,7 @@ function TiendaContent() {
                 if (prodsSinSub.length === 0) return null
                 return (
                   <div className="space-y-2.5 animate-fade-in">
-                    <h3 className="font-extrabold text-gray-900 text-sm">Otros productos</h3>
+                    <h3 className="font-extrabold text-ink text-sm">Otros productos</h3>
                     <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
                       {prodsSinSub.map(p => (
                         <TiendaProductCard
@@ -1192,7 +1156,7 @@ function TiendaContent() {
                       </button>
                       <button
                         onClick={() => irACategoria(c)}
-                        className="text-xs text-green-700 font-bold flex items-center gap-0.5 hover:underline"
+                        className="text-xs text-pine-deep font-bold flex items-center gap-0.5 hover:underline"
                       >
                         Ver pasillo <ChevronRight size={12} />
                       </button>
@@ -1225,8 +1189,8 @@ function TiendaContent() {
                 ))}
               </div>
               {visibles < filtrados.length && (
-                <div ref={sentinelRef} className="w-full py-6 flex items-center justify-center gap-2 text-gray-400 text-xs select-none">
-                  <Loader2 size={16} className="animate-spin text-green-500" />
+                <div ref={sentinelRef} className="w-full py-6 flex items-center justify-center gap-2 text-ink-faint text-xs select-none">
+                  <Loader2 size={16} className="animate-spin text-pine" />
                   Cargando más productos...
                 </div>
               )}
@@ -1312,7 +1276,7 @@ export default function TiendaPage() {
   return (
     <Suspense fallback={
       <div className="max-w-5xl mx-auto px-4 py-16 flex justify-center">
-        <Loader2 size={28} className="animate-spin text-green-500" />
+        <Loader2 size={28} className="animate-spin text-pine" />
       </div>
     }>
       <LocalErrorBoundary>

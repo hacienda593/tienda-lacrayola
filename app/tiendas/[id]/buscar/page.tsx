@@ -112,9 +112,9 @@ function TiendaVerticalProductCard({ p, tienda, onSelect }: { p: Producto; tiend
           router.push(`/producto/${encodeURIComponent(p.codigo)}`)
         }
       }}
-      className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-xs hover:shadow-sm transition-all flex flex-col cursor-pointer group"
+      className="bg-white rounded-2xl border border-line overflow-hidden shadow-xs hover:shadow-sm transition-all flex flex-col cursor-pointer group"
     >
-      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 h-36 flex items-center justify-center text-3xl overflow-hidden group-hover:from-green-50 group-hover:to-green-100 transition-colors w-full">
+      <div className="relative bg-pine-tint h-36 flex items-center justify-center text-3xl overflow-hidden transition-colors w-full">
         <ImagenProducto src={p.imagen_url} categoria={p.categoria} alt={p.descripcion} descripcion={p.descripcion} />
         {p.stock > 0 && p.stock < 5 && (
           <span className="absolute top-2 left-2 text-[9px] font-bold bg-orange-500 text-white px-2 py-0.5 rounded-full z-10 animate-pulse">
@@ -124,7 +124,7 @@ function TiendaVerticalProductCard({ p, tienda, onSelect }: { p: Producto; tiend
         {cantidad === 0 && p.stock > 0 && (
           <button
             onClick={agregar}
-            className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center shadow-md hover:scale-105 active:scale-90 transition z-20 cursor-pointer border border-white/60 animate-in fade-in zoom-in-50 duration-150"
+            className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-pine hover:bg-pine-deep text-white flex items-center justify-center shadow-md hover:scale-105 active:scale-90 transition z-20 cursor-pointer border border-white/60 animate-in fade-in zoom-in-50 duration-150"
             aria-label="Agregar al carrito"
           >
             <Plus size={16} className="stroke-[3]" />
@@ -138,13 +138,13 @@ function TiendaVerticalProductCard({ p, tienda, onSelect }: { p: Producto; tiend
       </div>
       <div className="p-2 flex-1 flex flex-col justify-between">
         <div className="flex-1">
-          <div className="text-[10px] md:text-xs font-bold text-gray-800 leading-tight line-clamp-2 min-h-[26px] mb-0.5">{p.descripcion}</div>
+          <div className="text-[10px] md:text-xs font-bold text-ink leading-tight line-clamp-2 min-h-[26px] mb-0.5">{p.descripcion}</div>
           {p.marca && (
-            <div className="text-[9px] text-gray-400 font-bold truncate mb-0.5">{p.marca}</div>
+            <div className="text-[9px] text-ink-faint font-bold truncate mb-0.5">{p.marca}</div>
           )}
         </div>
         <div className="mt-2 space-y-1.5">
-          <div className="text-xs font-black text-gray-900">{fmt(p.precio_publico)}</div>
+          <div className="text-xs font-black text-ink">{fmt(p.precio_publico)}</div>
           {cantidad > 0 && (
             <div className="w-full animate-fade-in">
               <BtnAgregar prod={p} tiendaId={tienda.id} tiendaNombre={tienda.nombre} />
@@ -188,16 +188,16 @@ function BtnAgregar({ prod, tiendaId, tiendaNombre }: { prod: Producto; tiendaId
 
   if (cantidad === 0) return (
     <button onClick={agregar}
-      className="w-full py-1.5 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 bg-green-50 text-green-700 border border-green-200 hover:bg-green-600 hover:text-white hover:border-transparent active:scale-[0.96] transition-transform duration-75">
+      className="w-full py-1.5 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 bg-pine-tint text-pine-deep border border-pine/30 hover:bg-pine hover:text-white hover:border-transparent active:scale-[0.96] transition-transform duration-75">
       <ShoppingCart size={10} /> Agregar
     </button>
   )
 
   return (
-    <div className="flex items-center justify-between bg-green-600 rounded-lg overflow-hidden h-7">
-      <button onClick={e => cambiar(e, -1)} className="px-2 py-1 text-white hover:bg-green-700 transition font-bold active:scale-[0.96]"><Minus size={10} /></button>
+    <div className="flex items-center justify-between bg-pine rounded-lg overflow-hidden h-7">
+      <button onClick={e => cambiar(e, -1)} className="px-2 py-1 text-white hover:bg-pine-deep transition font-bold active:scale-[0.96]"><Minus size={10} /></button>
       <span className="text-white text-[10px] font-bold">{cantidad}</span>
-      <button onClick={e => cambiar(e, +1)} className="px-2 py-1 text-white hover:bg-green-700 transition font-bold active:scale-[0.96]"><Plus size={10} /></button>
+      <button onClick={e => cambiar(e, +1)} className="px-2 py-1 text-white hover:bg-pine-deep transition font-bold active:scale-[0.96]"><Plus size={10} /></button>
     </div>
   )
 }
@@ -234,7 +234,7 @@ function TiendaBuscarContent() {
     const endY = cartRect.top + cartRect.height / 2
 
     const element = document.createElement('div')
-    element.className = 'fixed z-[9999] pointer-events-none w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold shadow-lg text-lg transition-all duration-700 ease-out'
+    element.className = 'fixed z-[9999] pointer-events-none w-8 h-8 rounded-full bg-pine text-white flex items-center justify-center font-bold shadow-lg text-lg transition-all duration-700 ease-out'
     element.innerText = emojiOrText
     element.style.left = `${startX - 16}px`
     element.style.top = `${startY - 16}px`
@@ -381,7 +381,7 @@ function TiendaBuscarContent() {
   if (cargando) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-16 flex justify-center items-center min-h-[calc(100vh-120px)]">
-        <Loader2 size={32} className="animate-spin text-green-500" />
+        <Loader2 size={32} className="animate-spin text-pine" />
       </div>
     )
   }
@@ -389,9 +389,9 @@ function TiendaBuscarContent() {
   if (!tienda) {
     return (
       <div className="max-w-lg mx-auto px-4 py-16 text-center">
-        <Store size={48} className="text-gray-200 mx-auto mb-3" />
-        <p className="text-gray-500">Tienda no encontrada</p>
-        <button onClick={() => router.back()} className="mt-4 text-green-600 text-sm underline border-none bg-transparent cursor-pointer">← Volver</button>
+        <Store size={48} className="text-line mx-auto mb-3" />
+        <p className="text-ink-faint">Tienda no encontrada</p>
+        <button onClick={() => router.back()} className="mt-4 text-pine text-sm underline border-none bg-transparent cursor-pointer">← Volver</button>
       </div>
     )
   }
@@ -400,7 +400,7 @@ function TiendaBuscarContent() {
     <div className="max-w-5xl mx-auto flex flex-col h-[calc(100dvh)] overflow-hidden bg-white select-none">
 
       {/* ── HEADER DINÁMICO estilo Tipti ── */}
-      <div className="shrink-0 bg-white border-b border-gray-100">
+      <div className="shrink-0 bg-white border-b border-line">
 
         {buscando ? (
           /* Modo búsqueda: barra de búsqueda expandida */
@@ -409,7 +409,7 @@ function TiendaBuscarContent() {
               onClick={() => { setBuscando(false); setQ(''); setSub('') }}
               className="p-1.5 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition"
             >
-              <ArrowLeft size={20} className="text-gray-700" />
+              <ArrowLeft size={20} className="text-ink-soft" />
             </button>
             <div className="flex-1 relative">
               <input
@@ -418,12 +418,12 @@ function TiendaBuscarContent() {
                 onChange={e => setQ(e.target.value)}
                 placeholder={`Buscar en ${tienda.nombre || 'esta tienda'}...`}
                 autoFocus
-                className="w-full bg-gray-100 border border-transparent rounded-xl pl-3 pr-8 py-2 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-500 focus:bg-white transition"
+                className="w-full bg-surface-2 border border-transparent rounded-xl pl-3 pr-8 py-2 text-xs text-ink placeholder-ink-faint focus:outline-none focus:border-pine focus:bg-white transition"
               />
               {q && (
                 <button
                   onClick={() => setQ('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 border-none bg-transparent cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint border-none bg-transparent cursor-pointer"
                 >
                   <X size={13} />
                 </button>
@@ -437,20 +437,20 @@ function TiendaBuscarContent() {
               onClick={() => router.push(`/tiendas/${id}`)}
               className="p-1.5 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition"
             >
-              <ArrowLeft size={20} className="text-gray-700" />
+              <ArrowLeft size={20} className="text-ink-soft" />
             </button>
-            <h1 className="flex-1 text-sm font-extrabold text-gray-800 text-center truncate px-1">
+            <h1 className="flex-1 text-sm font-extrabold text-ink text-center truncate px-1">
               {activeCat || tienda.nombre}
             </h1>
             <button
               onClick={() => setBuscando(true)}
-              className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-gray-600 hover:text-green-600"
+              className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-ink-soft hover:text-pine"
             >
               <Search size={19} />
             </button>
             <button
               onClick={() => window.dispatchEvent(new Event('open-cart-global'))}
-              className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-gray-600 hover:text-green-600"
+              className="p-2 shrink-0 border-none bg-transparent cursor-pointer active:scale-90 transition text-ink-soft hover:text-pine"
             >
               <ShoppingCart size={19} />
             </button>
@@ -461,17 +461,17 @@ function TiendaBuscarContent() {
         {!buscando && q.length < 2 && subcats.length > 0 && (
           <div
             ref={tabsRef}
-            className="overflow-x-auto scrollbar-hide flex border-t border-gray-100"
+            className="overflow-x-auto scrollbar-hide flex border-t border-line"
           >
             {/* Tab Todo */}
             <button
               data-tab
               onClick={() => cambiarSub('', 0)}
               className={`shrink-0 px-4 py-2.5 text-[11px] font-extrabold relative whitespace-nowrap border-none bg-transparent cursor-pointer transition-colors
-                ${sub === '' ? 'text-green-600' : 'text-gray-500 hover:text-gray-700'}`}
+                ${sub === '' ? 'text-pine' : 'text-ink-faint hover:text-ink-soft'}`}
             >
               Todos los productos
-              {sub === '' && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-green-600 rounded-t-full" />}
+              {sub === '' && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-pine rounded-t-full" />}
             </button>
 
             {subcats.map(([s], idx) => (
@@ -480,10 +480,10 @@ function TiendaBuscarContent() {
                 data-tab
                 onClick={() => cambiarSub(s, idx + 1)}
                 className={`shrink-0 px-4 py-2.5 text-[11px] font-extrabold relative whitespace-nowrap border-none bg-transparent cursor-pointer transition-colors
-                  ${sub === s ? 'text-green-600' : 'text-gray-500 hover:text-gray-700'}`}
+                  ${sub === s ? 'text-pine' : 'text-ink-faint hover:text-ink-soft'}`}
               >
                 {s}
-                {sub === s && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-green-600 rounded-t-full" />}
+                {sub === s && <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-pine rounded-t-full" />}
               </button>
             ))}
           </div>
@@ -491,12 +491,12 @@ function TiendaBuscarContent() {
 
         {/* Resultados de búsqueda texto */}
         {q.length >= 2 && (
-          <div className="px-3 py-2 flex items-center gap-2 border-t border-gray-100">
-            <Search size={12} className="text-green-600 shrink-0" />
-            <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider flex-1">
+          <div className="px-3 py-2 flex items-center gap-2 border-t border-line">
+            <Search size={12} className="text-pine shrink-0" />
+            <span className="text-[10px] font-black text-ink-faint uppercase tracking-wider flex-1">
               {filtrados.length} resultado{filtrados.length !== 1 ? 's' : ''} para &quot;{q}&quot;
             </span>
-            <button onClick={() => { setQ(''); setBuscando(false) }} className="text-gray-400 hover:text-gray-600 border-none bg-transparent cursor-pointer">
+            <button onClick={() => { setQ(''); setBuscando(false) }} className="text-ink-faint hover:text-ink-soft border-none bg-transparent cursor-pointer">
               <X size={13} />
             </button>
           </div>
@@ -505,7 +505,7 @@ function TiendaBuscarContent() {
 
       <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
         {/* ── Columna Izquierda: Categorías (Sidebar) ── */}
-        <aside className="w-[68px] shrink-0 h-full bg-gray-50 border-r border-gray-100 overflow-y-auto flex flex-col select-none">
+        <aside className="w-[68px] shrink-0 h-full bg-surface-2 border-r border-line overflow-y-auto flex flex-col select-none">
           {cats.map(([c]) => {
             const esActiva = activeCat === c
             return (
@@ -518,14 +518,14 @@ function TiendaBuscarContent() {
                   setBuscando(false)
                   setVisibles(40)
                 }}
-                className={`py-3.5 px-1 border-l-[3px] cursor-pointer relative active:bg-gray-100 flex flex-col items-center gap-1 transition-all border-none bg-transparent
+                className={`py-3.5 px-1 border-l-[3px] cursor-pointer relative active:bg-surface-2 flex flex-col items-center gap-1 transition-all border-none bg-transparent
                   ${esActiva
-                    ? 'bg-white border-l-green-600 text-green-700'
-                    : 'border-l-transparent text-gray-500'}`}
+                    ? 'bg-white border-l-pine text-pine-deep'
+                    : 'border-l-transparent text-ink-faint'}`}
               >
                 <span className="text-[18px] leading-none">{CAT_EMOJI[c] || '📦'}</span>
-                <span className={`text-[8px] leading-tight font-bold break-words text-center max-w-[58px] ${esActiva ? 'text-green-700' : 'text-gray-500'}`}>{c}</span>
-                {esActiva && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-green-600 rounded-l-md" />}
+                <span className={`text-[8px] leading-tight font-bold break-words text-center max-w-[58px] ${esActiva ? 'text-pine-deep' : 'text-ink-faint'}`}>{c}</span>
+                {esActiva && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-pine rounded-l-md" />}
               </button>
             )
           })}
@@ -539,7 +539,7 @@ function TiendaBuscarContent() {
           onTouchEnd={onTouchEnd}
         >
           {filtrados.length === 0 ? (
-            <div className="text-center py-16 text-gray-400 text-xs italic">
+            <div className="text-center py-16 text-ink-faint text-xs italic">
               {q.length >= 2
                 ? 'No se encontraron productos'
                 : 'Sin productos en este pasillo'}
@@ -559,7 +559,7 @@ function TiendaBuscarContent() {
               {filtrados.length > visibles && (
                 <button
                   onClick={() => setVisibles(v => v + 40)}
-                  className="w-full mt-4 py-2.5 rounded-xl border border-green-200 text-green-700 text-[11px] font-extrabold hover:bg-green-50 transition cursor-pointer bg-transparent"
+                  className="w-full mt-4 py-2.5 rounded-xl border border-pine/30 text-pine-deep text-[11px] font-extrabold hover:bg-pine-tint transition cursor-pointer bg-transparent"
                 >
                   Ver más ({filtrados.length - visibles} restantes)
                 </button>
@@ -602,7 +602,7 @@ export default function TiendaBuscarPage() {
   return (
     <Suspense fallback={
       <div className="max-w-5xl mx-auto px-4 py-16 flex justify-center items-center min-h-[calc(100vh-120px)]">
-        <Loader2 size={32} className="animate-spin text-green-500" />
+        <Loader2 size={32} className="animate-spin text-pine" />
       </div>
     }>
       <LocalErrorBoundary>

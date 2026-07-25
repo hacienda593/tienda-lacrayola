@@ -176,7 +176,7 @@ const aTitleCase = (s: string) => s.replace(/\b\p{L}/gu, c => c.toUpperCase())
 // Descarta candidatos sin relación de texto con lo buscado (evita ruido) y el chip
 // redundante idéntico al término ya escrito.
 export function sugerirCategorias(
-  productos: { categoria: string; subcategoria: string }[],
+  productos: { categoria: string; subcategoria: string; grupo_busqueda?: string | null }[],
   term: string,
   max = 8
 ): SugerenciaBusqueda[] {
@@ -185,7 +185,7 @@ export function sugerirCategorias(
 
   const conteo = new Map<string, { cat: string; sub: string; n: number }>()
   productos.forEach(p => {
-    const etiquetaCruda = p.subcategoria || p.categoria
+    const etiquetaCruda = p.grupo_busqueda || p.subcategoria || p.categoria
     if (!etiquetaCruda) return
     const key = normalizeText(etiquetaCruda)
     if (!key || key === termNorm) return
