@@ -1,9 +1,8 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { X, ShoppingBag, Minus, Plus, Trash2, ArrowRight } from 'lucide-react'
-import { getCarrito, cambiarCantidad, vaciarCarrito, totalCarrito, calcularEnvioConsolidado, obtenerTiendasUnicas } from '@/lib/carrito'
-import { ItemCarrito } from '@/lib/types'
+import { useResumenCarrito } from '@/lib/carrito'
 import RecargoEnvioBadge from './RecargoEnvioBadge'
 
 interface CartDrawerProps {
@@ -14,14 +13,7 @@ interface CartDrawerProps {
 function fmt(n: number) { return '$' + n.toFixed(2) }
 
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
-  const [items, setItems] = useState<ItemCarrito[]>([])
-
-  useEffect(() => {
-    const update = () => setItems(getCarrito())
-    update()
-    window.addEventListener('carrito-update', update)
-    return () => window.removeEventListener('carrito-update', update)
-  }, [])
+  const { items, itemsPorTienda, total, nItems, nTiendas, costoEnvio, granTotal, cambiarCantidad, vaciarCarrito } = useResumenCarrito()
 
   // Cerrar al presionar la tecla Escape
   useEffect(() => {
@@ -32,24 +24,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
 
-  const total = totalCarrito(items)
-  const nItems = items.reduce((s, i) => s + i.cantidad, 0)
-  const nTiendas = obtenerTiendasUnicas(items).length || (items.length > 0 ? 1 : 0)
-  const costoEnvio = calcularEnvioConsolidado(items)
-  const granTotal = total + costoEnvio
-
-  // Agrupar items por tienda física
-  const itemsPorTienda: Record<string, ItemCarrito[]> = {}
-  items.forEach(item => {
-    const key = item.tienda_nombre || 'Inventario Crayola'
-    if (!itemsPorTienda[key]) itemsPorTienda[key] = []
-    itemsPorTienda[key].push(item)
-  })
-
   function handleQuantityChange(codigo: string, currentQty: number, delta: number) {
-    if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(10)
-    }
     cambiarCantidad(codigo, currentQty + delta)
   }
 
@@ -85,10 +60,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           <div className="flex items-center gap-3">
             {items.length > 0 && (
               <button
-                onClick={() => {
-                  if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(20)
-                  vaciarCarrito()
-                }}
+                onClick={vaciarCarrito}
                 className="text-xs font-bold text-ink-faint hover:text-red-500 flex items-center gap-1 transition"
               >
                 <Trash2 size={12} /> Vaciar

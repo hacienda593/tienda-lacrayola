@@ -2,6 +2,7 @@
 // Carrito 100% client-side en localStorage — sin servidor, sin auth requerida
 // Al hacer checkout se persiste en Supabase ol_pedidos
 
+import { useEffect, useState } from 'react'
 import { ItemCarrito } from './types'
 
 const KEY = 'lc_carrito'
@@ -74,4 +75,46 @@ export function calcularEnvioConsolidado(items: ItemCarrito[]): number {
   const tiendas = obtenerTiendasUnicas(items)
   const nTiendas = tiendas.length || 1 // Si no hay tienda_id, asumimos 1 (inventario propio)
   return 1.50 + (nTiendas - 1) * 0.75
+}
+
+export function agruparPorTienda(items: ItemCarrito[]): Record<string, ItemCarrito[]> {
+  const itemsPorTienda: Record<string, ItemCarrito[]> = {}
+  items.forEach(item => {
+    const key = item.tienda_nombre || 'Inventario Crayola'
+    if (!itemsPorTienda[key]) itemsPorTienda[key] = []
+    itemsPorTienda[key].push(item)
+  })
+  return itemsPorTienda
+}
+
+// Hook compartido entre CartDrawer y /carrito: evita mantener la misma lógica
+// de totales/agrupación/envío duplicada en dos componentes.
+export function useResumenCarrito() {
+  const [items, setItems] = useState<ItemCarrito[]>([])
+
+  useEffect(() => {
+    const update = () => setItems(getCarrito())
+    update()
+    window.addEventListener('carrito-update', update)
+    return () => window.removeEventListener('carrito-update', update)
+  }, [])
+
+  const total = totalCarrito(items)
+  const nItems = items.reduce((s, i) => s + i.cantidad, 0)
+  const nTiendas = obtenerTiendasUnicas(items).length || (items.length > 0 ? 1 : 0)
+  const costoEnvio = calcularEnvioConsolidado(items)
+  const granTotal = total + costoEnvio
+  const itemsPorTienda = agruparPorTienda(items)
+
+  function cambiarCantidadVibrando(codigo: string, cantidad: number) {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10)
+    cambiarCantidad(codigo, cantidad)
+  }
+
+  function vaciarVibrando() {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(20)
+    vaciarCarrito()
+  }
+
+  return { items, itemsPorTienda, total, nItems, nTiendas, costoEnvio, granTotal, cambiarCantidad: cambiarCantidadVibrando, vaciarCarrito: vaciarVibrando }
 }

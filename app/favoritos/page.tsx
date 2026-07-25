@@ -1,6 +1,7 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
-import { ShoppingCart, Share2, Trash2, Search, QrCode, X, Plus, Minus, History, Check, Loader2, AlertCircle, ClipboardList, Save, Settings2, StickyNote, ChevronDown } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
+import { ShoppingCart, Share2, Trash2, Search, QrCode, X, Plus, Minus, History, Check, Loader2, ClipboardList, Save, Settings2, StickyNote } from 'lucide-react'
 import Link from 'next/link'
 import { getFavoritos, toggleFavorito, ItemFavorito, serializarFavoritos } from '@/lib/favoritos'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
@@ -8,6 +9,8 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { getPedidosLocales } from '@/lib/perfil'
 import { CAT_EMOJI } from '@/lib/types'
+
+const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), { ssr: false })
 
 function fmt(n: number) { return '$' + n.toFixed(2) }
 
@@ -47,10 +50,6 @@ export default function FavoritosPage() {
   const [isScanning, setIsScanning] = useState(false)
   const [manualCode, setManualCode] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
-  const [isCameraReady, setIsCameraReady] = useState(false)
-  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // ── Estados para Compras Históricas ──
   const [historico, setHistorico] = useState<any[]>([])
@@ -484,32 +483,13 @@ export default function FavoritosPage() {
   }
 
   // ── 6. Lógica de Escáner de Código de Barras ──
-  const startScanning = async () => {
+  const startScanning = () => {
     setIsScanning(true)
     setErrorMsg('')
-    setIsCameraReady(false)
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        videoRef.current.setAttribute('playsinline', 'true')
-        videoRef.current.play()
-      }
-      setMediaStream(stream)
-      setIsCameraReady(true)
-    } catch (err) {
-      console.error(err)
-      setErrorMsg('No se pudo acceder a la cámara. Puedes escribir el código de barras manualmente.')
-    }
   }
 
   const stopScanning = () => {
-    if (mediaStream) {
-      mediaStream.getTracks().forEach(track => track.stop())
-    }
-    setMediaStream(null)
     setIsScanning(false)
-    setIsCameraReady(false)
     setManualCode('')
     setErrorMsg('')
   }
@@ -553,51 +533,6 @@ export default function FavoritosPage() {
       setErrorMsg(`Código "${code}" no encontrado en el catálogo de tiendas.`)
     }
   }
-
-  // Bucle de lectura de cámara nativa (BarcodeDetector)
-  useEffect(() => {
-    let active = true
-    let animationFrameId: number
-
-    const scanLoop = async () => {
-      if (!active) return
-      if (isCameraReady && videoRef.current && canvasRef.current && 'BarcodeDetector' in window) {
-        const video = videoRef.current
-        const canvas = canvasRef.current
-        const ctx = canvas.getContext('2d')
-        if (ctx && video.readyState === video.HAVE_ENOUGH_DATA) {
-          canvas.width = video.videoWidth
-          canvas.height = video.videoHeight
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-          
-          try {
-            // @ts-ignore
-            const detector = new BarcodeDetector({ formats: ['ean_13', 'code_128', 'qr_code', 'upc_a'] })
-            const barcodes = await detector.detect(canvas)
-            if (barcodes.length > 0 && active) {
-              const code = barcodes[0].rawValue
-              handleBarcodeSubmit(code)
-              active = false
-              return
-            }
-          } catch (e) {
-            console.error(e)
-          }
-        }
-      }
-      animationFrameId = requestAnimationFrame(scanLoop)
-    }
-
-    if (isScanning && isCameraReady) {
-      scanLoop()
-    }
-
-    return () => {
-      active = false
-      cancelAnimationFrame(animationFrameId)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isScanning, isCameraReady])
 
   // ── 7. Cargar Compras Históricas ──
   useEffect(() => {
@@ -969,58 +904,22 @@ export default function FavoritosPage() {
         </div>
       )}
 
-      {/* ── MODAL DEL ESCÁNER DE CÓDIGO DE BARRAS ── */}
+      {/* ── ESCÁNER DE CÓDIGO DE BARRAS (funciona también en iPhone/Safari) ── */}
       {isScanning && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex flex-col justify-between p-4">
-          <div className="flex items-center justify-between text-white">
-            <div>
-              <h3 className="font-bold text-sm flex items-center gap-1.5">
-                <QrCode size={16} className="text-pine-tint" /> Escanear Código
-              </h3>
-              <p className="text-[10px] text-white/60">Enfoca el código de barras en el recuadro</p>
-            </div>
-            <button
-              onClick={stopScanning}
-              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 active:scale-95 transition cursor-pointer"
-            >
-              <X size={16} />
-            </button>
-          </div>
+        <>
+          <BarcodeScanner onDetected={handleBarcodeSubmit} onClose={stopScanning} />
 
-          <div className="flex-1 flex flex-col items-center justify-center py-4 relative">
-            <div className="w-72 h-56 rounded-2xl border-2 border-dashed border-pine overflow-hidden bg-black/40 relative shadow-[0_0_50px_rgba(30,107,69,0.2)]">
-              <div className="absolute inset-x-0 h-[2px] bg-sale animate-pulse shadow-[0_0_8px_#AE3B2E]" style={{ top: '50%' }} />
-
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                style={{ transform: 'scaleX(1)' }}
-              />
-              <canvas ref={canvasRef} className="hidden" />
-
-              {!isCameraReady && !errorMsg && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white bg-black/60 p-4 text-center">
-                  <Loader2 size={24} className="animate-spin text-pine-tint" />
-                  <span className="text-xs">Cargando visor de cámara...</span>
-                </div>
-              )}
-            </div>
-
+          {/* Alternativa manual, por si el producto no tiene código legible o el catálogo no lo reconoce */}
+          <div className="fixed inset-x-0 bottom-0 z-[10000] p-4">
             {errorMsg && (
-              <div className="mt-4 bg-sale/20 border border-sale/50 text-white text-xs px-3.5 py-2.5 rounded-xl max-w-xs flex items-start gap-2">
-                <AlertCircle size={14} className="shrink-0 mt-0.5 text-sale" />
+              <div className="mb-2 bg-sale/90 text-white text-xs px-3.5 py-2.5 rounded-xl max-w-sm mx-auto flex items-start gap-2">
                 <span>{errorMsg}</span>
               </div>
             )}
-          </div>
-
-          <div className="bg-white border border-line rounded-3xl p-4 space-y-3.5 max-w-sm mx-auto w-full">
-            <div className="text-center font-bold text-ink text-xs uppercase tracking-wider">¿No puedes escanear?</div>
-
-            <div className="flex gap-2">
+            <div className="bg-white border border-line rounded-2xl p-3 flex gap-2 max-w-sm mx-auto w-full shadow-lg">
               <input
                 type="text"
-                placeholder="Escribe código de barras..."
+                placeholder="O escribe el código de barras..."
                 value={manualCode}
                 onChange={e => setManualCode(e.target.value)}
                 className="flex-1 bg-surface-2 border border-line rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-pine focus:bg-white"
@@ -1033,7 +932,7 @@ export default function FavoritosPage() {
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* ── MODAL DE IMPORTACIÓN DE LISTA COMPARTIDA ── */}

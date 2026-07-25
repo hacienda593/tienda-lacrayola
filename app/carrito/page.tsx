@@ -1,28 +1,13 @@
 'use client'
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getCarrito, cambiarCantidad, vaciarCarrito, totalCarrito, calcularEnvioConsolidado, obtenerTiendasUnicas } from '@/lib/carrito'
-import { ItemCarrito } from '@/lib/types'
+import { useResumenCarrito } from '@/lib/carrito'
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react'
 import RecargoEnvioBadge from '@/components/RecargoEnvioBadge'
 
 function fmt(n: number) { return '$' + n.toFixed(2) }
 
 export default function CarritoPage() {
-  const [items, setItems] = useState<ItemCarrito[]>([])
-
-  useEffect(() => {
-    const update = () => setItems(getCarrito())
-    update()
-    window.addEventListener('carrito-update', update)
-    return () => window.removeEventListener('carrito-update', update)
-  }, [])
-
-  const total = totalCarrito(items)
-  const nItems = items.reduce((s, i) => s + i.cantidad, 0)
-  const nTiendas = obtenerTiendasUnicas(items).length || (items.length > 0 ? 1 : 0)
-  const costoEnvio = calcularEnvioConsolidado(items)
-  const granTotal = total + costoEnvio
+  const { items, itemsPorTienda, total, nItems, nTiendas, costoEnvio, granTotal, cambiarCantidad, vaciarCarrito } = useResumenCarrito()
 
   if (items.length === 0) return (
     <div className="max-w-lg mx-auto px-4 py-16 text-center space-y-4">
@@ -34,19 +19,11 @@ export default function CarritoPage() {
     </div>
   )
 
-  // Agrupar items por tienda física
-  const itemsPorTienda: Record<string, ItemCarrito[]> = {}
-  items.forEach(item => {
-    const key = item.tienda_nombre || 'Inventario Crayola'
-    if (!itemsPorTienda[key]) itemsPorTienda[key] = []
-    itemsPorTienda[key].push(item)
-  })
-
   return (
-    <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
+    <div className="max-w-lg mx-auto px-4 py-4 space-y-4 font-ui">
       <div className="flex items-center justify-between">
-        <h1 className="text-base font-bold">Carrito <span className="text-ink-faint font-normal">({nItems} items)</span></h1>
-        <button onClick={() => { vaciarCarrito(); setItems([]) }}
+        <h1 className="font-display text-lg font-bold text-ink">Carrito <span className="text-ink-faint font-normal">({nItems} items)</span></h1>
+        <button onClick={vaciarCarrito}
           className="text-xs text-ink-faint hover:text-red-400 flex items-center gap-1 transition">
           <Trash2 size={12} /> Vaciar
         </button>
@@ -94,7 +71,7 @@ export default function CarritoPage() {
           <span>Subtotal ({nItems} productos)</span>
           <span className="font-extrabold text-ink">{fmt(total)}</span>
         </div>
-        
+
         {/* Recargo por parada adicional */}
         <RecargoEnvioBadge nTiendas={nTiendas} costoTotalEnvio={costoEnvio} />
 

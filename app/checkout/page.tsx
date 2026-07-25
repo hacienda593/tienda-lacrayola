@@ -424,34 +424,41 @@ export default function CheckoutPage() {
     )
   }
 
-  async function reversoGeocoding(lat: number, lng: number) {
+  async function reversoGeocoding(lat: number, lng: number, reintentando = false) {
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`, {
         headers: {
           'User-Agent': 'TiendaLaCrayola/1.0'
         }
       })
-      if (!res.ok) return
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       if (data) {
         const addr = data.address || {}
         const calle = addr.road || addr.pedestrian || addr.path || addr.footway || ''
         const num = addr.house_number || ''
         const sector = addr.neighbourhood || addr.suburb || addr.village || addr.hamlet || ''
-        
+
         let direccionFormateada = [calle, num, sector].filter(Boolean).join(', ')
         if (!direccionFormateada && data.display_name) {
           direccionFormateada = data.display_name.split(',').slice(0, 3).join(',').trim()
         }
-        
+
         const ciudadFormateada = addr.town || addr.city || addr.village || addr.municipality || 'Los Bancos'
-        
+
         if (direccionFormateada) {
           setForm(f => ({ ...f, direccion: direccionFormateada, ciudad: ciudadFormateada }))
+        } else {
+          setGeoMsg('✓ Ubicación marcada — completa la dirección a mano')
         }
       }
     } catch (err) {
       console.error('Error reverse geocoding:', err)
+      if (!reintentando) {
+        setTimeout(() => reversoGeocoding(lat, lng, true), 1200)
+      } else {
+        setGeoMsg('No pudimos autocompletar la dirección — escríbela abajo')
+      }
     }
   }
 
