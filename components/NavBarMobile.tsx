@@ -248,14 +248,14 @@ function NavBarMobileInner() {
           <span className="text-[9px] font-extrabold text-green-600 mt-7 uppercase tracking-wider">Tiendas</span>
         </div>
 
-        {/* Botón 4: Pasillos */}
-        <button 
-          onClick={() => window.dispatchEvent(new Event('open-categorias-global'))}
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100 cursor-pointer"
+        {/* Botón 4: Catálogo (acceso directo a La Crayola, tienda propia y prioridad de venta) */}
+        <Link
+          href={`/tiendas/${crayolaId || 'b7fe17b9-c3da-4c9f-9a87-169d70623566'}`}
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100"
         >
-          <LayoutGrid size={20} className="stroke-[1.8]" />
-          <span className="text-[9px] font-bold">Pasillos</span>
-        </button>
+          <LayoutList size={20} className="stroke-[1.8]" />
+          <span className="text-[9px] font-bold">Catálogo</span>
+        </Link>
 
         {/* Botón 5: Pedidos */}
         <Link 
