@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
-import { ShoppingCart, Share2, Trash2, Search, QrCode, X, Plus, Minus, History, Check, Loader2, Sparkles, AlertCircle, ClipboardList, Edit3, Save } from 'lucide-react'
+import { ShoppingCart, Share2, Trash2, Search, QrCode, X, Plus, Minus, History, Check, Loader2, AlertCircle, ClipboardList, Save, Settings2, StickyNote, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { getFavoritos, toggleFavorito, ItemFavorito, serializarFavoritos } from '@/lib/favoritos'
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
@@ -30,6 +30,7 @@ export default function FavoritosPage() {
   const [isRenamingList, setIsRenamingList] = useState(false)
   const [renameValue, setRenameValue] = useState('')
   const [activeListNotes, setActiveListNotes] = useState('')
+  const [showListOptions, setShowListOptions] = useState(false)
 
   // ── Estados de Interacción de Items ──
   const [checkedCodes, setCheckedCodes] = useState<Set<string>>(new Set())
@@ -598,44 +599,6 @@ export default function FavoritosPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isScanning, isCameraReady])
 
-  const simularEscaneoPrueba = async () => {
-    setIsSearching(true)
-    const { data } = await supabase
-      .from('ol_productos')
-      .select('codigo, descripcion, categoria, precio_publico')
-      .gt('stock', 0)
-      .limit(20)
-
-    setIsSearching(false)
-    if (data && data.length > 0) {
-      const randomProd = data[Math.floor(Math.random() * data.length)]
-      const yaExiste = activeItems.some(f => f.codigo === randomProd.codigo)
-      if (!yaExiste) {
-        const updatedItems = [
-          {
-            codigo: randomProd.codigo,
-            descripcion: randomProd.descripcion,
-            categoria: randomProd.categoria,
-            precio_unitario: randomProd.precio_publico,
-            agregadoEn: new Date().toISOString()
-          },
-          ...activeItems
-        ]
-        const newLists = lists.map(l => {
-          if (l.id === activeListId) {
-            return { ...l, items: updatedItems }
-          }
-          return l
-        })
-        updateListsStateAndStorage(newLists)
-      }
-      stopScanning()
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate(60)
-      }
-    }
-  }
-
   // ── 7. Cargar Compras Históricas ──
   useEffect(() => {
     if (!showHistorico) return
@@ -694,184 +657,107 @@ export default function FavoritosPage() {
   const totalLista = activeItems.reduce((s, p) => s + p.precio_unitario, 0)
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-5 space-y-4 pb-24">
-      {/* ── ENCABEZADO Y COMPARTIR ── */}
-      <div className="flex items-center justify-between">
+    <div className="max-w-lg mx-auto px-4 py-5 pb-24 font-ui">
+      {/* ── ENCABEZADO ── */}
+      <div className="flex items-start justify-between gap-2">
         <div>
-          <h1 className="text-xl font-black text-gray-900 flex items-center gap-1.5">
-            <ClipboardList size={22} className="text-green-600" />
-            <span>Lista de compras</span>
+          <h1 className="font-display text-xl font-bold text-ink flex items-center gap-1.5">
+            <ClipboardList size={20} className="text-pine" />
+            <span>Listas de compra</span>
           </h1>
-          <p className="text-xs text-gray-400">
-            Gestiona tus listas y agrégalas al súper
+          <p className="text-xs text-ink-faint mt-0.5">
+            {activeItems.length === 0 ? 'Sin productos aún' : `${activeItems.length} producto${activeItems.length === 1 ? '' : 's'} en "${activeList.nombre}"`}
           </p>
         </div>
-        <button
-          onClick={compartir}
-          className="flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 text-xs font-semibold px-3 py-2 rounded-xl shadow-sm transition cursor-pointer"
-        >
-          <Share2 size={13} />
-          {copiado ? '¡Copiado!' : 'Compartir lista'}
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={compartir}
+            className="w-9 h-9 rounded-xl border border-line bg-white hover:bg-surface-2 text-ink-soft flex items-center justify-center transition cursor-pointer"
+            title={copiado ? '¡Copiado!' : 'Compartir lista'}
+          >
+            <Share2 size={15} />
+          </button>
+          <button
+            onClick={() => { setRenameValue(activeList.nombre); setShowListOptions(true) }}
+            className="w-9 h-9 rounded-xl border border-line bg-white hover:bg-surface-2 text-ink-soft flex items-center justify-center transition cursor-pointer"
+            title="Opciones de esta lista"
+          >
+            <Settings2 size={15} />
+          </button>
+        </div>
       </div>
 
-      {/* ── SELECTOR DE MÚLTIPLES LISTAS (TABS) ── */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">Mis Listas</span>
-          {!isCreatingList && (
-            <button
-              onClick={() => setIsCreatingList(true)}
-              className="text-xs font-bold text-green-600 hover:text-green-700 flex items-center gap-1 cursor-pointer"
-            >
-              <Plus size={12} /> Nueva Lista
-            </button>
-          )}
-        </div>
-
-        {/* Input para crear nueva lista inline */}
-        {isCreatingList && (
-          <div className="bg-white border border-green-100 rounded-xl p-3 flex gap-2 items-center shadow-xs">
+      {/* ── SELECTOR DE LISTAS (CHIPS) ── */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 pt-3 scrollbar-hide">
+        {lists.map(l => (
+          <button
+            key={l.id}
+            onClick={() => handleSwitchList(l.id)}
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border shrink-0 transition flex items-center gap-1.5 active:scale-95 cursor-pointer
+              ${l.id === activeListId
+                ? 'bg-pine-deep text-white border-pine-deep'
+                : 'bg-white text-ink-soft border-line hover:bg-surface-2'}`}
+          >
+            <span>{l.nombre}</span>
+            <span className={`font-price text-[10px] px-1.5 py-0.5 rounded-full ${l.id === activeListId ? 'bg-white/20 text-white' : 'bg-surface-2 text-ink-faint'}`}>
+              {l.items.length}
+            </span>
+          </button>
+        ))}
+        {isCreatingList ? (
+          <div className="flex gap-1 items-center shrink-0">
             <input
+              autoFocus
               type="text"
-              placeholder="Nombre de la lista (ej. Asado, Farmacia...)"
+              placeholder="Nombre de la lista..."
               value={newListName}
               onChange={e => setNewListName(e.target.value)}
-              className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-green-600"
+              className="w-36 bg-white border border-pine rounded-full px-3 py-1.5 text-xs focus:outline-none"
               onKeyDown={e => e.key === 'Enter' && handleCreateList()}
             />
-            <button
-              onClick={handleCreateList}
-              className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition"
-            >
-              Crear
-            </button>
-            <button
-              onClick={() => setIsCreatingList(false)}
-              className="text-gray-400 hover:text-gray-600 text-xs p-1.5"
-            >
-              <X size={14} />
-            </button>
+            <button onClick={handleCreateList} className="text-pine p-1 cursor-pointer"><Check size={16} /></button>
+            <button onClick={() => setIsCreatingList(false)} className="text-ink-faint p-1 cursor-pointer"><X size={16} /></button>
           </div>
+        ) : (
+          <button
+            onClick={() => setIsCreatingList(true)}
+            className="px-3 py-1.5 rounded-full text-xs font-semibold border border-dashed border-pine text-pine flex items-center gap-1 shrink-0 cursor-pointer"
+          >
+            <Plus size={12} /> Nueva
+          </button>
         )}
-
-        {/* Listado de pestañas horizontales */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {lists.map(l => (
-            <button
-              key={l.id}
-              onClick={() => handleSwitchList(l.id)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap border shrink-0 transition flex items-center gap-1.5 active:scale-95 cursor-pointer
-                ${l.id === activeListId
-                  ? 'bg-green-600 text-white border-green-700 shadow-sm'
-                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
-            >
-              <span>📁 {l.nombre}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${l.id === activeListId ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
-                {l.items.length}
-              </span>
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* ── DETALLES DE LA LISTA ACTIVA (NOTAS / RENOMBRAR / ELIMINAR) ── */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          {isRenamingList ? (
-            <div className="flex gap-2 items-center flex-1">
-              <input
-                type="text"
-                value={renameValue}
-                onChange={e => setRenameValue(e.target.value)}
-                className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1 text-sm font-bold focus:outline-none"
-              />
-              <button onClick={handleRenameList} className="text-green-600 p-1 hover:text-green-700 cursor-pointer">
-                <Save size={16} />
-              </button>
-              <button onClick={() => setIsRenamingList(false)} className="text-gray-400 p-1 cursor-pointer">
-                <X size={16} />
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="font-extrabold text-gray-800 truncate">{activeList.nombre}</span>
-              <button
-                onClick={() => { setRenameValue(activeList.nombre); setIsRenamingList(true); }}
-                className="text-gray-300 hover:text-gray-500 transition p-0.5 cursor-pointer"
-                title="Renombrar lista"
-              >
-                <Edit3 size={12} />
-              </button>
-            </div>
-          )}
-
-          {/* Botón eliminar (Solo si hay más de 1 lista) */}
-          {lists.length > 1 && (
-            <button
-              onClick={() => handleDeleteList(activeListId)}
-              className="text-gray-300 hover:text-red-500 transition text-xs flex items-center gap-1 shrink-0 p-1 cursor-pointer"
-            >
-              <Trash2 size={13} /> Eliminar Lista
-            </button>
-          )}
-        </div>
-
-        {/* Textarea para Notas */}
-        <div>
-          <textarea
-            placeholder="Notas de esta lista (ej. Comprar la marca Tuti, traer suelto...)"
-            value={activeListNotes}
-            onChange={e => handleNotesChange(e.target.value)}
-            rows={2}
-            className="w-full text-xs bg-gray-50/50 hover:bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-gray-600 placeholder-gray-400 focus:outline-none focus:border-green-600 focus:bg-white transition resize-none"
-          />
-        </div>
-      </div>
-
-      {/* ── SECCIÓN AÑADIR PRODUCTO ── */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-3.5 shadow-sm space-y-3 relative">
-        <div className="text-xs font-bold text-gray-500 uppercase tracking-wide">Añadir a la lista</div>
+      {/* ── BARRA DE BÚSQUEDA (ACCIÓN PRINCIPAL) ── */}
+      <div className="sticky top-0 z-10 -mx-4 px-4 pb-3 pt-1 bg-paper">
         <div className="flex gap-2">
-          {/* Autocomplete Input */}
           <div className="flex-1 relative">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
             <input
               type="text"
               placeholder="Buscar producto por nombre..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-green-600 focus:bg-white transition"
+              className="w-full h-[42px] bg-white border border-line rounded-xl pl-9 pr-9 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-pine transition"
             />
             {isSearching && (
-              <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-green-600" />
+              <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-pine" />
             )}
-            
-            {/* Sugerencias desplegables mejoradas (FTS + Personalizados) */}
+
             {searchQuery.trim().length >= 2 && (
-              <div className="absolute left-0 right-0 mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl z-25 max-h-64 overflow-y-auto divide-y divide-gray-50 animate-in fade-in duration-100">
-                {/* 1. Coincidencias del catálogo */}
+              <div className="absolute left-0 right-0 mt-2 bg-white border border-line rounded-2xl shadow-xl z-20 max-h-64 overflow-y-auto divide-y divide-surface-2">
                 {suggestions.map(s => {
                   const yaEnLista = activeItems.some(x => x.codigo === s.codigo)
                   return (
-                    <div
-                      key={s.codigo}
-                      className="px-3.5 py-2.5 hover:bg-gray-50 flex items-center justify-between gap-3 text-xs"
-                    >
-                      <div 
-                        className="flex-1 min-w-0 cursor-pointer"
-                        onClick={() => handleSelectSuggestion(s)}
-                      >
-                        <div className="font-bold text-gray-800 truncate">{s.descripcion}</div>
-                        <div className="text-[10px] text-gray-400 mt-0.5">{s.categoria} • {fmt(s.precio_publico)}</div>
+                    <div key={s.codigo} className="px-3.5 py-2.5 hover:bg-surface-2 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleSelectSuggestion(s)}>
+                        <div className="font-semibold text-ink truncate">{s.descripcion}</div>
+                        <div className="text-[10px] text-ink-faint mt-0.5">{s.categoria} • {fmt(s.precio_publico)}</div>
                       </div>
-                      
                       <button
                         onClick={() => handleSelectSuggestion(s)}
                         className={`p-1.5 rounded-lg active:scale-95 transition shrink-0 cursor-pointer
-                          ${yaEnLista 
-                            ? 'bg-gray-100 text-gray-400 cursor-default' 
-                            : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
+                          ${yaEnLista ? 'bg-surface-2 text-ink-faint cursor-default' : 'bg-pine-tint text-pine-deep hover:bg-pine/20'}`}
                         disabled={yaEnLista}
                         title={yaEnLista ? "Ya en la lista" : "Añadir a la lista"}
                       >
@@ -880,188 +766,110 @@ export default function FavoritosPage() {
                     </div>
                   )
                 })}
-
-                {/* 2. Banner de artículo personalizado */}
                 <button
                   onClick={() => handleAddCustomItem(searchQuery.trim())}
-                  className="w-full text-left px-3.5 py-3 bg-orange-50/50 hover:bg-orange-50 text-xs font-bold text-orange-700 flex items-center gap-2 transition cursor-pointer"
+                  className="w-full text-left px-3.5 py-3 bg-surface-2 hover:bg-line/40 text-xs font-semibold text-ink-soft flex items-center gap-2 transition cursor-pointer"
                 >
-                  <span className="text-sm">📝</span>
                   <span className="truncate flex-1 text-left">
-                    Agregar <strong className="underline">"{searchQuery.trim()}"</strong> como personalizado
+                    Agregar <b className="text-ink">"{searchQuery.trim()}"</b> igual, aunque no esté en catálogo
                   </span>
-                  <Plus size={14} className="shrink-0 text-orange-600" />
+                  <Plus size={14} className="shrink-0 text-ink-soft" />
                 </button>
               </div>
             )}
           </div>
 
-          {/* Botón Escanear */}
           <button
             onClick={startScanning}
-            className="bg-green-600 hover:bg-green-700 text-white p-2.5 rounded-xl flex items-center justify-center shadow-sm transition active:scale-95 cursor-pointer shrink-0"
-            title="Escanear código de barras"
+            className="bg-pine hover:bg-pine-deep text-white w-[42px] h-[42px] rounded-xl flex items-center justify-center transition active:scale-95 cursor-pointer shrink-0"
+            title="Escanear código de barras (envase vacío)"
           >
             <QrCode size={18} />
           </button>
         </div>
       </div>
 
-      {/* ── SECCIÓN COMPRAS HISTÓRICAS ── */}
-      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-        <button
-          onClick={() => setShowHistorico(!showHistorico)}
-          className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50/50 transition text-left cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <History size={16} className="text-gray-500" />
-            <span className="text-sm font-bold text-gray-700">Agregar de mis compras pasadas</span>
-          </div>
-          <span className="text-xs text-gray-400 font-extrabold">{showHistorico ? '▲' : '▼'}</span>
-        </button>
-
-        {showHistorico && (
-          <div className="border-t border-gray-50 p-3 bg-gray-50/30">
-            {cargandoHistorico ? (
-              <div className="flex justify-center py-4">
-                <Loader2 size={20} className="animate-spin text-green-600" />
-              </div>
-            ) : historico.length === 0 ? (
-              <div className="text-xs text-gray-400 text-center py-3">No tienes compras anteriores guardadas en este dispositivo.</div>
-            ) : (
-              <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
-                {historico.map(h => {
-                  const yaEnLista = activeItems.some(x => x.codigo === h.codigo)
-                  return (
-                    <button
-                      key={h.codigo}
-                      disabled={yaEnLista}
-                      onClick={() => toggleFavorito({ codigo: h.codigo, descripcion: h.descripcion, categoria: h.categoria, precio_publico: h.precio_unitario })}
-                      className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1 active:scale-95 cursor-pointer
-                        ${yaEnLista 
-                          ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                          : 'bg-white hover:bg-green-50 hover:border-green-200 border-gray-200 text-gray-700 shadow-xs'}`}
-                    >
-                      <Plus size={10} />
-                      <span className="truncate max-w-[120px]">{h.descripcion}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ── LISTADO PRINCIPAL DE LA LISTA DE COMPRAS ACTIVA ── */}
+      {/* ── LISTADO PRINCIPAL ── */}
       {activeItems.length === 0 ? (
-        <div className="bg-white border border-gray-100 rounded-3xl p-10 flex flex-col items-center gap-4 text-center shadow-xs">
-          <div className="w-16 h-16 rounded-2xl bg-green-50 flex items-center justify-center text-3xl">📝</div>
-          <h2 className="text-base font-extrabold text-gray-800">Esta lista está vacía</h2>
-          <p className="text-xs text-gray-400 max-w-xs leading-relaxed">Escanea códigos de barras de contenedores vacíos o busca productos por nombre para llenar tu lista <strong>"{activeList.nombre}"</strong>.</p>
+        <div className="bg-white border border-line rounded-3xl p-10 flex flex-col items-center gap-4 text-center mt-1">
+          <div className="w-16 h-16 rounded-2xl bg-pine-tint flex items-center justify-center text-3xl">📝</div>
+          <h2 className="font-display text-base font-bold text-ink">Esta lista está vacía</h2>
+          <p className="text-xs text-ink-faint max-w-xs leading-relaxed">Busca productos por nombre o escanea el código de barras de un envase vacío para llenar tu lista <strong>"{activeList.nombre}"</strong>.</p>
           <Link href="/productos"
-            className="bg-green-600 hover:bg-green-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition shadow-sm">
+            className="bg-pine hover:bg-pine-deep text-white font-semibold px-5 py-2.5 rounded-xl text-xs transition">
             Explorar catálogo
           </Link>
         </div>
       ) : (
-        <div className="space-y-2">
-          {sortedLista.map(prod => {
-            const isChecked = checkedCodes.has(prod.codigo)
-            const cantEnCarrito = getQty(prod.codigo)
-            
-            return (
-              <div
-                key={prod.codigo}
-                className={`bg-white border rounded-2xl p-3 shadow-xs flex items-center gap-3 transition-all duration-150
-                  ${isChecked 
-                    ? 'border-gray-200 bg-gray-50/50 opacity-65' 
-                    : 'border-gray-100 hover:border-gray-200'}`}
-              >
-                {/* 1. Casilla de Verificación (Tachar) */}
-                <button
-                  onClick={() => handleCheckedToggle(prod.codigo)}
-                  className={`w-5 h-5 rounded-full flex items-center justify-center border transition shrink-0 cursor-pointer
-                    ${isChecked 
-                      ? 'bg-green-600 border-green-600 text-white' 
-                      : 'border-gray-300 hover:border-green-600 bg-white'}`}
-                >
-                  {isChecked && <Check size={11} className="stroke-[3.5]" />}
-                </button>
+        <div className="space-y-4 mt-1">
+          {sortedLista.some(p => !checkedCodes.has(p.codigo)) && (
+            <div className="space-y-2">
+              <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wide px-1">Por comprar</div>
+              {sortedLista.filter(p => !checkedCodes.has(p.codigo)).map(prod => (
+                <ItemRow
+                  key={prod.codigo}
+                  prod={prod}
+                  isChecked={false}
+                  cantEnCarrito={getQty(prod.codigo)}
+                  agregado={agregados.has(prod.codigo)}
+                  onToggleCheck={() => handleCheckedToggle(prod.codigo)}
+                  onAgregarCarrito={() => handleAgregarCarrito(prod)}
+                  onCambiarCantidad={c => handleCambiarCantidad(prod.codigo, c)}
+                  onQuitar={() => quitar(prod)}
+                />
+              ))}
+            </div>
+          )}
 
-                {/* Emoji Categoría */}
-                <div className="w-9 h-9 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center text-lg shrink-0">
-                  {prod.categoria === 'Personalizado' ? '📝' : (CAT_EMOJI[prod.categoria] || '🛒')}
-                </div>
-
-                {/* Información */}
-                <div className="flex-1 min-w-0" onClick={() => handleCheckedToggle(prod.codigo)}>
-                  <div className={`text-xs font-bold text-gray-800 leading-snug truncate cursor-pointer
-                    ${isChecked ? 'line-through text-gray-400' : ''}`}>
-                    {prod.descripcion}
-                  </div>
-                  <div className="text-[10px] text-gray-400 mt-0.5">{prod.categoria}</div>
-                  <div className={`text-xs font-black text-green-700 mt-0.5 ${isChecked ? 'text-gray-400' : ''}`}>
-                    {fmt(prod.precio_unitario)}
-                  </div>
-                </div>
-
-                {/* 2. Selector de Cantidad en Carrito o Botón Agregar */}
-                <div className="shrink-0 flex items-center gap-1.5">
-                  {cantEnCarrito === 0 ? (
-                    <button
-                      onClick={() => handleAgregarCarrito(prod)}
-                      className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition shadow-xs cursor-pointer
-                        ${agregados.has(prod.codigo)
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-green-600 hover:bg-green-700 text-white'}`}
-                    >
-                      <ShoppingCart size={11} />
-                      {agregados.has(prod.codigo) ? 'Listo' : '+ Carrito'}
-                    </button>
-                  ) : (
-                    <div className="flex items-center bg-green-600 text-white rounded-lg overflow-hidden h-[30px] shadow-sm select-none border border-green-700">
-                      <button
-                        onClick={() => handleCambiarCantidad(prod.codigo, cantEnCarrito - 1)}
-                        className="px-2.5 h-full hover:bg-green-700 active:scale-90 transition flex items-center justify-center font-bold cursor-pointer"
-                      >
-                        <Minus size={9} />
-                      </button>
-                      <span className="text-[11px] font-black w-5 text-center">{cantEnCarrito}</span>
-                      <button
-                        onClick={() => handleCambiarCantidad(prod.codigo, cantEnCarrito + 1)}
-                        className="px-2.5 h-full hover:bg-green-700 active:scale-90 transition flex items-center justify-center font-bold cursor-pointer"
-                      >
-                        <Plus size={9} />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Botón Borrar de la Lista */}
-                  <button
-                    onClick={() => quitar(prod)}
-                    className="text-gray-300 hover:text-red-500 transition p-1.5 rounded-lg hover:bg-gray-50 active:scale-95 cursor-pointer"
-                    title="Quitar de la lista"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+          {sortedLista.some(p => checkedCodes.has(p.codigo)) && (
+            <div className="space-y-2">
+              <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wide px-1">Comprado</div>
+              {sortedLista.filter(p => checkedCodes.has(p.codigo)).map(prod => (
+                <ItemRow
+                  key={prod.codigo}
+                  prod={prod}
+                  isChecked={true}
+                  cantEnCarrito={getQty(prod.codigo)}
+                  agregado={agregados.has(prod.codigo)}
+                  onToggleCheck={() => handleCheckedToggle(prod.codigo)}
+                  onAgregarCarrito={() => handleAgregarCarrito(prod)}
+                  onCambiarCantidad={c => handleCambiarCantidad(prod.codigo, c)}
+                  onQuitar={() => quitar(prod)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
+      {/* ── ACCESOS A NOTAS / HISTORIAL ── */}
+      <div className="flex gap-2 mt-4">
+        <button
+          onClick={() => setShowListOptions(true)}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-line text-ink-soft text-xs font-semibold hover:bg-surface-2 transition cursor-pointer"
+        >
+          <StickyNote size={13} />
+          {activeListNotes ? 'Ver nota' : 'Nota para esta lista'}
+        </button>
+        <button
+          onClick={() => setShowHistorico(true)}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed border-line text-ink-soft text-xs font-semibold hover:bg-surface-2 transition cursor-pointer"
+        >
+          <History size={13} />
+          Compras pasadas
+        </button>
+      </div>
+
       {/* ── TOTAL ESTIMADO Y BOTÓN DE ACCIÓN ── */}
       {activeItems.length > 0 && (
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white border border-line rounded-2xl p-4 mt-4 flex items-center justify-between">
           <div>
-            <div className="text-[10px] text-gray-400 uppercase font-bold">Total estimado</div>
-            <div className="text-lg font-black text-green-700">{fmt(totalLista)}</div>
+            <div className="text-[10px] text-ink-faint uppercase font-bold">Total estimado</div>
+            <div className="font-price text-lg font-semibold text-pine-deep">{fmt(totalLista)}</div>
           </div>
           <button
             onClick={agregarTodos}
-            className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs active:scale-95 transition shadow-sm cursor-pointer"
+            className="flex items-center gap-1.5 bg-pine hover:bg-pine-deep text-white font-semibold px-4 py-2.5 rounded-xl text-xs active:scale-95 transition cursor-pointer"
           >
             <ShoppingCart size={13} />
             Agregar todos al carrito
@@ -1069,16 +877,107 @@ export default function FavoritosPage() {
         </div>
       )}
 
+      {/* ── SHEET: OPCIONES DE LA LISTA (renombrar / notas / eliminar) ── */}
+      {showListOptions && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => { setShowListOptions(false); setIsRenamingList(false) }}>
+          <div
+            className="bg-white rounded-t-3xl sm:rounded-3xl p-5 w-full sm:max-w-sm space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-display font-bold text-ink text-base">Opciones de la lista</h3>
+              <button onClick={() => { setShowListOptions(false); setIsRenamingList(false) }} className="text-ink-faint p-1 cursor-pointer"><X size={18} /></button>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-ink-faint uppercase tracking-wide">Nombre</label>
+              <div className="flex gap-2 mt-1">
+                <input
+                  type="text"
+                  value={renameValue}
+                  onChange={e => setRenameValue(e.target.value)}
+                  className="flex-1 bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm font-semibold text-ink focus:outline-none focus:border-pine"
+                />
+                <button onClick={handleRenameList} className="bg-pine-tint text-pine-deep px-3 rounded-lg cursor-pointer" title="Guardar nombre">
+                  <Save size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-ink-faint uppercase tracking-wide">Notas</label>
+              <textarea
+                placeholder="Ej. Comprar la marca Tuti, traer suelto..."
+                value={activeListNotes}
+                onChange={e => handleNotesChange(e.target.value)}
+                rows={3}
+                className="w-full mt-1 text-sm bg-surface-2 border border-line rounded-xl px-3 py-2 text-ink placeholder-ink-faint focus:outline-none focus:border-pine focus:bg-white transition resize-none"
+              />
+            </div>
+
+            {lists.length > 1 && (
+              <button
+                onClick={() => { setShowListOptions(false); handleDeleteList(activeListId) }}
+                className="w-full flex items-center justify-center gap-1.5 text-sale text-xs font-semibold py-2.5 rounded-xl border border-sale/30 hover:bg-sale/5 transition cursor-pointer"
+              >
+                <Trash2 size={13} /> Eliminar esta lista
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── SHEET: COMPRAS HISTÓRICAS ── */}
+      {showHistorico && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowHistorico(false)}>
+          <div
+            className="bg-white rounded-t-3xl sm:rounded-3xl p-5 w-full sm:max-w-sm max-h-[70vh] flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3 shrink-0">
+              <h3 className="font-display font-bold text-ink text-base flex items-center gap-1.5"><History size={16} className="text-pine" /> Compras pasadas</h3>
+              <button onClick={() => setShowHistorico(false)} className="text-ink-faint p-1 cursor-pointer"><X size={18} /></button>
+            </div>
+            <div className="overflow-y-auto flex-1">
+              {cargandoHistorico ? (
+                <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-pine" /></div>
+              ) : historico.length === 0 ? (
+                <div className="text-xs text-ink-faint text-center py-8">No tienes compras anteriores guardadas en este dispositivo.</div>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {historico.map(h => {
+                    const yaEnLista = activeItems.some(x => x.codigo === h.codigo)
+                    return (
+                      <button
+                        key={h.codigo}
+                        disabled={yaEnLista}
+                        onClick={() => toggleFavorito({ codigo: h.codigo, descripcion: h.descripcion, categoria: h.categoria, precio_publico: h.precio_unitario })}
+                        className={`text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border transition flex items-center gap-1 active:scale-95 cursor-pointer
+                          ${yaEnLista
+                            ? 'bg-surface-2 text-ink-faint border-line cursor-not-allowed'
+                            : 'bg-white hover:bg-pine-tint hover:border-pine/30 border-line text-ink-soft'}`}
+                      >
+                        <Plus size={10} />
+                        <span className="truncate max-w-[140px]">{h.descripcion}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── MODAL DEL ESCÁNER DE CÓDIGO DE BARRAS ── */}
       {isScanning && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex flex-col justify-between p-4">
-          {/* Header del Escáner */}
           <div className="flex items-center justify-between text-white">
             <div>
-              <h3 className="font-extrabold text-sm flex items-center gap-1.5">
-                <QrCode size={16} className="text-green-400" /> Escanear Código
+              <h3 className="font-bold text-sm flex items-center gap-1.5">
+                <QrCode size={16} className="text-pine-tint" /> Escanear Código
               </h3>
-              <p className="text-[10px] text-gray-400">Enfoca el código de barras en el recuadro</p>
+              <p className="text-[10px] text-white/60">Enfoca el código de barras en el recuadro</p>
             </div>
             <button
               onClick={stopScanning}
@@ -1088,12 +987,10 @@ export default function FavoritosPage() {
             </button>
           </div>
 
-          {/* Cámara y Visor */}
           <div className="flex-1 flex flex-col items-center justify-center py-4 relative">
-            <div className="w-72 h-56 rounded-2xl border-2 border-dashed border-green-500 overflow-hidden bg-black/40 relative shadow-[0_0_50px_rgba(34,197,94,0.15)]">
-              {/* Línea de escaneo láser */}
-              <div className="absolute inset-x-0 h-[2px] bg-red-500 animate-pulse shadow-[0_0_8px_#ef4444]" style={{ top: '50%' }} />
-              
+            <div className="w-72 h-56 rounded-2xl border-2 border-dashed border-pine overflow-hidden bg-black/40 relative shadow-[0_0_50px_rgba(30,107,69,0.2)]">
+              <div className="absolute inset-x-0 h-[2px] bg-sale animate-pulse shadow-[0_0_8px_#AE3B2E]" style={{ top: '50%' }} />
+
               <video
                 ref={videoRef}
                 className="w-full h-full object-cover"
@@ -1103,55 +1000,38 @@ export default function FavoritosPage() {
 
               {!isCameraReady && !errorMsg && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white bg-black/60 p-4 text-center">
-                  <Loader2 size={24} className="animate-spin text-green-500" />
+                  <Loader2 size={24} className="animate-spin text-pine-tint" />
                   <span className="text-xs">Cargando visor de cámara...</span>
                 </div>
               )}
             </div>
 
             {errorMsg && (
-              <div className="mt-4 bg-red-950/60 border border-red-800 text-red-200 text-xs px-3.5 py-2.5 rounded-xl max-w-xs flex items-start gap-2 shadow-sm">
-                <AlertCircle size={14} className="shrink-0 mt-0.5 text-red-400" />
+              <div className="mt-4 bg-sale/20 border border-sale/50 text-white text-xs px-3.5 py-2.5 rounded-xl max-w-xs flex items-start gap-2">
+                <AlertCircle size={14} className="shrink-0 mt-0.5 text-sale" />
                 <span>{errorMsg}</span>
               </div>
             )}
           </div>
 
-          {/* Controles de Entrada Manual / Simulación */}
-          <div className="bg-white border border-gray-100 rounded-3xl p-4 space-y-3.5 max-w-sm mx-auto w-full shadow-lg">
-            <div className="text-center font-bold text-gray-800 text-xs uppercase tracking-wider">¿No puedes escanear?</div>
-            
-            {/* Input Manual */}
+          <div className="bg-white border border-line rounded-3xl p-4 space-y-3.5 max-w-sm mx-auto w-full">
+            <div className="text-center font-bold text-ink text-xs uppercase tracking-wider">¿No puedes escanear?</div>
+
             <div className="flex gap-2">
               <input
                 type="text"
                 placeholder="Escribe código de barras..."
                 value={manualCode}
                 onChange={e => setManualCode(e.target.value)}
-                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-green-600 focus:bg-white"
+                className="flex-1 bg-surface-2 border border-line rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-pine focus:bg-white"
               />
               <button
                 onClick={() => handleBarcodeSubmit(manualCode)}
-                className="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition active:scale-95 cursor-pointer"
+                className="bg-pine hover:bg-pine-deep text-white font-bold px-4 py-2 rounded-xl text-xs transition active:scale-95 cursor-pointer"
               >
                 Ingresar
               </button>
             </div>
-
-            <div className="relative flex py-1 items-center">
-              <div className="flex-grow border-t border-gray-100"></div>
-              <span className="flex-shrink mx-3 text-[10px] text-gray-300 font-bold uppercase">o</span>
-              <div className="flex-grow border-t border-gray-100"></div>
-            </div>
-
-            {/* Simulación */}
-            <button
-              onClick={simularEscaneoPrueba}
-              className="w-full bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
-            >
-              <Sparkles size={13} className="text-orange-500" />
-              Simular escaneo de prueba (ej. Tuti)
-            </button>
           </div>
         </div>
       )}
@@ -1159,39 +1039,39 @@ export default function FavoritosPage() {
       {/* ── MODAL DE IMPORTACIÓN DE LISTA COMPARTIDA ── */}
       {mostrarImportModal && importData && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-gray-100 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white border border-line rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600 shrink-0">
+              <div className="w-10 h-10 rounded-full bg-pine-tint flex items-center justify-center text-pine-deep shrink-0">
                 <Share2 size={20} />
               </div>
               <div>
-                <h3 className="font-black text-gray-900 text-base">Importar Lista</h3>
-                <p className="text-[10px] text-gray-400">Recibida desde WhatsApp</p>
+                <h3 className="font-display font-bold text-ink text-base">Importar Lista</h3>
+                <p className="text-[10px] text-ink-faint">Recibida desde WhatsApp</p>
               </div>
             </div>
 
-            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-3.5 space-y-2">
-              <div className="text-sm font-extrabold text-gray-800">{importData.n}</div>
+            <div className="bg-surface-2 border border-line rounded-2xl p-3.5 space-y-2">
+              <div className="text-sm font-bold text-ink">{importData.n}</div>
               {importData.o && (
-                <div className="text-xs text-gray-500 bg-white p-2 rounded-lg border border-gray-100 italic">
+                <div className="text-xs text-ink-soft bg-white p-2 rounded-lg border border-line italic">
                   "{importData.o}"
                 </div>
               )}
-              <div className="text-xs text-gray-400 font-bold flex items-center gap-1.5 mt-2">
-                <span>📦</span> {importData.i.length} productos detectados
+              <div className="text-xs text-ink-faint font-bold flex items-center gap-1.5 mt-2">
+                {importData.i.length} productos detectados
               </div>
             </div>
 
             <div className="flex gap-2">
               <button
                 onClick={handleImportCancel}
-                className="flex-1 border border-gray-200 text-gray-500 font-bold py-3 rounded-xl text-xs hover:bg-gray-50 transition active:scale-95 cursor-pointer"
+                className="flex-1 border border-line text-ink-soft font-bold py-3 rounded-xl text-xs hover:bg-surface-2 transition active:scale-95 cursor-pointer"
               >
                 Ignorar
               </button>
               <button
                 onClick={handleImportConfirm}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl text-xs transition active:scale-95 cursor-pointer flex items-center justify-center gap-1"
+                className="flex-1 bg-pine hover:bg-pine-deep text-white font-bold py-3 rounded-xl text-xs transition active:scale-95 cursor-pointer flex items-center justify-center gap-1"
               >
                 <Check size={14} /> Importar Lista
               </button>
@@ -1199,6 +1079,77 @@ export default function FavoritosPage() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function ItemRow({ prod, isChecked, cantEnCarrito, agregado, onToggleCheck, onAgregarCarrito, onCambiarCantidad, onQuitar }: {
+  prod: ItemFavorito
+  isChecked: boolean
+  cantEnCarrito: number
+  agregado: boolean
+  onToggleCheck: () => void
+  onAgregarCarrito: () => void
+  onCambiarCantidad: (c: number) => void
+  onQuitar: () => void
+}) {
+  return (
+    <div
+      className={`bg-white border rounded-2xl p-3 flex items-center gap-3 transition-all duration-150
+        ${isChecked ? 'border-line opacity-60' : 'border-line hover:border-ink-faint/40'}`}
+    >
+      <button
+        onClick={onToggleCheck}
+        className={`w-5 h-5 rounded-full flex items-center justify-center border transition shrink-0 cursor-pointer
+          ${isChecked ? 'bg-pine border-pine text-white' : 'border-line hover:border-pine bg-white'}`}
+      >
+        {isChecked && <Check size={11} className="stroke-[3.5]" />}
+      </button>
+
+      <div className="w-9 h-9 bg-surface-2 border border-line rounded-xl flex items-center justify-center text-lg shrink-0">
+        {prod.categoria === 'Personalizado' ? '📝' : (CAT_EMOJI[prod.categoria] || '🛒')}
+      </div>
+
+      <div className="flex-1 min-w-0 cursor-pointer" onClick={onToggleCheck}>
+        <div className={`text-xs font-semibold text-ink leading-snug truncate ${isChecked ? 'line-through text-ink-faint' : ''}`}>
+          {prod.descripcion}
+        </div>
+        <div className="text-[10px] text-ink-faint mt-0.5">{prod.categoria}</div>
+        <div className={`font-price text-xs font-semibold text-pine-deep mt-0.5 ${isChecked ? 'text-ink-faint' : ''}`}>
+          {fmt(prod.precio_unitario)}
+        </div>
+      </div>
+
+      <div className="shrink-0 flex items-center gap-1.5">
+        {cantEnCarrito === 0 ? (
+          <button
+            onClick={onAgregarCarrito}
+            className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg active:scale-95 transition cursor-pointer
+              ${agregado ? 'bg-pine-tint text-pine-deep' : 'bg-pine hover:bg-pine-deep text-white'}`}
+          >
+            <ShoppingCart size={11} />
+            {agregado ? 'Listo' : 'Carrito'}
+          </button>
+        ) : (
+          <div className="flex items-center bg-pine-deep text-white rounded-lg overflow-hidden h-[30px] select-none">
+            <button onClick={() => onCambiarCantidad(cantEnCarrito - 1)} className="px-2.5 h-full hover:bg-pine active:scale-90 transition flex items-center justify-center font-bold cursor-pointer">
+              <Minus size={9} />
+            </button>
+            <span className="font-price text-[11px] font-semibold w-5 text-center">{cantEnCarrito}</span>
+            <button onClick={() => onCambiarCantidad(cantEnCarrito + 1)} className="px-2.5 h-full hover:bg-pine active:scale-90 transition flex items-center justify-center font-bold cursor-pointer">
+              <Plus size={9} />
+            </button>
+          </div>
+        )}
+
+        <button
+          onClick={onQuitar}
+          className="text-ink-faint hover:text-sale transition p-1.5 rounded-lg hover:bg-surface-2 active:scale-95 cursor-pointer"
+          title="Quitar de la lista"
+        >
+          <Trash2 size={13} />
+        </button>
+      </div>
     </div>
   )
 }
