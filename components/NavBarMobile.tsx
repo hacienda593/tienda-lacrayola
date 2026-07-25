@@ -250,7 +250,7 @@ function NavBarMobileInner() {
 
         {/* Botón 4: Catálogo (acceso directo a La Crayola, tienda propia y prioridad de venta) */}
         <Link
-          href={`/tiendas/${crayolaId || 'b7fe17b9-c3da-4c9f-9a87-169d70623566'}`}
+          href={`/tiendas/${crayolaId || 'b7fe17b9-c3da-4c9f-9a87-169d70623566'}/buscar`}
           className="flex-1 flex flex-col items-center justify-center gap-0.5 text-gray-400 hover:text-green-600 active:scale-95 transition-transform duration-100"
         >
           <LayoutList size={20} className="stroke-[1.8]" />
