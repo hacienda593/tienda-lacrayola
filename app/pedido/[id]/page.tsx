@@ -95,22 +95,22 @@ function obtenerEncabezado(estado: string): EncabezadoConfig {
       return {
         titulo: '🚚 ¡Pedido en camino!',
         subtitulo: 'El repartidor está llevando tu pedido a tu dirección.',
-        colorClase: 'text-green-500',
-        icon: <Truck size={44} className="text-green-500 mx-auto" />
+        colorClase: 'text-pine',
+        icon: <Truck size={44} className="text-pine mx-auto" />
       }
     case 'entregado':
       return {
         titulo: '🎉 ¡Pedido entregado!',
         subtitulo: '¡Gracias por comprar en Tienda La Crayola! Esperamos que disfrutes tu compra.',
-        colorClase: 'text-green-600',
-        icon: <Star size={44} className="text-green-600 mx-auto fill-green-600" />
+        colorClase: 'text-pine',
+        icon: <Star size={44} className="text-pine mx-auto fill-pine" />
       }
     default:
       return {
         titulo: '¡Pedido recibido!',
         subtitulo: 'Puedes seguir el estado de tu pedido en tiempo real.',
-        colorClase: 'text-green-500',
-        icon: <CheckCircle size={44} className="text-green-500 mx-auto" />
+        colorClase: 'text-pine',
+        icon: <CheckCircle size={44} className="text-pine mx-auto" />
       }
   }
 }
@@ -199,14 +199,14 @@ export default function PedidoPage() {
 
   if (error) return (
     <div className="max-w-lg mx-auto px-4 py-16 text-center">
-      <p className="text-gray-500">Pedido no encontrado.</p>
-      <Link href="/pedidos" className="text-green-600 text-sm mt-2 block">← Mis pedidos</Link>
+      <p className="text-ink-faint">Pedido no encontrado.</p>
+      <Link href="/pedidos" className="text-pine text-sm mt-2 block">← Mis pedidos</Link>
     </div>
   )
   if (!pedido) return (
     <div className="max-w-lg mx-auto px-4 py-16 flex flex-col items-center gap-3">
-      <RefreshCw size={28} className="text-green-500 animate-spin" />
-      <p className="text-sm text-gray-400">Cargando pedido...</p>
+      <RefreshCw size={28} className="text-pine animate-spin" />
+      <p className="text-sm text-ink-faint">Cargando pedido...</p>
     </div>
   )
 
@@ -259,10 +259,10 @@ const HORARIOS_TIENDAS: Record<string, string> = {
   return (
     <div className="max-w-lg mx-auto px-4 py-5 space-y-5">
       {/* Encabezado */}
-      <div className="text-center space-y-1 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+      <div className="text-center space-y-1 bg-white border border-line rounded-2xl p-6 shadow-sm">
         {headerInfo.icon}
-        <h1 className="text-xl font-bold text-gray-800 mt-2">{headerInfo.titulo}</h1>
-        <p className="text-gray-500 text-sm max-w-sm mx-auto">{headerInfo.subtitulo}</p>
+        <h1 className="text-xl font-bold text-ink mt-2">{headerInfo.titulo}</h1>
+        <p className="text-ink-faint text-sm max-w-sm mx-auto">{headerInfo.subtitulo}</p>
         {pedido.estado === 'preparado' && tiendasPedido.length > 0 && (
           <div className="mt-2.5 text-xs font-semibold text-purple-700 bg-purple-50 border border-purple-100/50 px-3 py-1.5 rounded-xl inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
             {tiendasPedido.map(t => (
@@ -270,26 +270,26 @@ const HORARIOS_TIENDAS: Record<string, string> = {
             ))}
           </div>
         )}
-        <div className="pt-2 border-t border-gray-50 mt-3 flex items-center justify-between text-xs text-gray-400">
-          <span>Pedido <strong className="text-gray-700">#{String(pedido.numero).padStart(4,'0')}</strong></span>
+        <div className="pt-2 border-t border-line mt-3 flex items-center justify-between text-xs text-ink-faint">
+          <span>Pedido <strong className="text-ink-soft">#{String(pedido.numero).padStart(4,'0')}</strong></span>
           <div className="flex items-center gap-1">
             <RefreshCw size={11} className="animate-spin-slow" />
             <span>Actualizado {ultima.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}</span>
-            <button onClick={cargar} className="underline hover:text-green-600 transition ml-1">Refrescar</button>
+            <button onClick={cargar} className="underline hover:text-pine transition ml-1">Refrescar</button>
           </div>
         </div>
       </div>
 
       {/* Progreso de estado */}
       {!cancelado && (
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Estado del pedido</div>
+        <div className="bg-white border border-line rounded-2xl p-4 shadow-sm">
+          <div className="text-xs font-bold text-ink-faint uppercase tracking-wider mb-4">Estado del pedido</div>
           <div className="flex items-start justify-between relative">
             {/* Línea de fondo */}
-            <div className="absolute top-4 left-4 right-4 h-0.5 bg-gray-100" />
+            <div className="absolute top-4 left-4 right-4 h-0.5 bg-surface-2" />
             {/* Línea de progreso */}
             <div
-              className="absolute top-4 left-4 h-0.5 bg-green-500 transition-all duration-700"
+              className="absolute top-4 left-4 h-0.5 bg-pine transition-all duration-700"
               style={{ width: `${(Math.max(0, idxActual) / (PASOS.length - 1)) * 100}%` }}
             />
             {PASOS.map((paso, i) => {
@@ -300,13 +300,13 @@ const HORARIOS_TIENDAS: Record<string, string> = {
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${
                     done
                       ? actual
-                        ? 'bg-green-500 border-green-500 text-white scale-110'
-                        : 'bg-green-500 border-green-500 text-white'
-                      : 'bg-white border-gray-200 text-gray-300'
+                        ? 'bg-pine border-pine text-white scale-110'
+                        : 'bg-pine border-pine text-white'
+                      : 'bg-white border-line text-ink-faint'
                   }`}>
                     {paso.icon}
                   </div>
-                  <span className={`text-[10px] text-center font-medium leading-tight ${done ? 'text-green-700' : 'text-gray-300'}`}>
+                  <span className={`text-[10px] text-center font-medium leading-tight ${done ? 'text-pine-deep' : 'text-ink-faint'}`}>
                     {paso.label}
                   </span>
                 </div>
@@ -341,16 +341,16 @@ const HORARIOS_TIENDAS: Record<string, string> = {
 
       {/* Información del Repartidor / Comprador */}
       {repartidor && (
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3">
+        <div className="bg-white border border-line rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-sm shrink-0">
+            <div className="w-10 h-10 rounded-full bg-pine-tint flex items-center justify-center text-pine-deep font-bold text-sm shrink-0">
               {repartidor.nombre.charAt(0).toUpperCase()}
             </div>
             <div>
-              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">
                 {pedido.estado === 'preparado' ? 'Tu Comprador' : 'Tu Repartidor'}
               </div>
-              <div className="font-semibold text-gray-800 text-sm">{repartidor.nombre}</div>
+              <div className="font-semibold text-ink text-sm">{repartidor.nombre}</div>
             </div>
           </div>
           <a
@@ -359,7 +359,7 @@ const HORARIOS_TIENDAS: Record<string, string> = {
             )}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white font-semibold px-3.5 py-2 rounded-xl transition text-xs shadow-sm"
+            className="flex items-center gap-1.5 bg-pine hover:bg-pine-deep text-white font-semibold px-3.5 py-2 rounded-xl transition text-xs shadow-sm"
           >
             <MessageSquare size={14} />
             Escribirle
@@ -369,9 +369,9 @@ const HORARIOS_TIENDAS: Record<string, string> = {
 
       {/* Mapa de Entrega */}
       {['preparado', 'enviado', 'entregado'].includes(pedido.estado) && (
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Ubicación de Entrega</div>
-          <div className="relative rounded-xl overflow-hidden bg-gray-50 border border-gray-150 h-48">
+        <div className="bg-white border border-line rounded-2xl p-4 shadow-sm space-y-3">
+          <div className="text-xs font-bold text-ink-faint uppercase tracking-wider">Ubicación de Entrega</div>
+          <div className="relative rounded-xl overflow-hidden bg-surface-2 border border-line h-48">
             <iframe 
               src={`https://maps.google.com/maps?q=${pedido.geo_lat && pedido.geo_lng ? `${pedido.geo_lat},${pedido.geo_lng}` : encodeURIComponent(`${pedido.direccion ?? ''}, ${pedido.ciudad ?? ''}`)}&z=16&output=embed`} 
               className="w-full h-full border-0" 
@@ -379,7 +379,7 @@ const HORARIOS_TIENDAS: Record<string, string> = {
               referrerPolicy="no-referrer-when-downgrade" 
             />
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+          <div className="flex items-center gap-1.5 text-xs text-ink-faint">
             <span>📍</span>
             <span>
               {pedido.geo_lat && pedido.geo_lng 
@@ -397,12 +397,12 @@ const HORARIOS_TIENDAS: Record<string, string> = {
       )}
 
       {/* Datos de entrega */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-2">
-        <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Datos de entrega</div>
+      <div className="bg-white border border-line rounded-2xl p-4 shadow-sm space-y-2">
+        <div className="text-xs font-bold text-ink-faint uppercase tracking-wider">Datos de entrega</div>
         <div className="space-y-1 text-sm">
-          <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Nombre</span><span className="text-gray-800 font-medium">{pedido.nombre_cliente}</span></div>
-          <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Teléfono</span><span className="text-gray-800">{pedido.telefono}</span></div>
-          {pedido.direccion && <div className="flex gap-2"><span className="text-gray-400 w-20 shrink-0">Dirección</span><span className="text-gray-800">{pedido.direccion}, {pedido.ciudad}</span></div>}
+          <div className="flex gap-2"><span className="text-ink-faint w-20 shrink-0">Nombre</span><span className="text-ink font-medium">{pedido.nombre_cliente}</span></div>
+          <div className="flex gap-2"><span className="text-ink-faint w-20 shrink-0">Teléfono</span><span className="text-ink">{pedido.telefono}</span></div>
+          {pedido.direccion && <div className="flex gap-2"><span className="text-ink-faint w-20 shrink-0">Dirección</span><span className="text-ink">{pedido.direccion}, {pedido.ciudad}</span></div>}
         </div>
       </div>
 
@@ -421,42 +421,42 @@ const HORARIOS_TIENDAS: Record<string, string> = {
             }] : [])
 
         return (
-          <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-2.5">
-            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pago y Facturación</div>
+          <div className="bg-white border border-line rounded-2xl p-4 shadow-sm space-y-2.5">
+            <div className="text-xs font-bold text-ink-faint uppercase tracking-wider">Pago y Facturación</div>
             <div className="space-y-3.5 text-sm">
               {infoNotas.pago && (
                 <div className="flex gap-2">
-                  <span className="text-gray-400 w-24 shrink-0 font-medium">Forma de pago</span>
-                  <span className="text-gray-800 font-semibold">{infoNotas.pago}</span>
+                  <span className="text-ink-faint w-24 shrink-0 font-medium">Forma de pago</span>
+                  <span className="text-ink font-semibold">{infoNotas.pago}</span>
                 </div>
               )}
               
               {/* Listado de comprobantes de proveedores */}
               {listadoComprobantes.map((comp: any, idx: number) => (
-                <div key={idx} className="border-t border-gray-100 pt-2.5 first:border-0 first:pt-0 space-y-1">
-                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                <div key={idx} className="border-t border-line pt-2.5 first:border-0 first:pt-0 space-y-1">
+                  <p className="text-[11px] font-bold text-ink-faint uppercase tracking-wider mb-1">
                     🛒 Compra en {comp.ol_tiendas?.nombre || 'Proveedor'}
                   </p>
                   <div className="flex gap-2">
-                    <span className="text-gray-400 w-24 shrink-0 font-medium">Comprobante</span>
-                    <span className="text-gray-800 font-mono font-semibold">
+                    <span className="text-ink-faint w-24 shrink-0 font-medium">Comprobante</span>
+                    <span className="text-ink font-mono font-semibold">
                       {comp.prov_establecimiento}-{comp.prov_punto_emision}-{comp.prov_secuencial}
                     </span>
                   </div>
                   {comp.prov_costo_real && (
                     <div className="flex gap-2">
-                      <span className="text-gray-400 w-24 shrink-0 font-medium">Costo Compra</span>
-                      <span className="text-gray-800 font-semibold">${Number(comp.prov_costo_real).toFixed(2)}</span>
+                      <span className="text-ink-faint w-24 shrink-0 font-medium">Costo Compra</span>
+                      <span className="text-ink font-semibold">${Number(comp.prov_costo_real).toFixed(2)}</span>
                     </div>
                   )}
                   {comp.prov_factura_url && (
                     <div className="flex gap-2 pt-0.5">
-                      <span className="text-gray-400 w-24 shrink-0 font-medium">Foto Ticket</span>
+                      <span className="text-ink-faint w-24 shrink-0 font-medium">Foto Ticket</span>
                       <a 
                         href={comp.prov_factura_url} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-green-600 hover:text-green-700 font-semibold underline flex items-center gap-1"
+                        className="text-pine hover:text-pine-deep font-semibold underline flex items-center gap-1"
                       >
                         Ver comprobante adjunto
                       </a>
@@ -467,15 +467,15 @@ const HORARIOS_TIENDAS: Record<string, string> = {
 
               {!pedido.prov_secuencial && infoNotas.factura && listadoComprobantes.length === 0 && (
                 <div className="flex gap-2">
-                  <span className="text-gray-400 w-24 shrink-0 font-medium">Factura</span>
-                  <span className="text-gray-800">{infoNotas.factura}</span>
+                  <span className="text-ink-faint w-24 shrink-0 font-medium">Factura</span>
+                  <span className="text-ink">{infoNotas.factura}</span>
                 </div>
               )}
 
               {infoNotas.cleanNotas && (
-                <div className="flex gap-2 pt-2 border-t border-gray-100">
-                  <span className="text-gray-400 w-24 shrink-0 font-medium">Notas</span>
-                  <span className="text-gray-650 italic">"{infoNotas.cleanNotas}"</span>
+                <div className="flex gap-2 pt-2 border-t border-line">
+                  <span className="text-ink-faint w-24 shrink-0 font-medium">Notas</span>
+                  <span className="text-ink-soft italic">"{infoNotas.cleanNotas}"</span>
                 </div>
               )}
             </div>
@@ -484,9 +484,9 @@ const HORARIOS_TIENDAS: Record<string, string> = {
       })()}
 
       {/* Productos */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
-        <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Productos</div>
-        <div className="divide-y divide-gray-50 space-y-2">
+      <div className="bg-white border border-line rounded-2xl p-4 shadow-sm space-y-3">
+        <div className="text-xs font-bold text-ink-faint uppercase tracking-wider">Productos</div>
+        <div className="divide-y divide-line space-y-2">
           {items.map((it, i) => {
             const showStatus = ['preparado', 'enviado', 'entregado'].includes(pedido.estado)
             const isPicked = it.picking_completado
@@ -497,24 +497,24 @@ const HORARIOS_TIENDAS: Record<string, string> = {
               <div key={i} className="flex items-center justify-between text-sm pt-2 first:pt-0 gap-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {/* Miniature Thumbnail */}
-                  <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-150 flex items-center justify-center overflow-hidden shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-surface-2 border border-line flex items-center justify-center overflow-hidden shrink-0">
                     {it.imagen_url ? (
                       <img src={it.imagen_url} alt={it.descripcion} className="w-full h-full object-contain p-1" />
                     ) : (
-                      <Package size={16} className="text-gray-400" />
+                      <Package size={16} className="text-ink-faint" />
                     )}
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <span className={`text-gray-750 block font-medium truncate ${isAgotado ? 'line-through text-gray-400' : ''}`}>
-                      {it.descripcion} <span className="text-gray-400 font-normal text-xs">×{it.cantidad}</span>
+                    <span className={`text-ink block font-medium truncate ${isAgotado ? 'line-through text-ink-faint' : ''}`}>
+                      {it.descripcion} <span className="text-ink-faint font-normal text-xs">×{it.cantidad}</span>
                     </span>
                     
                     {/* Badge de estado en tiempo real */}
                     {showStatus && (
                       <div className="mt-0.5">
                         {isPicked && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-pine-deep bg-pine-tint px-1.5 py-0.5 rounded">
                             🧺 En canasta
                           </span>
                         )}
@@ -524,7 +524,7 @@ const HORARIOS_TIENDAS: Record<string, string> = {
                           </span>
                         )}
                         {isPending && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gray-450 bg-gray-50 px-1.5 py-0.5 rounded">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-ink-faint bg-surface-2 px-1.5 py-0.5 rounded">
                             ⏳ Pendiente
                           </span>
                         )}
@@ -532,16 +532,16 @@ const HORARIOS_TIENDAS: Record<string, string> = {
                     )}
                   </div>
                 </div>
-                <span className={`text-gray-800 font-semibold shrink-0 ${isAgotado ? 'text-gray-400 line-through' : ''}`}>
+                <span className={`text-ink font-semibold shrink-0 ${isAgotado ? 'text-ink-faint line-through' : ''}`}>
                   {fmt(it.precio_unitario * it.cantidad)}
                 </span>
               </div>
             )
           })}
         </div>
-        <div className="flex justify-between font-bold text-gray-800 border-t border-gray-100 pt-3 mt-1">
+        <div className="flex justify-between font-bold text-ink border-t border-line pt-3 mt-1">
           <span>Total</span>
-          <span className="text-green-600">{fmt(pedido.total)}</span>
+          <span className="text-pine">{fmt(pedido.total)}</span>
         </div>
       </div>
 
@@ -551,10 +551,10 @@ const HORARIOS_TIENDAS: Record<string, string> = {
       </div>
 
       <div className="flex gap-3">
-        <Link href="/pedidos" className="flex-1 text-center border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-3 rounded-xl transition text-sm">
+        <Link href="/pedidos" className="flex-1 text-center border border-line hover:bg-surface-2 text-ink-soft font-semibold py-3 rounded-xl transition text-sm">
           Mis pedidos
         </Link>
-        <Link href="/productos" className="flex-1 text-center bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition text-sm">
+        <Link href="/productos" className="flex-1 text-center bg-pine hover:bg-pine-deep text-white font-semibold py-3 rounded-xl transition text-sm">
           Seguir comprando
         </Link>
       </div>

@@ -570,8 +570,8 @@ export default function CheckoutPage() {
   if (cargandoCarrito) {
     return (
       <div className="max-w-lg mx-auto px-4 py-20 flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-10 h-10 animate-spin text-green-600" />
-        <p className="text-sm font-bold text-gray-500">Cargando tu pedido...</p>
+        <Loader2 className="w-10 h-10 animate-spin text-pine" />
+        <p className="text-sm font-bold text-ink-faint">Cargando tu pedido...</p>
       </div>
     )
   }
@@ -584,52 +584,52 @@ export default function CheckoutPage() {
   if (pedidoCompletado) {
     return (
       <div className="max-w-lg mx-auto px-4 py-16 flex flex-col items-center gap-4 text-center">
-        <CheckCircle size={56} className="text-green-500" />
-        <h2 className="text-xl font-bold text-gray-800">¡Pedido enviado!</h2>
+        <CheckCircle size={56} className="text-pine" />
+        <h2 className="font-display text-xl font-bold text-ink">¡Pedido enviado!</h2>
         {puntosGanados !== null && puntosGanados > 0 && (
-          <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-5 py-3">
-            <Star size={18} className="text-yellow-500 fill-yellow-400" />
-            <span className="text-sm font-semibold text-yellow-800">
+          <div className="flex items-center gap-2 bg-wheat/10 border border-wheat/30 rounded-xl px-5 py-3">
+            <Star size={18} className="text-wheat fill-wheat" />
+            <span className="text-sm font-semibold text-wheat">
               {user ? `+${puntosGanados} puntos ganados` : `+${puntosGanados} puntos temporales acumulados`}
             </span>
           </div>
         )}
-        <p className="text-sm text-gray-500">Redirigiendo al seguimiento...</p>
+        <p className="text-sm text-ink-faint">Redirigiendo al seguimiento...</p>
       </div>
     )
   }
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
-      <h1 className="text-base font-bold">Confirmar pedido</h1>
+    <div className="max-w-lg mx-auto px-4 py-4 space-y-4 font-ui">
+      <h1 className="font-display text-lg font-bold text-ink">Confirmar pedido</h1>
 
       <form onSubmit={confirmar} className="space-y-4">
         {/* Datos personales */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+        <div className="bg-white border border-line rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tus datos</div>
+            <div className="text-xs font-bold text-ink-faint uppercase tracking-wider">Tus datos</div>
             {user
-              ? <span className="flex items-center gap-1 text-[10px] text-green-400">
+              ? <span className="flex items-center gap-1 text-[10px] text-pine">
                   <CheckCircle size={10} /> Cuenta Google
                 </span>
               : getPerfil()?.nombre
-                ? <span className="text-[10px] text-green-400">✓ Datos guardados</span>
+                ? <span className="text-[10px] text-pine">✓ Datos guardados</span>
                 : null
             }
           </div>
 
           {/* Avatar Google si está logueado */}
           {user && (
-            <div className="flex items-center gap-3 bg-gray-800 rounded-xl px-3 py-2.5">
+            <div className="flex items-center gap-3 bg-surface-2 rounded-xl px-3 py-2.5">
               {user.user_metadata?.avatar_url
                 ? <img src={user.user_metadata.avatar_url} className="w-8 h-8 rounded-full" alt="" />
-                : <div className="w-8 h-8 bg-green-700 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                : <div className="w-8 h-8 bg-pine-deep rounded-full flex items-center justify-center text-white text-xs font-bold">
                     {form.nombre?.[0]?.toUpperCase() || 'U'}
                   </div>
               }
               <div>
-                <div className="text-sm font-semibold text-white">{form.nombre || user.email}</div>
-                <div className="text-[10px] text-gray-400">{user.email}</div>
+                <div className="text-sm font-semibold text-ink">{form.nombre || user.email}</div>
+                <div className="text-[10px] text-ink-faint">{user.email}</div>
               </div>
             </div>
           )}
@@ -639,20 +639,20 @@ export default function CheckoutPage() {
             { k: 'telefono', label: 'Teléfono / WhatsApp *',  type: 'tel',   placeholder: '0991234567',    hidden: false },
           ].filter(f => !f.hidden).map(({ k, label, type, placeholder }) => (
             <div key={k}>
-              <label className="text-xs text-gray-400 block mb-1">{label}</label>
+              <label className="text-xs text-ink-faint block mb-1">{label}</label>
               <input type={type} value={(form as Record<string, string>)[k]}
                 onChange={e => set(k, e.target.value)} placeholder={placeholder}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500" />
+                className="w-full bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-pine" />
             </div>
           ))}
         </div>
 
         {/* Facturación */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+        <div className="bg-white border border-line rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Facturación</div>
+            <div className="text-xs font-bold text-ink-faint uppercase tracking-wider">Facturación</div>
             {requiereDatosLey && (
-              <span className="text-[9px] bg-red-950 text-red-400 border border-red-900 rounded px-1.5 py-0.5 font-bold uppercase tracking-wider">
+              <span className="text-[9px] bg-sale/10 text-sale border border-sale/30 rounded px-1.5 py-0.5 font-bold uppercase tracking-wider">
                 Requerido por Ley
               </span>
             )}
@@ -664,70 +664,70 @@ export default function CheckoutPage() {
               checked={facturaConDatos}
               disabled={requiereDatosLey}
               onChange={(e) => setFacturaConDatos(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-green-600 focus:ring-green-500 focus:ring-offset-gray-900 disabled:opacity-50"
+              className="w-4 h-4 rounded border-line bg-surface-2 text-pine focus:ring-pine focus:ring-offset-white disabled:opacity-50"
             />
-            <span className="text-xs text-gray-200 font-medium">
+            <span className="text-xs text-ink-soft font-medium">
               ¿Necesitas factura con datos?
             </span>
           </label>
 
           {requiereDatosLey && (
-            <div className="bg-orange-950/40 border border-orange-900/40 rounded-xl p-3 text-[11px] text-orange-200 leading-relaxed">
+            <div className="bg-wheat/10 border border-wheat/30 rounded-xl p-3 text-[11px] text-wheat leading-relaxed">
               ⚠️ <strong>Control de Facturación (SRI):</strong> De acuerdo con la normativa legal de Ecuador, las transacciones de <strong>$50.00 o más</strong> requieren obligatoriamente datos de facturación (no se permite Consumidor Final).
             </div>
           )}
 
           {facturaConDatos ? (
-            <div className="space-y-2.5 border-t border-gray-800 pt-3 transition-all">
+            <div className="space-y-2.5 border-t border-line pt-3 transition-all">
               <div>
-                <label className="text-xs text-gray-400 block mb-1">Identificación (Cédula o RUC) *</label>
+                <label className="text-xs text-ink-faint block mb-1">Identificación (Cédula o RUC) *</label>
                 <input
                   type="text"
                   value={identificacion}
                   onChange={(e) => setIdentificacion(e.target.value)}
                   placeholder="Ej: 1726384920 o 1793081928001"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                  className="w-full bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-pine"
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-400 block mb-1">Razón Social / Nombre Completo *</label>
+                <label className="text-xs text-ink-faint block mb-1">Razón Social / Nombre Completo *</label>
                 <input
                   type="text"
                   value={razonSocial}
                   onChange={(e) => setRazonSocial(e.target.value)}
                   placeholder="Ej: Juan Pérez o Empresa S.A."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                  className="w-full bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-pine"
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-400 block mb-1">Correo Electrónico para Factura (Opcional)</label>
+                <label className="text-xs text-ink-faint block mb-1">Correo Electrónico para Factura (Opcional)</label>
                 <input
                   type="email"
                   value={correoFactura}
                   onChange={(e) => setCorreoFactura(e.target.value)}
                   placeholder="Ej: factura@cliente.com"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+                  className="w-full bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-pine"
                 />
               </div>
             </div>
           ) : (
-            <p className="text-[11px] text-gray-500 italic leading-relaxed">
+            <p className="text-[11px] text-ink-faint italic leading-relaxed">
               Se emitirá la factura como <strong>Consumidor Final</strong> (sin identificación ni datos detallados).
             </p>
           )}
         </div>
 
         {/* Método de Entrega */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Método de entrega</div>
+        <div className="bg-white border border-line rounded-xl p-4 space-y-3">
+          <div className="text-xs font-bold text-ink-faint uppercase tracking-wider">Método de entrega</div>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => setMetodoEntrega('domicilio')}
               className={`py-2.5 rounded-xl font-bold text-xs transition border flex flex-col items-center justify-center gap-1 cursor-pointer ${
                 metodoEntrega === 'domicilio'
-                  ? 'bg-green-600 text-white border-transparent'
-                  : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'
+                  ? 'bg-pine text-white border-transparent'
+                  : 'bg-surface-2 text-ink-faint border-line hover:bg-line/40'
               }`}
             >
               <span>🚚 Envío a domicilio</span>
@@ -739,10 +739,10 @@ export default function CheckoutPage() {
               onClick={() => setMetodoEntrega('retiro')}
               className={`py-2.5 rounded-xl font-bold text-xs transition border flex flex-col items-center justify-center gap-1 ${
                 !esSoloCrayola
-                  ? 'opacity-40 bg-gray-900 text-gray-600 border-gray-800 cursor-not-allowed'
+                  ? 'opacity-40 bg-surface-2 text-ink-faint border-line cursor-not-allowed'
                   : metodoEntrega === 'retiro'
-                    ? 'bg-green-600 text-white border-transparent cursor-pointer'
-                    : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700 cursor-pointer'
+                    ? 'bg-pine text-white border-transparent cursor-pointer'
+                    : 'bg-surface-2 text-ink-faint border-line hover:bg-line/40 cursor-pointer'
               }`}
             >
               <span>🏪 Retiro en tienda</span>
@@ -750,7 +750,7 @@ export default function CheckoutPage() {
             </button>
           </div>
           {!esSoloCrayola && (
-            <p className="text-[10px] text-orange-400 font-medium leading-relaxed">
+            <p className="text-[10px] text-wheat font-medium leading-relaxed">
               ⚠️ El retiro en tienda no está disponible porque tienes productos de otros locales en tu carrito.
             </p>
           )}
@@ -758,25 +758,25 @@ export default function CheckoutPage() {
 
         {/* Entrega */}
         {metodoEntrega === 'domicilio' ? (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+          <div className="bg-white border border-line rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dirección de entrega</div>
+              <div className="text-xs font-bold text-ink-faint uppercase tracking-wider">Dirección de entrega</div>
               {geoMsg && (
                 <span className={`text-[10px] font-semibold ${
                   geoMsg.includes('denegado') || geoMsg.includes('No') || geoMsg.includes('agotado')
-                    ? 'text-orange-400'
-                    : 'text-green-400'
+                    ? 'text-wheat'
+                    : 'text-pine'
                 }`}>{geoMsg}</span>
               )}
             </div>
 
             {/* Botón de Obtener Ubicación GPS Destacado */}
-            <div className="flex gap-2.5 border-b border-gray-800 pb-3">
+            <div className="flex gap-2.5 border-b border-line pb-3">
               <button
                 type="button"
                 onClick={pedirUbicacion}
                 disabled={geoMsg === 'Obteniendo...'}
-                className="flex-1 flex items-center justify-center gap-2 bg-green-500/10 text-green-400 border border-green-500/30 hover:bg-green-500/20 active:bg-green-500/30 disabled:bg-green-500/5 disabled:text-green-600 disabled:border-green-500/10 font-bold py-2.5 px-4 rounded-xl transition text-xs shadow-sm cursor-pointer select-none"
+                className="flex-1 flex items-center justify-center gap-2 bg-pine-tint text-pine border border-pine/30 hover:bg-pine-deep/20 active:bg-pine/25 disabled:bg-pine-tint disabled:text-pine disabled:border-pine/10 font-bold py-2.5 px-4 rounded-xl transition text-xs shadow-sm cursor-pointer select-none"
               >
                 {geoMsg === 'Obteniendo...' ? (
                   <>
@@ -802,8 +802,8 @@ export default function CheckoutPage() {
                 }}
                 className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-semibold transition cursor-pointer select-none ${
                   verMapa 
-                    ? 'bg-orange-600/10 text-orange-400 border-orange-500/30 hover:bg-orange-600/20' 
-                    : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700 hover:text-white'
+                    ? 'bg-orange-600/10 text-wheat border-orange-500/30 hover:bg-orange-600/20' 
+                    : 'bg-surface-2 text-ink-soft border-line hover:bg-line/40 hover:text-ink'
                 }`}
               >
                 🗺️ {verMapa ? 'Ocultar mapa' : 'Ver mapa'}
@@ -812,12 +812,12 @@ export default function CheckoutPage() {
 
             {/* Selector de direcciones guardadas */}
             {direcciones.length > 0 && (
-              <div className="border-b border-gray-800 pb-3">
-                <label className="text-xs text-gray-400 block mb-1">📍 Mis direcciones guardadas</label>
+              <div className="border-b border-line pb-3">
+                <label className="text-xs text-ink-faint block mb-1">📍 Mis direcciones guardadas</label>
                 <select
                   value={direccionSeleccionadaId}
                   onChange={e => alSeleccionarDireccion(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500"
+                  className="w-full bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-pine"
                 >
                   <option value="nueva">-- Nueva dirección / Ingresar otra --</option>
                   {direcciones.map(d => (
@@ -831,25 +831,25 @@ export default function CheckoutPage() {
 
             {/* Mapa interactivo */}
             {verMapa && (
-              <div className="space-y-1.5 border-b border-gray-800 pb-3">
-                <div className="text-[10px] text-gray-400 flex items-center justify-between">
+              <div className="space-y-1.5 border-b border-line pb-3">
+                <div className="text-[10px] text-ink-faint flex items-center justify-between">
                   <span>📍 Arrastra la chincheta sobre tu ubicación exacta:</span>
                   <div className="flex gap-2.5">
-                    <button type="button" onClick={pedirUbicacion} className="text-green-400 hover:underline">📡 Obtener GPS</button>
-                    <button type="button" onClick={() => setVerMapa(false)} className="text-red-400 hover:underline">Ocultar</button>
+                    <button type="button" onClick={pedirUbicacion} className="text-pine hover:underline">📡 Obtener GPS</button>
+                    <button type="button" onClick={() => setVerMapa(false)} className="text-sale hover:underline">Ocultar</button>
                   </div>
                 </div>
                 {geoMsg?.includes('denegado') && (
-                  <div className="bg-yellow-950/40 border border-yellow-850/40 rounded-xl p-3 text-[11px] text-yellow-200 leading-relaxed">
+                  <div className="bg-wheat/10 border border-wheat/30 rounded-xl p-3 text-[11px] text-wheat leading-relaxed">
                     💡 <strong>GPS bloqueado:</strong> Puedes activarlo tocando el candado/ajustes ⚙️ en la barra de direcciones de tu navegador (arriba) y permitiendo la ubicación. Si no sabes cómo, puedes arrastrar la chincheta azul en el mapa, o simplemente <strong>enviarnos tu ubicación de WhatsApp</strong> al finalizar el pedido.
                   </div>
                 )}
                 <div 
                   ref={mapContainerRef} 
-                  className="w-full h-[220px] rounded-xl border border-gray-800 bg-gray-950 overflow-hidden relative z-10" 
+                  className="w-full h-[220px] rounded-xl border border-line bg-surface-2 overflow-hidden relative z-10" 
                 />
                 {geo && (
-                  <div className="text-[9px] text-gray-500 text-right">
+                  <div className="text-[9px] text-ink-faint text-right">
                     Lat: {geo.lat.toFixed(5)} · Lng: {geo.lng.toFixed(5)}
                   </div>
                 )}
@@ -858,25 +858,25 @@ export default function CheckoutPage() {
 
             {/* Guardar nueva dirección */}
             {direccionSeleccionadaId === 'nueva' && geo && (
-              <div className="bg-gray-800/40 border border-gray-800 rounded-xl p-3 space-y-2">
-                <div className="text-[11px] font-semibold text-gray-300">💾 ¿Quieres guardar esta ubicación para futuras compras?</div>
+              <div className="bg-surface-2 border border-line rounded-xl p-3 space-y-2">
+                <div className="text-[11px] font-semibold text-ink-soft">💾 ¿Quieres guardar esta ubicación para futuras compras?</div>
                 <div className="flex gap-2">
                   <input 
                     value={nombreEtiqueta} 
                     onChange={e => setNombreEtiqueta(e.target.value)}
                     placeholder="Nombre (ej: Casa, Trabajo, Escuela...)"
-                    className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-green-500" 
+                    className="flex-1 bg-surface-2 border border-line rounded-lg px-3 py-1.5 text-xs text-ink placeholder-ink-faint focus:outline-none focus:border-pine"
                   />
                   <button 
                     type="button" 
                     onClick={guardarDireccionNueva} 
                     disabled={guardandoDir}
-                    className="bg-green-600 hover:bg-green-500 disabled:opacity-60 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition cursor-pointer"
+                    className="bg-pine hover:bg-pine-deep disabled:opacity-60 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition cursor-pointer"
                   >
                     {guardandoDir ? 'Guardando...' : 'Guardar'}
                   </button>
                 </div>
-                {dirMsg && <p className="text-[10px] text-green-400 font-semibold">{dirMsg}</p>}
+                {dirMsg && <p className="text-[10px] text-pine font-semibold">{dirMsg}</p>}
               </div>
             )}
             {[
@@ -885,32 +885,32 @@ export default function CheckoutPage() {
               { k: 'referencias', label: 'Referencias', placeholder: 'Cerca de, color de casa...' },
             ].map(({ k, label, placeholder }) => (
               <div key={k}>
-                <label className="text-xs text-gray-400 block mb-1">{label}</label>
+                <label className="text-xs text-ink-faint block mb-1">{label}</label>
                 <input value={(form as Record<string, string>)[k]} onChange={e => set(k, e.target.value)}
                   placeholder={placeholder}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500" />
+                  className="w-full bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-pine" />
               </div>
             ))}
             <div>
-              <label className="text-xs text-gray-400 block mb-1">Notas del pedido</label>
+              <label className="text-xs text-ink-faint block mb-1">Notas del pedido</label>
               <textarea value={form.notas} onChange={e => set('notas', e.target.value)}
                 rows={2} placeholder="Instrucciones especiales..."
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500 resize-none" />
+                className="w-full bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-pine resize-none" />
             </div>
           </div>
         ) : (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
-            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Punto de retiro</div>
-            <div className="bg-gray-800 rounded-xl p-3 border border-gray-700 text-xs text-gray-300 leading-relaxed space-y-1">
-              <p className="font-bold text-white">📍 Local Principal - La Crayola</p>
+          <div className="bg-white border border-line rounded-xl p-4 space-y-3">
+            <div className="text-xs font-bold text-ink-faint uppercase tracking-wider">Punto de retiro</div>
+            <div className="bg-surface-2 rounded-xl p-3 border border-line text-xs text-ink-soft leading-relaxed space-y-1">
+              <p className="font-bold text-ink">📍 Local Principal - La Crayola</p>
               <p>Dirección: Av. Principal, San Miguel de los Bancos, Ecuador</p>
               <p>Horario: Lunes a Sábado de 8:00 AM a 6:00 PM</p>
             </div>
             <div>
-              <label className="text-xs text-gray-400 block mb-1">Notas para tu retiro (opcional)</label>
+              <label className="text-xs text-ink-faint block mb-1">Notas para tu retiro (opcional)</label>
               <textarea value={form.notas} onChange={e => set('notas', e.target.value)}
                 rows={2} placeholder="¿Quién retirará el pedido? ¿A qué hora pasarás?..."
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-green-500 resize-none" />
+                className="w-full bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-pine resize-none" />
             </div>
           </div>
         )}
@@ -928,16 +928,16 @@ export default function CheckoutPage() {
         </div>
 
         {/* Forma de Pago */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Forma de pago</div>
+        <div className="bg-white border border-line rounded-xl p-4 space-y-3">
+          <div className="text-xs font-bold text-ink-faint uppercase tracking-wider">Forma de pago</div>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => setMetodoPago('efectivo')}
               className={`py-2.5 rounded-xl font-bold text-xs transition border flex flex-col items-center justify-center gap-1 cursor-pointer ${
                 metodoPago === 'efectivo'
-                  ? 'bg-green-600 text-white border-transparent'
-                  : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-750'
+                  ? 'bg-pine text-white border-transparent'
+                  : 'bg-surface-2 text-ink-faint border-line hover:bg-line/40'
               }`}
             >
               <span>💵 Efectivo al recibir</span>
@@ -948,8 +948,8 @@ export default function CheckoutPage() {
               onClick={() => setMetodoPago('transferencia')}
               className={`py-2.5 rounded-xl font-bold text-xs transition border flex flex-col items-center justify-center gap-1 cursor-pointer ${
                 metodoPago === 'transferencia'
-                  ? 'bg-green-600 text-white border-transparent'
-                  : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-750'
+                  ? 'bg-pine text-white border-transparent'
+                  : 'bg-surface-2 text-ink-faint border-line hover:bg-line/40'
               }`}
             >
               <span>🏦 Transferencia Bancaria</span>
@@ -958,12 +958,12 @@ export default function CheckoutPage() {
           </div>
 
           {metodoPago === 'efectivo' && (
-            <div className="space-y-2 bg-gray-800/40 border border-gray-800 rounded-xl p-3">
-              <label className="text-xs text-gray-400 block font-medium">¿Con cuánto pagarás? (Para llevar sueltos)</label>
+            <div className="space-y-2 bg-surface-2 border border-line rounded-xl p-3">
+              <label className="text-xs text-ink-faint block font-medium">¿Con cuánto pagarás? (Para llevar sueltos)</label>
               <select
                 value={billeteCambio}
                 onChange={e => setBilleteCambio(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500"
+                className="w-full bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-pine"
               >
                 <option value="Pago exacto">Tengo el pago exacto</option>
                 <option value="Billete de $5">Billete de $5</option>
@@ -976,48 +976,48 @@ export default function CheckoutPage() {
           )}
 
           {metodoPago === 'transferencia' && (
-            <div className="bg-gray-800/50 border border-gray-800 rounded-xl p-3 space-y-2">
-              <div className="text-[11px] font-bold text-green-400 uppercase tracking-wider">Datos de transferencia:</div>
-              <div className="space-y-1.5 text-xs text-gray-300">
-                <div className="flex justify-between border-b border-gray-800/60 pb-1">
-                  <span className="text-gray-500">Banco</span>
-                  <span className="font-semibold text-white">Banco Pichincha</span>
+            <div className="bg-surface-2 border border-line rounded-xl p-3 space-y-2">
+              <div className="text-[11px] font-bold text-pine uppercase tracking-wider">Datos de transferencia:</div>
+              <div className="space-y-1.5 text-xs text-ink-soft">
+                <div className="flex justify-between border-b border-line pb-1">
+                  <span className="text-ink-faint">Banco</span>
+                  <span className="font-semibold text-ink">Banco Pichincha</span>
                 </div>
-                <div className="flex justify-between border-b border-gray-800/60 pb-1">
-                  <span className="text-gray-500">Tipo de Cuenta</span>
-                  <span className="font-medium text-white">Cuenta de Ahorros</span>
+                <div className="flex justify-between border-b border-line pb-1">
+                  <span className="text-ink-faint">Tipo de Cuenta</span>
+                  <span className="font-medium text-ink">Cuenta de Ahorros</span>
                 </div>
-                <div className="flex justify-between border-b border-gray-800/60 pb-1">
-                  <span className="text-gray-500">Nro. de Cuenta</span>
-                  <span className="font-bold text-green-400 select-all">2208546193</span>
+                <div className="flex justify-between border-b border-line pb-1">
+                  <span className="text-ink-faint">Nro. de Cuenta</span>
+                  <span className="font-bold text-pine select-all">2208546193</span>
                 </div>
-                <div className="flex justify-between border-b border-gray-800/60 pb-1">
-                  <span className="text-gray-500">Beneficiario</span>
-                  <span className="font-medium text-white">La Crayola</span>
+                <div className="flex justify-between border-b border-line pb-1">
+                  <span className="text-ink-faint">Beneficiario</span>
+                  <span className="font-medium text-ink">La Crayola</span>
                 </div>
-                <div className="flex justify-between border-b border-gray-800/60 pb-1">
-                  <span className="text-gray-500">RUC / Identificación</span>
-                  <span className="font-medium text-white select-all">1793081928001</span>
+                <div className="flex justify-between border-b border-line pb-1">
+                  <span className="text-ink-faint">RUC / Identificación</span>
+                  <span className="font-medium text-ink select-all">1793081928001</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Correo</span>
-                  <span className="font-medium text-gray-300 select-all">pagos@lacrayola.com</span>
+                  <span className="text-ink-faint">Correo</span>
+                  <span className="font-medium text-ink-soft select-all">pagos@lacrayola.com</span>
                 </div>
               </div>
 
               {/* Botón Deuna */}
-              <div className="pt-2 border-t border-gray-850">
+              <div className="pt-2 border-t border-line">
                 <a
                   href="https://pagar.deuna.app/H92p/merchant?id=828c98695b77537a52da2f2dd281b2746c019154"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-3 bg-[#702082] hover:bg-[#5a166a] active:scale-[0.99] text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg border border-purple-800 text-center select-none"
+                  className="w-full py-3 bg-[#702082] hover:bg-[#5a166a] active:scale-[0.99] text-ink font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg border border-purple-800 text-center select-none"
                 >
                   <span className="text-sm">🟣</span> Pagar con Deuna
                 </a>
               </div>
 
-              <div className="text-[10px] text-gray-400 leading-relaxed border-t border-gray-800 pt-2 flex items-start gap-1">
+              <div className="text-[10px] text-ink-faint leading-relaxed border-t border-line pt-2 flex items-start gap-1">
                 <span>💡</span>
                 <span>Por favor, realiza la transferencia y envíanos el comprobante por WhatsApp al terminar. Tu pedido será procesado una vez verificado.</span>
               </div>
@@ -1026,13 +1026,13 @@ export default function CheckoutPage() {
         </div>
 
         {/* Resumen */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-4.5 space-y-4 shadow-xs">
-          <div className="text-xs font-black text-gray-400 uppercase tracking-wider">Resumen de compra</div>
-          <div className="space-y-2 max-h-48 overflow-y-auto divide-y divide-gray-50 pr-1">
+        <div className="bg-white border border-line rounded-2xl p-4.5 space-y-4 shadow-xs">
+          <div className="text-xs font-black text-ink-faint uppercase tracking-wider">Resumen de compra</div>
+          <div className="space-y-2 max-h-48 overflow-y-auto divide-y divide-surface-2 pr-1">
             {items.map(i => (
-              <div key={i.codigo} className="flex justify-between text-xs text-gray-700 pt-2 first:pt-0">
-                <span className="truncate flex-1 font-medium">{i.descripcion} <span className="text-gray-400 font-bold ml-1">×{i.cantidad}</span></span>
-                <span className="ml-2 shrink-0 font-bold text-gray-900">{fmt(i.precio_unitario * i.cantidad)}</span>
+              <div key={i.codigo} className="flex justify-between text-xs text-ink-soft pt-2 first:pt-0">
+                <span className="truncate flex-1 font-medium">{i.descripcion} <span className="text-ink-faint font-bold ml-1">×{i.cantidad}</span></span>
+                <span className="ml-2 shrink-0 font-bold text-ink">{fmt(i.precio_unitario * i.cantidad)}</span>
               </div>
             ))}
           </div>
@@ -1042,20 +1042,20 @@ export default function CheckoutPage() {
             <RecargoEnvioBadge nTiendas={nTiendas} costoTotalEnvio={costoEnvio} />
           )}
 
-          <div className="flex justify-between font-black text-sm text-gray-900 border-t border-gray-100 pt-3">
+          <div className="flex justify-between font-black text-sm text-ink border-t border-line pt-3">
             <span>{metodoEntrega === 'domicilio' ? 'Total consolidado' : 'Total a pagar'}</span>
-            <span className="text-green-700 text-base font-black">{fmt(granTotal)}</span>
+            <span className="text-pine-deep text-base font-black">{fmt(granTotal)}</span>
           </div>
         </div>
 
-        {error && <p className="text-red-400 text-xs text-center">{error}</p>}
+        {error && <p className="text-sale text-xs text-center">{error}</p>}
 
         <button type="submit" disabled={loading}
-          className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition text-sm cursor-pointer">
+          className="w-full flex items-center justify-center gap-2 bg-pine hover:bg-pine-deep disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition text-sm cursor-pointer">
           {loading ? <><Loader2 size={16} className="animate-spin" />Procesando...</> : <>✅ Confirmar pedido · {fmt(granTotal)}</>}
         </button>
 
-        <p className="text-center text-xs text-gray-500">
+        <p className="text-center text-xs text-ink-faint">
           Al confirmar se abrirá WhatsApp para coordinar la entrega y el pago.
         </p>
       </form>
