@@ -123,6 +123,60 @@ export async function crearPedido(
     return { ok: false, error: errPed?.message || 'Error al crear pedido' }
   }
 
+  // Sincronizar dirección y coordenadas con el directorio rep_clientes_direcciones
+  if (cliente.geo_lat && cliente.geo_lng && cliente.telefono) {
+    try {
+      const cleanAddress = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
+      const sonDireccionesSimilaresAction = (dir1: string, dir2: string) => {
+        if (!dir1 || !dir2) return false
+        const c1 = cleanAddress(dir1)
+        const c2 = cleanAddress(dir2)
+        if (c1 === c2) return true
+        if (c1.length > 8 && c2.length > 8 && (c1.includes(c2) || c2.includes(c1))) return true
+        
+        const palabras1 = dir1.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 3)
+        const palabras2 = dir2.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 3)
+        if (palabras1.length === 0 || palabras2.length === 0) return false
+        const coincidentes = palabras1.filter(p => palabras2.includes(p))
+        const ratio = coincidentes.length / Math.min(palabras1.length, palabras2.length)
+        return ratio >= 0.5
+      }
+
+      const tel = cliente.telefono.trim()
+      const { data: extDir } = await supabaseServer
+        .from('rep_clientes_direcciones')
+        .select('id, direccion')
+        .eq('telefono', tel)
+
+      const matchDir = (extDir ?? []).find((d: any) => sonDireccionesSimilaresAction(d.direccion, cliente.direccion))
+
+      if (matchDir) {
+        await supabaseServer.from('rep_clientes_direcciones')
+          .update({
+            geo_lat: cliente.geo_lat,
+            geo_lng: cliente.geo_lng,
+            verificada: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', matchDir.id)
+      } else {
+        await supabaseServer.from('rep_clientes_direcciones')
+          .insert({
+            telefono: tel,
+            nombre_direccion: cliente.direccion ? cliente.direccion.trim().slice(0, 15) : 'Nueva Dirección',
+            direccion: cliente.direccion.trim(),
+            ciudad: cliente.ciudad.trim(),
+            referencias: cliente.referencias.trim() || '',
+            geo_lat: cliente.geo_lat,
+            geo_lng: cliente.geo_lng,
+            verificada: true
+          })
+      }
+    } catch (e) {
+      console.error('Error al sincronizar rep_clientes_direcciones en checkout:', e)
+    }
+  }
+
   // Insertar items con descripcion, categoria y tienda para historial
   const { data: productosDetalle } = await supabaseServer
     .from('ol_productos')
