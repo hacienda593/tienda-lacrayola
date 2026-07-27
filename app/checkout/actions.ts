@@ -53,7 +53,7 @@ export async function crearPedido(
   if (codigosFiltrados.length > 0) {
     const { data: prods, error: errP } = await supabaseServer
       .from('ol_productos')
-      .select('codigo, precio_con_iva, stock')
+      .select('codigo, precio_con_iva, stock, iva_codigo, iva_porcentaje')
       .in('codigo', codigosFiltrados)
 
     if (errP || !prods) {
@@ -82,6 +82,8 @@ export async function crearPedido(
         codigo: linea.codigo,
         cantidad: linea.cantidad,
         precio_unitario: linea.precio_unitario ?? 0.25,
+        iva_codigo: null as string | null,
+        iva_porcentaje: null as number | null,
       }
     }
     const prod = mapaProductos.get(linea.codigo)!
@@ -89,6 +91,8 @@ export async function crearPedido(
       codigo: linea.codigo,
       cantidad: linea.cantidad,
       precio_unitario: prod.precio_con_iva,
+      iva_codigo: prod.iva_codigo ?? null,
+      iva_porcentaje: prod.iva_porcentaje ?? null,
     }
   })
   const total = items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0)
@@ -137,6 +141,8 @@ export async function crearPedido(
         categoria:       orig?.categoria || mapaDetalle.get(i.codigo)?.categoria || '',
         precio_unitario: i.precio_unitario,
         cantidad:        i.cantidad,
+        iva_codigo:      i.iva_codigo,
+        iva_porcentaje:  i.iva_porcentaje,
       }
     })
   )

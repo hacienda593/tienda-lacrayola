@@ -125,13 +125,14 @@ export default function PedidoPage() {
   const [comprobantes, setComprobantes] = useState<any[]>([])
 
   const cargar = useCallback(async () => {
-    const [{ data: p }, { data: its }, { data: comps }] = await Promise.all([
-      supabase.from('ol_pedidos').select('*').eq('id', id).single(),
-      supabase.from('ol_pedido_items').select('codigo,descripcion,cantidad,precio_unitario,picking_completado,picking_agotado').eq('pedido_id', id),
-      supabase.from('ol_pedidos_comprobantes_proveedor')
-        .select('prov_establecimiento, prov_punto_emision, prov_secuencial, prov_costo_real, prov_factura_url, prov_ruc, tienda_id, ol_tiendas(nombre)')
-        .eq('pedido_id', id)
-    ])
+    // Se usa una funcion (RPC) en vez de leer las tablas directamente:
+    // el seguimiento de pedido debe funcionar tambien para invitados sin
+    // cuenta, y la funcion exige el id exacto del pedido (el mismo UUID
+    // de este link) en vez de permitir listar pedidos de otras personas.
+    const { data: resp } = await supabase.rpc('seguimiento_pedido_publico', { p_id: id })
+    const p     = resp?.pedido ?? null
+    const its   = (resp?.items ?? []) as Item[]
+    const comps = resp?.comprobantes ?? []
     if (!p) { setError(true); return }
 
     let itemsMapeados = (its ?? []) as Item[]
@@ -163,31 +164,7 @@ export default function PedidoPage() {
     setUltima(new Date())
     actualizarEstadoPedidoLocal(id, (p as Pedido).estado)
 
-    // Fetch assignment & repartidor
-    try {
-      const { data: asig } = await supabase
-        .from('rep_asignaciones')
-        .select('repartidor_id')
-        .eq('pedido_id', id)
-        .maybeSingle()
-
-      if (asig?.repartidor_id) {
-        const { data: rep } = await supabase
-          .from('rep_repartidores')
-          .select('nombre,telefono')
-          .eq('id', asig.repartidor_id)
-          .maybeSingle()
-        if (rep) {
-          setRepartidor(rep as Repartidor)
-        } else {
-          setRepartidor(null)
-        }
-      } else {
-        setRepartidor(null)
-      }
-    } catch (e) {
-      console.error("Error cargando repartidor:", e)
-    }
+    setRepartidor(resp?.repartidor ?? null)
   }, [id])
 
   useEffect(() => {
