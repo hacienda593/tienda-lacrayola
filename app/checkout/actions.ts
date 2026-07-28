@@ -26,6 +26,7 @@ export interface DatosCliente {
   geo_lng?: number | null
   user_id?: string | null
   referencia_transferencia?: string | null
+  metodo_pago?: string | null
 }
 
 export interface ResultadoPedido {
@@ -130,7 +131,8 @@ export async function crearPedido(
       total,
       total_items,
       estado: 'pendiente',
-      referencia_transferencia: cliente.referencia_transferencia ? cliente.referencia_transferencia.trim() : null
+      referencia_transferencia: cliente.referencia_transferencia ? cliente.referencia_transferencia.trim() : null,
+      metodo_pago: cliente.metodo_pago || 'contra_entrega'
     })
     .select('id, numero')
     .single()

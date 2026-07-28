@@ -504,7 +504,8 @@ export default function CheckoutPage() {
         geo_lat: metodoEntrega === 'retiro' ? null : geo?.lat, 
         geo_lng: metodoEntrega === 'retiro' ? null : geo?.lng, 
         user_id: user?.id ?? null,
-        referencia_transferencia: metodoPago === 'transferencia' ? referenciaTransferencia.trim() : null
+        referencia_transferencia: metodoPago === 'transferencia' ? referenciaTransferencia.trim() : null,
+        metodo_pago: metodoPago === 'transferencia' ? 'transferencia' : 'contra_entrega'
       },
       items.map(i => ({
         codigo: i.codigo,
