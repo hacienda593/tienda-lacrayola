@@ -10,6 +10,7 @@ import CategoriasPanel from '@/components/CategoriasPanel'
 import CartDrawer from '@/components/CartDrawer'
 import BarcodeScannerModal from '@/components/BarcodeScannerModal'
 import HeaderCategoryTabs from '@/components/HeaderCategoryTabs'
+import PromoDrawer from './PromoDrawer'
 import { sugerirCategorias, type SugerenciaBusqueda } from '@/lib/search'
 import { corregirTermino } from '@/lib/diccionarioBusqueda'
 
@@ -495,6 +496,16 @@ export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [catOpen,    setCatOpen]    = useState(false)
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const [promoDrawerOpen, setPromoDrawerOpen] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 35)
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   // Ocultar header en /buscar y en rutas de categoria (tienen su propio header Tipti)
   const hideHeader = mounted && (pathname.endsWith('/buscar') || pathname.includes('/categoria/'))
@@ -531,11 +542,12 @@ export default function Header() {
       </Suspense>
       <CategoriasPanel open={catOpen}  onClose={() => setCatOpen(false)} />
       <CartDrawer isOpen={cartDrawerOpen} onClose={() => setCartDrawerOpen(false)} />
+      <PromoDrawer open={promoDrawerOpen} onClose={() => setPromoDrawerOpen(false)} />
+
+      {/* Top bar (Ahora fuera del header sticky para que se deslice fuera al hacer scroll) */}
+      <TopBar />
 
       <header ref={headerRef} className="sticky top-0 z-50 bg-white border-b border-line shadow-sm font-ui">
-        {/* Top bar */}
-        <TopBar />
-
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
           {/* Hamburguesa */}
           <button
@@ -585,14 +597,28 @@ export default function Header() {
           </button>
         </div>
 
+        {/* Franja de envío gratis / garantías colapsada cuando scrolled es true */}
+        {scrolled && (
+          <div 
+            onClick={() => setPromoDrawerOpen(true)}
+            className="bg-[#10b981]/10 hover:bg-[#10b981]/15 border-t border-b border-[#10b981]/25 text-[#059669] text-[10px] py-1.5 px-4 font-bold flex items-center justify-center gap-1 cursor-pointer transition-all duration-150 animate-in slide-in-from-top-2 md:hidden select-none"
+          >
+            <span>🚚 Envío en Los Bancos • Garantía La Crayola ❯</span>
+          </div>
+        )}
+
         {/* Barra de pestañas de categorías estilo Pinduoduo / Marketplace */}
         <Suspense fallback={null}>
-          <HeaderCategoryTabs />
+          <div className={scrolled ? 'hidden md:block' : 'block'}>
+            <HeaderCategoryTabs />
+          </div>
         </Suspense>
 
         {/* Dynamic Store Categories Bar (2nd Row para dentro de tiendas) */}
         <Suspense fallback={null}>
-          <HeaderStoreCategories />
+          <div className={scrolled ? 'hidden md:block' : 'block'}>
+            <HeaderStoreCategories />
+          </div>
         </Suspense>
       </header>
     </>
