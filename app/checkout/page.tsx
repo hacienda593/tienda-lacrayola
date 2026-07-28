@@ -503,7 +503,8 @@ export default function CheckoutPage() {
         referencias: metodoEntrega === 'retiro' ? 'Retiro directo en local' : form.referencias,
         geo_lat: metodoEntrega === 'retiro' ? null : geo?.lat, 
         geo_lng: metodoEntrega === 'retiro' ? null : geo?.lng, 
-        user_id: user?.id ?? null 
+        user_id: user?.id ?? null,
+        referencia_transferencia: metodoPago === 'transferencia' ? referenciaTransferencia.trim() : null
       },
       items.map(i => ({
         codigo: i.codigo,

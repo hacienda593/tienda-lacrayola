@@ -25,6 +25,7 @@ export interface DatosCliente {
   geo_lat?: number | null
   geo_lng?: number | null
   user_id?: string | null
+  referencia_transferencia?: string | null
 }
 
 export interface ResultadoPedido {
@@ -98,6 +99,20 @@ export async function crearPedido(
   const total = items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0)
   const total_items = items.reduce((s, i) => s + i.cantidad, 0)
 
+  // Prevenir fraudes: Validar si el comprobante ya existe en otro pedido activo/creado
+  if (cliente.referencia_transferencia) {
+    const refLimpia = cliente.referencia_transferencia.trim()
+    const { data: dup } = await supabaseServer
+      .from('ol_pedidos')
+      .select('numero')
+      .eq('referencia_transferencia', refLimpia)
+      .limit(1)
+    
+    if (dup && dup.length > 0) {
+      return { ok: false, error: `El comprobante de transferencia ya fue registrado en el pedido #${dup[0].numero}. Ingresa la referencia correcta.` }
+    }
+  }
+
   // Insertar pedido
   const { data: pedido, error: errPed } = await supabaseServer
     .from('ol_pedidos')
@@ -115,6 +130,7 @@ export async function crearPedido(
       total,
       total_items,
       estado: 'pendiente',
+      referencia_transferencia: cliente.referencia_transferencia ? cliente.referencia_transferencia.trim() : null
     })
     .select('id, numero')
     .single()
