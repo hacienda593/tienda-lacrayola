@@ -103,6 +103,7 @@ export default function CheckoutPage() {
   const [metodoEntrega, setMetodoEntrega] = useState<'domicilio' | 'retiro'>('domicilio')
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo')
   const [billeteCambio, setBilleteCambio] = useState('Pago exacto')
+  const [referenciaTransferencia, setReferenciaTransferencia] = useState('')
   const [facturaConDatos, setFacturaConDatos] = useState(false)
   const [identificacion, setIdentificacion] = useState('')
   const [razonSocial, setRazonSocial] = useState('')
@@ -472,13 +473,19 @@ export default function CheckoutPage() {
       if (!razonSocial.trim()) { setError('La razón social o nombre es obligatorio para la factura.'); return }
     }
     
+    if (metodoPago === 'transferencia' && !referenciaTransferencia.trim()) {
+      setError('Por favor, ingresa el número de referencia o comprobante de tu transferencia.')
+      setLoading(false)
+      return
+    }
+    
     setError('')
     setLoading(true)
 
     // Formatear notas con tags de pago y facturación para no alterar el esquema de BD
     const pagoText = metodoPago === 'efectivo'
       ? `Efectivo (Cambio de: ${billeteCambio})`
-      : 'Transferencia Bancaria'
+      : `Transferencia Bancaria (Ref: ${referenciaTransferencia.trim()})`
     const facturaText = facturaConDatos
       ? `RUC/Cédula: ${identificacion.trim()} | Razón Social: ${razonSocial.trim()} | Correo: ${correoFactura.trim() || 'Sin correo'}`
       : 'Consumidor Final'
@@ -1010,6 +1017,18 @@ export default function CheckoutPage() {
                   <span className="text-ink-faint">Correo</span>
                   <span className="font-medium text-ink-soft select-all">pagos@lacrayola.com</span>
                 </div>
+              </div>
+
+              <div className="pt-3 border-t border-line space-y-1 text-left">
+                <label className="text-[10px] font-black text-ink-faint uppercase tracking-wide block">Nro. de Comprobante / Referencia *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Escribe el número de transferencia..."
+                  value={referenciaTransferencia}
+                  onChange={e => setReferenciaTransferencia(e.target.value)}
+                  className="w-full bg-[#f8fafc] border border-line rounded-xl px-3.5 py-2 text-ink text-xs focus:outline-none focus:border-pine font-bold"
+                />
               </div>
 
               {/* Botón Deuna */}
