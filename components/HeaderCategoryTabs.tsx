@@ -23,7 +23,7 @@ export const MAIN_CATEGORY_TABS: CategoryTab[] = [
   { name: 'Libros', cat: 'Libros' },
 ]
 
-export default function HeaderCategoryTabs() {
+export default function HeaderCategoryTabs({ scrolled }: { scrolled?: boolean }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -98,11 +98,13 @@ export default function HeaderCategoryTabs() {
   }
 
   return (
-    <div className="w-full bg-white border-b border-line shadow-2xs z-30 sticky top-[56px] font-ui">
+    <div className={`w-full bg-white border-b border-line shadow-2xs z-30 transition-all duration-200 ${scrolled ? 'sticky top-[44px]' : 'sticky top-[56px]'} font-ui`}>
       <div className="max-w-5xl mx-auto px-2">
         <div
           ref={containerRef}
-          className="flex items-center gap-3.5 overflow-x-auto scrollbar-hide text-xs md:text-sm select-none px-1"
+          className={`flex items-center overflow-x-auto scrollbar-hide select-none px-1 transition-all duration-200 ${
+            scrolled ? 'gap-2.5 text-[11px]' : 'gap-3.5 text-xs md:text-sm'
+          }`}
         >
           {MAIN_CATEGORY_TABS.map((tab) => {
             const tabKey = tab.cat || 'inicio'
@@ -116,7 +118,9 @@ export default function HeaderCategoryTabs() {
                   e.stopPropagation()
                   selectTab(tab.cat)
                 }}
-                className={`relative shrink-0 flex items-center justify-center py-2 transition-colors duration-150 cursor-pointer border-none bg-transparent
+                className={`relative shrink-0 flex items-center justify-center transition-all duration-200 cursor-pointer border-none bg-transparent ${
+                  scrolled ? 'py-1.5' : 'py-2'
+                }
                   ${isActive
                     ? 'text-pine-deep font-semibold'
                     : 'text-ink-faint hover:text-ink font-medium'

@@ -72,7 +72,7 @@ function TopBar() {
   )
 }
 
-function HeaderStoreCategories() {
+function HeaderStoreCategories({ scrolled }: { scrolled?: boolean }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -164,10 +164,12 @@ function HeaderStoreCategories() {
   }
 
   return (
-    <div className="md:hidden relative border-t border-gray-100 px-4 bg-white pb-2 shadow-xs transition-all duration-200">
+    <div className={`md:hidden relative border-t border-gray-100 px-4 bg-white shadow-xs transition-all duration-200 ${scrolled ? 'pb-1' : 'pb-2'}`}>
       <div className="flex items-center justify-between gap-2 relative">
         <div className="flex-1 overflow-x-auto scrollbar-hide pr-10">
-          <div className="flex gap-4.5 whitespace-nowrap text-xs font-bold items-center py-1.5">
+          <div className={`flex whitespace-nowrap font-bold items-center transition-all duration-200 ${
+            scrolled ? 'gap-3 text-[11px] py-1' : 'gap-4.5 text-xs py-1.5'
+          }`}>
             <button
               onClick={() => updateFiltersUrl({ cat: '', sub: '', marca: '' })}
               className={`pb-1 transition-all relative shrink-0 cursor-pointer
@@ -548,7 +550,7 @@ export default function Header() {
       <TopBar />
 
       <header ref={headerRef} className="sticky top-0 z-50 bg-white border-b border-line shadow-sm font-ui">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
+        <div className={`max-w-5xl mx-auto px-4 flex items-center gap-3 transition-all duration-200 ${scrolled ? 'py-1.5' : 'py-3'}`}>
           {/* Hamburguesa */}
           <button
             onClick={() => setDrawerOpen(true)}
@@ -567,7 +569,7 @@ export default function Header() {
             <img
               src="/logo-tienlo.png"
               alt="Tienlo Logo"
-              className="h-9 md:h-11 w-auto object-contain bg-white rounded-lg p-0.5"
+              className={`w-auto object-contain bg-white rounded-lg p-0.5 transition-all duration-200 ${scrolled ? 'h-7' : 'h-9 md:h-11'}`}
             />
             <div className="hidden md:flex items-center gap-2 pl-2.5 border-l border-line">
               <span className="text-[9px] font-price font-medium tracking-wide uppercase text-ink-faint">
@@ -609,16 +611,12 @@ export default function Header() {
 
         {/* Barra de pestañas de categorías estilo Pinduoduo / Marketplace */}
         <Suspense fallback={null}>
-          <div className={scrolled ? 'hidden md:block' : 'block'}>
-            <HeaderCategoryTabs />
-          </div>
+          <HeaderCategoryTabs scrolled={scrolled} />
         </Suspense>
 
         {/* Dynamic Store Categories Bar (2nd Row para dentro de tiendas) */}
         <Suspense fallback={null}>
-          <div className={scrolled ? 'hidden md:block' : 'block'}>
-            <HeaderStoreCategories />
-          </div>
+          <HeaderStoreCategories scrolled={scrolled} />
         </Suspense>
       </header>
     </>
