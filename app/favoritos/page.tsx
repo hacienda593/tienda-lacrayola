@@ -22,6 +22,10 @@ interface ListaCompras {
   created_at: string
 }
 
+function generateRandomCode() {
+  return 'manual_' + Math.random().toString(36).substr(2, 9)
+}
+
 export default function FavoritosPage() {
   const { user } = useAuth()
   
@@ -430,7 +434,7 @@ export default function FavoritosPage() {
 
   const handleAddCustomItem = (name: string) => {
     if (!name) return
-    const customCode = 'manual_' + Math.random().toString(36).substr(2, 9)
+    const customCode = generateRandomCode()
     const yaExiste = activeItems.some(f => f.descripcion.toLowerCase() === name.toLowerCase())
     
     if (!yaExiste) {

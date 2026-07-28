@@ -47,6 +47,14 @@ interface PhysicalPage {
   colorArea: number // cm2
 }
 
+function getCurrentTimestamp() {
+  return Date.now()
+}
+
+function generateRandomCode() {
+  return Math.random().toString(36).substr(2, 9)
+}
+
 export default function ImpresionPage() {
   const router = useRouter()
   const { user, loading: authLoading, loginGoogle } = useAuth()
@@ -133,7 +141,7 @@ export default function ImpresionPage() {
             }
 
             resolve({
-              id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              id: `img-${getCurrentTimestamp()}-${generateRandomCode()}`,
               file: f,
               name: f.name,
               size: f.size,
@@ -860,7 +868,7 @@ export default function ImpresionPage() {
         
         const pdfBlob = pdf.output('blob')
         setMsgCarga('Subiendo documento de impresión PDF...')
-        const fileName = `imp-${Date.now()}.pdf`
+        const fileName = `imp-${getCurrentTimestamp()}.pdf`
         
         const { data, error } = await supabase.storage
           .from('ol_impresiones')
@@ -881,7 +889,7 @@ export default function ImpresionPage() {
         }
       } else if (tipoArchivo === 'documento' && docFile) {
         const extension = docFile.name.split('.').pop()
-        const fileName = `imp-${Date.now()}.${extension}`
+        const fileName = `imp-${getCurrentTimestamp()}.${extension}`
         
         const { data, error } = await supabase.storage
           .from('ol_impresiones')
@@ -927,7 +935,7 @@ export default function ImpresionPage() {
       ? `[Adjuntar por WhatsApp: ${fallbacks.join(', ')}]` 
       : ''
       
-    const uniqueId = `IMP-${Date.now()}`
+    const uniqueId = `IMP-${getCurrentTimestamp()}`
     const itemCarrito = {
       codigo: uniqueId,
       descripcion: `🖨️ ${configStr} ${labelDescargas} ${labelFallbacks}`.trim(),
