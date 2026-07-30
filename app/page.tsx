@@ -934,7 +934,7 @@ function HomeContent() {
               />
             )}
 
-            {/* ── 5. COMPRAR DE NUEVO (Grid de 3 Columnas) ── */}
+            {/* ── 5. COMPRAR DE NUEVO (Grid de 2 Columnas Móvil / 4 Desktop) ── */}
             {frecuentes.length > 0 && (
               <section id="sec-frecuentes" className="bg-surface-2 border border-line rounded-2xl p-4">
                 <div className="flex items-end justify-between mb-3">
@@ -948,9 +948,9 @@ function HomeContent() {
                     Ver todos <ChevronRight size={13} />
                   </Link>
                 </div>
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-2 sm:gap-2.5">
-                  {frecuentes.slice(0, 6).map(p => (
-                    <FrecuenteCardCompacta key={p.codigo} p={p} onSelect={(prod) => openQuickView(prod, frecuentes)} />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                  {frecuentes.slice(0, 4).map(p => (
+                    <ProdCard key={p.codigo} p={p} onSelect={(prod) => openQuickView(prod, frecuentes)} />
                   ))}
                 </div>
               </section>
