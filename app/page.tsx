@@ -222,7 +222,7 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
         router.push(`/producto/${encodeURIComponent(p.codigo)}`)
       }
     }}
-      className="bg-white rounded-xl border border-line overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer group w-full relative font-ui">
+      className="bg-white rounded-xl border border-line overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer group w-full min-w-0 relative font-ui">
       <div className="relative bg-pine-tint h-28 sm:h-32 flex items-center justify-center text-3xl overflow-hidden w-full">
         {p.imagen_url && !imageError ? (
           <img
@@ -253,8 +253,8 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
           </span>
         )}
       </div>
-      <div className="p-2.5 flex-1 flex flex-col justify-between bg-white">
-        <div className="flex-1">
+      <div className="p-2.5 flex-1 min-w-0 flex flex-col justify-between bg-white">
+        <div className="flex-1 min-w-0">
           {/* Micro-etiqueta de comercio origen */}
           <div className="flex items-center gap-1.5 mt-0.5 mb-1">
             <span className="font-price text-[9px] font-bold tracking-wide uppercase text-pine bg-pine-tint px-1.5 py-0.5 rounded truncate max-w-full">
