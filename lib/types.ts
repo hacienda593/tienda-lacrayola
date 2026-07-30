@@ -36,6 +36,7 @@ export interface ItemCarrito {
   cantidad:        number
   tienda_id?:      string | null
   tienda_nombre?:  string | null
+  detallesImpresion?: any
 }
 
 export interface Pedido {

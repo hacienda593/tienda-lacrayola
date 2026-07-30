@@ -936,6 +936,8 @@ export default function ImpresionPage() {
       : ''
       
     const uniqueId = `IMP-${getCurrentTimestamp()}`
+    const edicionCount = tipoArchivo === 'imagen' ? imagenes.filter(img => img.requiereEdicionTienda && !img.croppedUrl).length : 0
+
     const itemCarrito = {
       codigo: uniqueId,
       descripcion: `🖨️ ${configStr} ${labelDescargas} ${labelFallbacks}`.trim(),
@@ -943,7 +945,18 @@ export default function ImpresionPage() {
       precio_unitario: precioUnitario,
       cantidad: numeroCopias,
       tienda_id: null,
-      tienda_nombre: 'Servicio de Impresión'
+      tienda_nombre: 'Servicio de Impresión',
+      detallesImpresion: {
+        tipoArchivo: tipoArchivo,
+        paginasTotales: totalPagsFisicas,
+        docColorMode: docColorMode,
+        modoMixtoDoc: modoMixtoDoc,
+        paginasColorManual: paginasColorManual,
+        coberturaColorDoc: coberturaColorDoc,
+        tipoPapel: tipoPapel,
+        dobleFaz: dobleFaz,
+        imagenesEdicionCount: edicionCount,
+      }
     }
  
     const prevCarrito = getCarrito()

@@ -512,7 +512,8 @@ export default function CheckoutPage() {
         cantidad: i.cantidad,
         precio_unitario: i.precio_unitario,
         descripcion: i.descripcion,
-        categoria: i.categoria
+        categoria: i.categoria,
+        detallesImpresion: i.detallesImpresion
       }))
     )
 

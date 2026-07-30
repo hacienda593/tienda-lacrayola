@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { notFound } from 'next/navigation'
 import { getCarrito, agregarItem, cambiarCantidad, vaciarCarrito, totalCarrito, obtenerTiendasUnicas, calcularEnvioConsolidado } from '@/lib/carrito'
 import { ItemCarrito } from '@/lib/types'
 import RecargoEnvioBadge from '@/components/RecargoEnvioBadge'
@@ -20,6 +21,9 @@ const PRODUCTOS_MOCK = [
 ]
 
 export default function StorefrontTestBench() {
+  if (process.env.NODE_ENV === 'production') {
+    notFound()
+  }
   const [items, setItems] = useState<ItemCarrito[]>([])
   const [copied, setCopied] = useState(false)
 

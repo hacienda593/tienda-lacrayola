@@ -1,10 +1,73 @@
 'use server'
 import { createClient } from '@supabase/supabase-js'
 
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+if (!serviceKey) {
+  throw new Error('SUPABASE_SERVICE_ROLE_KEY no está configurada en el entorno del servidor.')
+}
+
 const supabaseServer = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  serviceKey
 )
+
+export interface DetallesImpresion {
+  tipoArchivo: 'imagen' | 'documento'
+  paginasTotales: number
+  docColorMode?: 'color' | 'bn'
+  modoMixtoDoc?: boolean
+  paginasColorManual?: string
+  coberturaColorDoc?: 'bajo' | 'medio' | 'alto'
+  tipoPapel?: string
+  dobleFaz?: boolean
+  imagenesEdicionCount?: number
+}
+
+export function calcularPrecioImpresionServidor(detalles?: DetallesImpresion): number | null {
+  if (!detalles || typeof detalles.paginasTotales !== 'number' || detalles.paginasTotales <= 0) {
+    return null
+  }
+
+  const paginas = detalles.paginasTotales
+  const tipoPapel = detalles.tipoPapel || 'bond_75g'
+  const recargoPapel = (tipoPapel === 'fotografico_200g' || tipoPapel === 'couche') ? 0.35 : (tipoPapel === 'bond_90g' ? 0.05 : 0)
+
+  if (detalles.tipoArchivo === 'imagen') {
+    const costoBasePag = 0.50
+    const costoHojas = paginas * (costoBasePag + recargoPapel)
+    const costoEdicion = (detalles.imagenesEdicionCount || 0) * 0.25
+    return Number((costoHojas + costoEdicion).toFixed(2))
+  }
+
+  if (detalles.tipoArchivo === 'documento') {
+    const colorVal = detalles.coberturaColorDoc === 'bajo' ? 0.25 : (detalles.coberturaColorDoc === 'medio' ? 0.50 : 1.00)
+    const bnVal = 0.05
+    let costoHojasDoc = 0
+
+    if (detalles.docColorMode === 'bn') {
+      costoHojasDoc = paginas * bnVal
+    } else if (detalles.modoMixtoDoc) {
+      let pagsColor = 0
+      if (detalles.paginasColorManual) {
+        try {
+          const arr = detalles.paginasColorManual.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x))
+          pagsColor = Array.from(new Set(arr)).length
+        } catch {}
+      }
+      pagsColor = Math.min(pagsColor, paginas)
+      const pagsBN = Math.max(0, paginas - pagsColor)
+      costoHojasDoc = (pagsColor * colorVal) + (pagsBN * bnVal)
+    } else {
+      costoHojasDoc = paginas * colorVal
+    }
+
+    const totalHojasFisicas = detalles.dobleFaz ? Math.ceil(paginas / 2) : paginas
+    const total = costoHojasDoc + (totalHojasFisicas * recargoPapel)
+    return Number(total.toFixed(2))
+  }
+
+  return null
+}
 
 export interface LineaCarrito {
   codigo: string
@@ -12,6 +75,7 @@ export interface LineaCarrito {
   precio_unitario?: number
   descripcion?: string
   categoria?: string
+  detallesImpresion?: DetallesImpresion
 }
 
 export interface DatosCliente {
@@ -47,7 +111,7 @@ export async function crearPedido(
     return { ok: false, error: 'El carrito está vacío' }
   }
 
-  // Consultar precios reales desde la base de datos (excluyendo items de impresión)
+  // 1. Consultar precios reales desde la base de datos (excluyendo items de impresión)
   const codigos = lineas.map(l => l.codigo)
   const codigosFiltrados = codigos.filter(c => !c.startsWith('IMP-'))
   
@@ -59,16 +123,21 @@ export async function crearPedido(
       .in('codigo', codigosFiltrados)
 
     if (errP || !prods) {
-      return { ok: false, error: 'Error al verificar productos' }
+      console.error('[CHECKOUT_ERROR] Error al verificar productos:', errP)
+      return { ok: false, error: 'Error al verificar productos en el servidor' }
     }
     productos = prods
   }
 
-  // Verificar que todos los productos existen y tienen stock
+  // 2. Verificar que todos los productos existen y tienen stock suficiente
   const mapaProductos = new Map(productos.map(p => [p.codigo, p]))
   for (const linea of lineas) {
     if (linea.codigo.startsWith('IMP-')) {
-      continue // Bypass para items de impresión
+      const precioCalculadoServidor = calcularPrecioImpresionServidor(linea.detallesImpresion)
+      if (precioCalculadoServidor === null) {
+        return { ok: false, error: `Parámetros de impresión incompletos o inválidos para el ítem ${linea.codigo}` }
+      }
+      continue
     }
     const prod = mapaProductos.get(linea.codigo)
     if (!prod) return { ok: false, error: `Producto ${linea.codigo} no encontrado` }
@@ -77,13 +146,14 @@ export async function crearPedido(
     }
   }
 
-  // Calcular total con precios del servidor
+  // 3. Calcular total con precios verificados en el Servidor (ignorando precios enviados por el cliente)
   const items = lineas.map(linea => {
     if (linea.codigo.startsWith('IMP-')) {
+      const precioServidor = calcularPrecioImpresionServidor(linea.detallesImpresion) ?? (linea.precio_unitario ?? 0.25)
       return {
         codigo: linea.codigo,
         cantidad: linea.cantidad,
-        precio_unitario: linea.precio_unitario ?? 0.25,
+        precio_unitario: precioServidor,
         iva_codigo: null as string | null,
         iva_porcentaje: null as number | null,
       }
@@ -97,10 +167,11 @@ export async function crearPedido(
       iva_porcentaje: prod.iva_porcentaje ?? null,
     }
   })
+
   const total = items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0)
   const total_items = items.reduce((s, i) => s + i.cantidad, 0)
 
-  // Prevenir fraudes: Validar si el comprobante ya existe en otro pedido activo/creado
+  // 4. Prevenir fraudes: Validar comprobante duplicado
   if (cliente.referencia_transferencia) {
     const refLimpia = cliente.referencia_transferencia.trim()
     const { data: dup } = await supabaseServer
@@ -114,7 +185,26 @@ export async function crearPedido(
     }
   }
 
-  // Insertar pedido
+  // 5. Descuento atómico de stock (Prevención de condición de carrera / sobreventa)
+  for (const linea of lineas) {
+    if (linea.codigo.startsWith('IMP-')) continue
+    const prod = mapaProductos.get(linea.codigo)!
+    const nuevoStock = prod.stock - linea.cantidad
+
+    const { data: stockUpdated, error: errStock } = await supabaseServer
+      .from('ol_productos')
+      .update({ stock: nuevoStock })
+      .eq('codigo', linea.codigo)
+      .gte('stock', linea.cantidad)
+      .select('codigo')
+
+    if (errStock || !stockUpdated || stockUpdated.length === 0) {
+      console.error('[CHECKOUT_ERROR] Sobreventa detectada para el producto:', linea.codigo, errStock)
+      return { ok: false, error: `El producto ${linea.codigo} ya no cuenta con stock suficiente. Intenta de nuevo.` }
+    }
+  }
+
+  // 6. Insertar pedido principal
   const { data: pedido, error: errPed } = await supabaseServer
     .from('ol_pedidos')
     .insert({
@@ -138,10 +228,64 @@ export async function crearPedido(
     .single()
 
   if (errPed || !pedido) {
-    return { ok: false, error: errPed?.message || 'Error al crear pedido' }
+    console.error('[CHECKOUT_ERROR] Error al crear pedido principal:', errPed)
+    return { ok: false, error: 'No se pudo procesar tu pedido. Por favor intenta de nuevo.' }
   }
 
-  // Sincronizar dirección y coordenadas con el directorio rep_clientes_direcciones
+  // 7. Insertar ítems del pedido (Con lógica de Rollback automático si falla)
+  const { data: productosDetalle } = await supabaseServer
+    .from('ol_productos')
+    .select('codigo, descripcion, categoria, tienda_id, tienda_nombre')
+    .in('codigo', codigos)
+
+  const mapaDetalle = new Map((productosDetalle ?? []).map(p => [p.codigo, p]))
+
+  const { error: errItems } = await supabaseServer.from('ol_pedido_items').insert(
+    items.map(i => {
+      const orig = lineas.find(l => l.codigo === i.codigo)
+      return {
+        pedido_id:       pedido.id,
+        codigo:          i.codigo,
+        descripcion:     orig?.descripcion || mapaDetalle.get(i.codigo)?.descripcion || i.codigo,
+        categoria:       orig?.categoria || mapaDetalle.get(i.codigo)?.categoria || '',
+        precio_unitario: i.precio_unitario,
+        cantidad:        i.cantidad,
+        iva_codigo:      i.iva_codigo,
+        iva_porcentaje:  i.iva_porcentaje,
+      }
+    })
+  )
+
+  if (errItems) {
+    console.error('[CHECKOUT_ERROR] Falló inserción de ítems. Ejecutando rollback...', errItems)
+    // Rollback: Eliminar pedido principal creado
+    await supabaseServer.from('ol_pedidos').delete().eq('id', pedido.id)
+    return { ok: false, error: 'No se pudieron registrar los ítems de tu pedido. Por favor intenta de nuevo.' }
+  }
+
+  // 8. Crear lista de picking agrupada por tienda
+  const pickingItems = items
+    .map(i => {
+      const det = mapaDetalle.get(i.codigo)
+      return {
+        pedido_id:    pedido.id,
+        tienda_id:    det?.tienda_id ?? null,
+        descripcion:  det?.descripcion ?? i.codigo,
+        cantidad:     i.cantidad,
+        precio_ref:   i.precio_unitario,
+        estado:       'pendiente',
+      }
+    })
+    .filter(i => i.tienda_id)
+
+  if (pickingItems.length > 0) {
+    const { error: errPick } = await supabaseServer.from('rep_picking').insert(pickingItems)
+    if (errPick) {
+      console.error('[CHECKOUT_ERROR] Error no bloqueante en rep_picking:', errPick)
+    }
+  }
+
+  // 9. Sincronizar directorio de direcciones de clientes
   if (cliente.geo_lat && cliente.geo_lng && cliente.telefono) {
     try {
       const cleanAddress = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -191,58 +335,11 @@ export async function crearPedido(
           })
       }
     } catch (e) {
-      console.error('Error al sincronizar rep_clientes_direcciones en checkout:', e)
+      console.error('[CHECKOUT_ERROR] Error al sincronizar rep_clientes_direcciones:', e)
     }
   }
 
-  // Insertar items con descripcion, categoria y tienda para historial
-  const { data: productosDetalle } = await supabaseServer
-    .from('ol_productos')
-    .select('codigo, descripcion, categoria, tienda_id, tienda_nombre')
-    .in('codigo', codigos)
-
-  const mapaDetalle = new Map((productosDetalle ?? []).map(p => [p.codigo, p]))
-
-  const { error: errItems } = await supabaseServer.from('ol_pedido_items').insert(
-    items.map(i => {
-      const orig = lineas.find(l => l.codigo === i.codigo)
-      return {
-        pedido_id:       pedido.id,
-        codigo:          i.codigo,
-        descripcion:     orig?.descripcion || mapaDetalle.get(i.codigo)?.descripcion || i.codigo,
-        categoria:       orig?.categoria || mapaDetalle.get(i.codigo)?.categoria || '',
-        precio_unitario: i.precio_unitario,
-        cantidad:        i.cantidad,
-        iva_codigo:      i.iva_codigo,
-        iva_porcentaje:  i.iva_porcentaje,
-      }
-    })
-  )
-
-  if (errItems) {
-    return { ok: false, error: errItems.message }
-  }
-
-  // Crear lista de picking agrupada por tienda
-  const pickingItems = items
-    .map(i => {
-      const det = mapaDetalle.get(i.codigo)
-      return {
-        pedido_id:    pedido.id,
-        tienda_id:    det?.tienda_id ?? null,
-        descripcion:  det?.descripcion ?? i.codigo,
-        cantidad:     i.cantidad,
-        precio_ref:   i.precio_unitario,
-        estado:       'pendiente',
-      }
-    })
-    .filter(i => i.tienda_id) // solo items con tienda asignada
-
-  if (pickingItems.length > 0) {
-    await supabaseServer.from('rep_picking').insert(pickingItems)
-  }
-
-  // Registrar/Actualizar productos frecuentes
+  // 10. Registrar / actualizar productos frecuentes
   try {
     const userId = cliente.user_id ?? null
     const telefono = cliente.telefono.trim()
@@ -276,8 +373,9 @@ export async function crearPedido(
       await supabaseServer.from('ol_productos_frecuentes').upsert(upsertPayload)
     }
   } catch (err) {
-    console.error('Error al registrar productos frecuentes:', err)
+    console.error('[CHECKOUT_ERROR] Error al registrar productos frecuentes:', err)
   }
 
   return { ok: true, pedidoId: pedido.id, numeroPedido: pedido.numero }
 }
+
