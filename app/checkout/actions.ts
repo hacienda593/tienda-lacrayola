@@ -23,7 +23,7 @@ export interface DetallesImpresion {
   imagenesEdicionCount?: number
 }
 
-export function calcularPrecioImpresionServidor(detalles?: DetallesImpresion): number | null {
+export async function calcularPrecioImpresionServidor(detalles?: DetallesImpresion): Promise<number | null> {
   if (!detalles || typeof detalles.paginasTotales !== 'number' || detalles.paginasTotales <= 0) {
     return null
   }
@@ -133,7 +133,7 @@ export async function crearPedido(
   const mapaProductos = new Map(productos.map(p => [p.codigo, p]))
   for (const linea of lineas) {
     if (linea.codigo.startsWith('IMP-')) {
-      const precioCalculadoServidor = calcularPrecioImpresionServidor(linea.detallesImpresion)
+      const precioCalculadoServidor = await calcularPrecioImpresionServidor(linea.detallesImpresion)
       if (precioCalculadoServidor === null) {
         return { ok: false, error: `Parámetros de impresión incompletos o inválidos para el ítem ${linea.codigo}` }
       }
@@ -147,9 +147,9 @@ export async function crearPedido(
   }
 
   // 3. Calcular total con precios verificados en el Servidor (ignorando precios enviados por el cliente)
-  const items = lineas.map(linea => {
+  const items = await Promise.all(lineas.map(async linea => {
     if (linea.codigo.startsWith('IMP-')) {
-      const precioServidor = calcularPrecioImpresionServidor(linea.detallesImpresion) ?? (linea.precio_unitario ?? 0.25)
+      const precioServidor = (await calcularPrecioImpresionServidor(linea.detallesImpresion)) ?? (linea.precio_unitario ?? 0.25)
       return {
         codigo: linea.codigo,
         cantidad: linea.cantidad,
@@ -166,7 +166,7 @@ export async function crearPedido(
       iva_codigo: prod.iva_codigo ?? null,
       iva_porcentaje: prod.iva_porcentaje ?? null,
     }
-  })
+  }))
 
   const total = items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0)
   const total_items = items.reduce((s, i) => s + i.cantidad, 0)
