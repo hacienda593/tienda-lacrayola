@@ -191,7 +191,7 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
       setCantidad(getCarrito().find(i => i.codigo === p.codigo)?.cantidad ?? 0)
     }
     window.addEventListener('carrito-update', sync)
-    return () => window.removeEventListener('carrito-update', sync)
+    return () => window.removeEventListener('favoritos-update', sync)
   }, [p.codigo])
 
   function addCart(e: React.MouseEvent) {
@@ -214,92 +214,112 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
   const tieneOferta = showOffer && p.en_oferta && p.precio_oferta && p.precio_oferta < p.precio_publico
   const descuentoPct = tieneOferta ? Math.round((1 - p.precio_oferta! / p.precio_publico) * 100) : 0
 
+  const nombreTienda = p.tienda?.nombre ? p.tienda.nombre.toUpperCase() : 'TIENLO'
+
   return (
-    <div onClick={() => {
-      if (USE_QUICK_VIEW && onSelect) {
-        onSelect(p)
-      } else {
-        router.push(`/producto/${encodeURIComponent(p.codigo)}`)
-      }
-    }}
-      className="bg-white rounded-xl border border-line overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer group w-full min-w-0 relative font-ui">
-      <div className="relative bg-pine-tint h-28 sm:h-32 flex items-center justify-center text-3xl overflow-hidden w-full">
+    <div
+      onClick={() => {
+        if (USE_QUICK_VIEW && onSelect) {
+          onSelect(p)
+        } else {
+          router.push(`/producto/${encodeURIComponent(p.codigo)}`)
+        }
+      }}
+      className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer group w-full relative font-ui"
+    >
+      {/* Contenedor de Imagen */}
+      <div className="relative bg-gradient-to-br from-gray-50/80 to-gray-100/60 aspect-square flex items-center justify-center overflow-hidden w-full p-2 group-hover:from-emerald-50/40 group-hover:to-emerald-100/40 transition-colors">
         {p.imagen_url && !imageError ? (
           <img
             src={p.imagen_url}
             alt={p.descripcion}
             onError={() => setImageError(true)}
-            className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
         ) : (
-          <span className="opacity-85 group-hover:scale-110 transition-transform duration-300">{CAT_CONFIG[p.categoria]?.emoji || '📦'}</span>
+          <span className="text-3xl opacity-85 group-hover:scale-110 transition-transform duration-300">
+            {CAT_CONFIG[p.categoria]?.emoji || '📦'}
+          </span>
         )}
-        <button onClick={toggleFav}
-          className={`absolute top-1.5 right-1.5 w-6.5 h-6.5 rounded-full flex items-center justify-center z-10 transition
-            ${fav ? 'bg-pine text-white' : 'bg-white/90 text-ink-faint hover:text-pine-deep hover:bg-white'}`}
+
+        {/* Botón Favorito */}
+        <button
+          onClick={toggleFav}
+          className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center z-10 shadow-xs transition ${
+            fav ? 'bg-emerald-600 text-white' : 'bg-white/90 text-gray-400 hover:text-emerald-700 hover:bg-white'
+          }`}
           title={fav ? "Quitar de la lista" : "Añadir a la lista de compras"}
         >
-          <ClipboardList size={11.5} className="stroke-[2.2]" />
+          <ClipboardList size={12} className="stroke-[2.2]" />
         </button>
+
+        {/* Badges Oferta / Stock */}
         {tieneOferta && (
-          <span className="absolute top-1.5 left-1.5 font-price text-[10px] font-semibold text-sale z-10 tracking-tight">
+          <span className="absolute top-2 left-2 font-price text-[10px] font-black text-white bg-red-500 px-2 py-0.5 rounded-full z-10 shadow-xs">
             -{descuentoPct}%
           </span>
         )}
         {!tieneOferta && p.stock > 0 && p.stock < 5 && (
-          <span className="absolute top-1.5 left-1.5 font-price text-[9.5px] font-semibold text-wheat z-10 tracking-tight">
+          <span className="absolute top-2 left-2 font-price text-[9.5px] font-bold text-amber-800 bg-amber-100/90 px-2 py-0.5 rounded-full z-10">
             Quedan {p.stock}
           </span>
         )}
       </div>
-      <div className="p-2.5 flex-1 min-w-0 flex flex-col justify-between bg-white">
+
+      {/* Detalle del Producto */}
+      <div className="p-2.5 flex-1 flex flex-col justify-between bg-white">
         <div className="flex-1 min-w-0">
-          {/* Micro-etiqueta de comercio origen */}
-          <div className="flex items-center gap-1.5 mt-0.5 mb-1">
-            <span className="font-price text-[9px] font-bold tracking-wide uppercase text-pine bg-pine-tint px-1.5 py-0.5 rounded truncate max-w-full">
-              📍 {p.tienda?.nombre || 'Tienlo'}
+          {/* Micro-etiqueta Origen + Marca */}
+          <div className="flex items-center gap-1 mb-1 flex-wrap">
+            <span className="text-[9.5px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-md truncate max-w-full inline-flex items-center gap-0.5">
+              📍 {nombreTienda}
             </span>
             {p.marca && (
-              <span className="text-[9.5px] text-ink-faint font-semibold truncate">· {p.marca}</span>
+              <span className="text-[9.5px] text-gray-400 font-bold truncate">· {p.marca}</span>
             )}
           </div>
 
-          {/* Nombre / Descripción del Producto */}
-          <h4 className="text-xs font-semibold text-ink leading-snug line-clamp-2 min-h-[32px] mt-1">
+          {/* NOMBRE Y DESCRIPCIÓN DEL PRODUCTO — SIEMPRE VISIBLE */}
+          <h4 className="text-[11.5px] font-bold text-gray-800 leading-snug line-clamp-2 min-h-[30px] group-hover:text-emerald-700 transition-colors mt-0.5">
             {p.descripcion}
           </h4>
         </div>
-        <div className="mt-2 flex items-center justify-between gap-1">
+
+        {/* Precio + Botón Agregar */}
+        <div className="mt-2 pt-1.5 border-t border-gray-100 flex items-center justify-between gap-1">
           <div className="shrink-0">
             {tieneOferta ? (
               <div className="flex flex-col">
-                <span className="font-price text-[9.5px] text-ink-faint line-through font-medium">{fmt(p.precio_publico)}</span>
-                <span className="font-price text-sm font-semibold text-sale tracking-tight">{fmt(p.precio_oferta!)}</span>
+                <span className="text-[9.5px] text-gray-400 line-through font-semibold">{fmt(p.precio_publico)}</span>
+                <span className="text-sm font-black text-red-600">{fmt(p.precio_oferta!)}</span>
               </div>
             ) : (
-              <div className="font-price text-sm font-semibold text-ink tracking-tight">{fmt(p.precio_publico)}</div>
+              <div className="text-sm font-black text-gray-900">{fmt(p.precio_publico)}</div>
             )}
           </div>
-          <div className="scale-90 origin-right shrink-0">
+
+          <div className="shrink-0">
             {cantidad === 0 ? (
-              <button onClick={addCart}
-                className="py-1 px-2.5 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 active:scale-[0.94] transition-all duration-150 cursor-pointer bg-pine hover:bg-pine-deep text-white">
-                <ShoppingCart size={11} className="stroke-[2.2]" />
+              <button
+                onClick={addCart}
+                className="py-1 px-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 active:scale-[0.95] transition cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+              >
+                <ShoppingCart size={11} className="stroke-[2.5]" />
                 {ok ? '✓' : 'Agregar'}
               </button>
             ) : (
-              <div className="flex items-center justify-between bg-pine text-white rounded-lg overflow-hidden h-[26px] w-[68px]">
+              <div className="flex items-center justify-between bg-emerald-600 text-white rounded-lg overflow-hidden h-[26px] w-[68px]">
                 <button
                   onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad - 1); }}
-                  className="px-1.5 h-full text-white hover:bg-pine-deep transition font-bold active:scale-[0.90] flex items-center justify-center cursor-pointer"
+                  className="px-1.5 h-full text-white hover:bg-emerald-700 transition font-bold flex items-center justify-center cursor-pointer"
                 >
                   <Minus size={9.5} className="stroke-[3]" />
                 </button>
-                <span className="font-price text-white text-[11px] font-semibold select-none">{cantidad}</span>
+                <span className="text-white text-[11px] font-black select-none">{cantidad}</span>
                 <button
                   onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); cambiarCantidad(p.codigo, cantidad + 1); }}
-                  className="px-1.5 h-full text-white hover:bg-pine-deep transition font-bold active:scale-[0.90] flex items-center justify-center cursor-pointer"
+                  className="px-1.5 h-full text-white hover:bg-emerald-700 transition font-bold flex items-center justify-center cursor-pointer"
                 >
                   <Plus size={9.5} className="stroke-[3]" />
                 </button>
