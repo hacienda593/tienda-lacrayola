@@ -256,14 +256,19 @@ function ProdCard({ p, onSelect, showOffer }: { p: Producto; onSelect?: (p: Prod
       <div className="p-2.5 flex-1 flex flex-col justify-between bg-white">
         <div className="flex-1">
           {/* Micro-etiqueta de comercio origen */}
-          <div className="flex items-center gap-1.5 mt-1 mb-0.5">
-            <span className="font-price text-[8.5px] font-medium tracking-wide uppercase text-ink-faint truncate max-w-full">
-              {p.tienda?.nombre || 'Tienlo'}
+          <div className="flex items-center gap-1.5 mt-0.5 mb-1">
+            <span className="font-price text-[9px] font-bold tracking-wide uppercase text-pine bg-pine-tint px-1.5 py-0.5 rounded truncate max-w-full">
+              📍 {p.tienda?.nombre || 'Tienlo'}
             </span>
             {p.marca && (
               <span className="text-[9.5px] text-ink-faint font-semibold truncate">· {p.marca}</span>
             )}
           </div>
+
+          {/* Nombre / Descripción del Producto */}
+          <h4 className="text-xs font-semibold text-ink leading-snug line-clamp-2 min-h-[32px] mt-1">
+            {p.descripcion}
+          </h4>
         </div>
         <div className="mt-2 flex items-center justify-between gap-1">
           <div className="shrink-0">
@@ -860,10 +865,10 @@ function HomeContent() {
               </div>
             )}
 
-            {/* Grid de productos de la categoría (3 Columnas Móvil / 6 Desktop) */}
+            {/* Grid de productos de la categoría (2 Columnas Móvil / 5 Desktop) */}
             {cargandoCatActive ? (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-2.5">
-                {[...Array(9)].map((_, i) => <SkeletonCard key={i} />)}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
               </div>
             ) : prodsCatFiltrados.length === 0 ? (
               <div className="bg-white rounded-2xl border border-line p-8 text-center space-y-2 font-ui">
@@ -877,7 +882,7 @@ function HomeContent() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {prodsCatFiltrados.map(p => (
                   <ProdCard
                     key={p.codigo}
