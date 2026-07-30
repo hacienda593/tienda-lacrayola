@@ -867,7 +867,7 @@ function HomeContent() {
 
             {/* Grid de productos de la categoría (2 Columnas Móvil / 5 Desktop) */}
             {cargandoCatActive ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
               </div>
             ) : prodsCatFiltrados.length === 0 ? (
@@ -882,7 +882,7 @@ function HomeContent() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 {prodsCatFiltrados.map(p => (
                   <ProdCard
                     key={p.codigo}
