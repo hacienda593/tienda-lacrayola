@@ -47,9 +47,9 @@ export default function QuickIcons() {
     <div 
       onTouchStart={(e) => e.stopPropagation()}
       onTouchEnd={(e) => e.stopPropagation()}
-      className="w-full py-1 px-1"
+      className="w-full overflow-x-auto scrollbar-hide py-1 px-0.5"
     >
-      <div className="grid grid-cols-4 sm:flex sm:flex-wrap sm:justify-center gap-y-3 gap-x-2 w-full px-1">
+      <div className="flex gap-2 sm:gap-4 justify-start md:justify-center min-w-max px-1">
         {ICONS.map(iconItem => {
           const IconComp = iconItem.icon
           const href = iconItem.id === 'tienlo'
@@ -57,17 +57,17 @@ export default function QuickIcons() {
             : iconItem.href
 
           const content = (
-            <div className="flex flex-col items-center gap-1.5 w-full group cursor-pointer select-none">
-              <div className="w-11 h-11 rounded-xl bg-pine group-hover:bg-pine-deep
-                flex items-center justify-center shadow-xs
+            <div className="flex flex-col items-center gap-1 w-[56px] group cursor-pointer select-none">
+              <div className="w-10 h-10 rounded-lg bg-pine group-hover:bg-pine-deep
+                flex items-center justify-center shadow-2xs
                 group-hover:scale-[1.03] group-active:scale-95
                 transition-all duration-150"
               >
-                <IconComp size={18} className="text-white stroke-[1.8]" />
+                <IconComp size={17} className="text-white stroke-[1.8]" />
               </div>
 
               {/* Label */}
-              <span className="text-[9.5px] font-price font-semibold tracking-wide uppercase text-ink-soft group-hover:text-pine-deep transition-colors leading-tight text-center truncate w-full">
+              <span className="text-[9px] font-price font-medium tracking-wide uppercase text-ink-soft group-hover:text-pine-deep transition-colors leading-tight text-center truncate w-full">
                 {iconItem.label}
               </span>
             </div>
@@ -75,7 +75,7 @@ export default function QuickIcons() {
 
           if (href) {
             return (
-              <Link key={iconItem.id} href={href} className="no-underline w-full flex justify-center">
+              <Link key={iconItem.id} href={href} className="no-underline">
                 {content}
               </Link>
             )
@@ -85,7 +85,7 @@ export default function QuickIcons() {
             <button 
               key={iconItem.id} 
               onClick={() => handleClick(iconItem)} 
-              className="bg-transparent border-none p-0 m-0 cursor-pointer w-full flex justify-center"
+              className="bg-transparent border-none p-0 m-0 text-left cursor-pointer"
             >
               {content}
             </button>
