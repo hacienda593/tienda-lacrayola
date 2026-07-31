@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Zap, Heart, Store, LayoutGrid, RotateCw, Package } from 'lucide-react'
+import { Zap, Heart, Store, LayoutGrid, RotateCw, Package, Printer, Smartphone } from 'lucide-react'
 
 interface QuickIcon {
   id: string
@@ -12,15 +12,13 @@ interface QuickIcon {
   icon: React.ElementType
 }
 
-// Roster aprobado sobre el mockup: 6 accesos, relleno sólido de marca (pine) —
-// no fondo pálido. La corrección de color: apps de alta conversión usan color
-// con confianza para que el ícono se reconozca por forma+color al vuelo, no
-// arcoíris decorativo (eso sí seguimos evitando: un solo acento, aplicado fuerte).
 const ICONS: QuickIcon[] = [
   { id: 'ofertas',   label: 'Ofertas',   scrollTo: 'sec-ofertas',    icon: Zap },
   { id: 'favoritos', label: 'Favoritos', href: '/favoritos',         icon: Heart },
   { id: 'comercios', label: 'Comercios', href: '/tiendas',           icon: Store },
   { id: 'catalogo',  label: 'Catálogo',  href: '/productos',         icon: LayoutGrid },
+  { id: 'impresion', label: 'Impresión', href: '/impresion',         icon: Printer },
+  { id: 'recargas',  label: 'Recargas',  href: '/recargas',          icon: Smartphone },
   { id: 'recompra',  label: 'Recompra',  scrollTo: 'sec-frecuentes', icon: RotateCw },
   { id: 'tienlo',    label: 'Tienlo',    href: '',                   icon: Package },
 ]
@@ -49,9 +47,9 @@ export default function QuickIcons() {
     <div 
       onTouchStart={(e) => e.stopPropagation()}
       onTouchEnd={(e) => e.stopPropagation()}
-      className="w-full overflow-x-auto scrollbar-hide py-1 px-0.5"
+      className="w-full py-1 px-1"
     >
-      <div className="flex gap-1 justify-start md:justify-center min-w-max px-1">
+      <div className="grid grid-cols-4 sm:flex sm:flex-wrap sm:justify-center gap-y-3 gap-x-2 w-full px-1">
         {ICONS.map(iconItem => {
           const IconComp = iconItem.icon
           const href = iconItem.id === 'tienlo'
@@ -59,17 +57,17 @@ export default function QuickIcons() {
             : iconItem.href
 
           const content = (
-            <div className="flex flex-col items-center gap-1 w-[52px] group cursor-pointer select-none">
-              <div className="w-10 h-10 rounded-lg bg-pine group-hover:bg-pine-deep
-                flex items-center justify-center
+            <div className="flex flex-col items-center gap-1.5 w-full group cursor-pointer select-none">
+              <div className="w-11 h-11 rounded-xl bg-pine group-hover:bg-pine-deep
+                flex items-center justify-center shadow-xs
                 group-hover:scale-[1.03] group-active:scale-95
                 transition-all duration-150"
               >
-                <IconComp size={17} className="text-white stroke-[1.75]" />
+                <IconComp size={18} className="text-white stroke-[1.8]" />
               </div>
 
               {/* Label */}
-              <span className="text-[9px] font-price font-medium tracking-wide uppercase text-ink-soft group-hover:text-pine-deep transition-colors leading-tight text-center truncate w-full">
+              <span className="text-[9.5px] font-price font-semibold tracking-wide uppercase text-ink-soft group-hover:text-pine-deep transition-colors leading-tight text-center truncate w-full">
                 {iconItem.label}
               </span>
             </div>
@@ -77,7 +75,7 @@ export default function QuickIcons() {
 
           if (href) {
             return (
-              <Link key={iconItem.id} href={href} className="no-underline">
+              <Link key={iconItem.id} href={href} className="no-underline w-full flex justify-center">
                 {content}
               </Link>
             )
@@ -87,7 +85,7 @@ export default function QuickIcons() {
             <button 
               key={iconItem.id} 
               onClick={() => handleClick(iconItem)} 
-              className="bg-transparent border-none p-0 m-0 text-left cursor-pointer"
+              className="bg-transparent border-none p-0 m-0 cursor-pointer w-full flex justify-center"
             >
               {content}
             </button>
