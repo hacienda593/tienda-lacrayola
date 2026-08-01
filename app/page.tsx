@@ -126,7 +126,7 @@ function BannerCarrusel() {
 
       {/* Desktop */}
       <div className="hidden md:block">
-        <div className="max-w-5xl mx-auto px-6 py-8 flex flex-row items-center gap-6">
+        <div className="w-full max-w-[1800px] mx-auto px-6 py-8 flex flex-row items-center gap-6">
           <div className="flex-1">
             <div className="font-price text-[11px] font-medium tracking-wide uppercase text-white/60 mb-3">
               {b.badge}
@@ -484,7 +484,7 @@ function BtnAgregarFrecuente({ prod }: { prod: Producto }) {
 // ── Sección Grid de productos ──────────────────────────────
 function ProductSection({
   id, titulo, subtitulo, productos, loading, onSelect, showOffer, emoji,
-  verTodosHref, bgClass, maxItems = 4, gridCols = 'grid-cols-2 md:grid-cols-4'
+  verTodosHref, bgClass, maxItems = 7, gridCols = 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7'
 }: {
   id?: string
   titulo: string
@@ -847,7 +847,7 @@ function HomeContent() {
 
   return (
     <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} className="min-h-screen">
-      <div className="max-w-5xl mx-auto px-3 py-4 space-y-6 md:px-4 md:py-6 md:space-y-8">
+      <div className="w-full max-w-[1800px] mx-auto px-3 sm:px-6 py-4 space-y-6 md:py-6 md:space-y-8">
 
         {/* ══════════════════════════════════════════════════════════════════
             1. VISTA DE CATEGORÍA ACTIVA (Si el usuario seleccionó una pestaña)
@@ -887,7 +887,7 @@ function HomeContent() {
 
             {/* Grid de productos de la categoría (2 Columnas Móvil / 5 Desktop) */}
             {cargandoCatActive ? (
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3">
                 {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
               </div>
             ) : prodsCatFiltrados.length === 0 ? (
@@ -902,7 +902,7 @@ function HomeContent() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3">
                 {prodsCatFiltrados.map(p => (
                   <ProdCard
                     key={p.codigo}
@@ -968,7 +968,7 @@ function HomeContent() {
                     Ver todos <ChevronRight size={13} />
                   </Link>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2.5">
                   {frecuentes.slice(0, 4).map(p => (
                     <ProdCard key={p.codigo} p={p} onSelect={(prod) => openQuickView(prod, frecuentes)} />
                   ))}
@@ -1058,11 +1058,11 @@ function HomeContent() {
                 </Link>
               </div>
               {cargando ? (
-                <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-                  {[...Array(8)].map((_, i) => <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />)}
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
+                  {[...Array(10)].map((_, i) => <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />)}
                 </div>
               ) : (
-                <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
                   {cats.map(({ categoria, n }) => {
                     const cfg = CAT_CONFIG[categoria] || { emoji: '📦', color: 'text-gray-700', bg: 'bg-gray-50 border-gray-200' }
                     return (
@@ -1122,7 +1122,7 @@ function HomeContent() {
 export default function Home() {
   return (
     <Suspense fallback={
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-4">
+      <div className="w-full max-w-[1800px] mx-auto px-4 py-8 space-y-4">
         <div className="h-12 bg-gray-100 rounded-2xl animate-pulse" />
         <div className="h-32 bg-gray-100 rounded-2xl animate-pulse" />
       </div>

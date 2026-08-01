@@ -8,7 +8,7 @@ import { corregirTermino, registrarBusquedaFallida } from '@/lib/diccionarioBusq
 import { agregarItem, getCarrito, cambiarCantidad } from '@/lib/carrito'
 import { toggleFavorito, esFavorito } from '@/lib/favoritos'
 import { Producto, CAT_EMOJI } from '@/lib/types'
-import { Search, X, ShoppingCart, Plus, Minus, ClipboardList, ArrowUpDown, Share2, ChevronRight } from 'lucide-react'
+import { Search, X, ShoppingCart, Plus, Minus, ClipboardList, ArrowUpDown, Share2, ChevronRight, SlidersHorizontal, Filter } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { getPerfil } from '@/lib/perfil'
 import QuickViewDrawer from '@/components/QuickViewDrawer'
@@ -326,6 +326,7 @@ function ProductosContent() {
   }
   const [visibles, setVisibles]     = useState(40)
   const [showOrden, setShowOrden]   = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [crayolaId, setCrayolaId]   = useState('')
   const [soloFrecuentes, setSoloFrecuentes] = useState(false)
   const [frecuentesCodigos, setFrecuentesCodigos] = useState<string[]>([])
@@ -570,80 +571,96 @@ function ProductosContent() {
   ]
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-5">
+    <div className="w-full max-w-[1800px] mx-auto px-3 md:px-6 py-4 md:py-6">
       <div className="flex flex-col md:flex-row gap-5">
 
-        {/* ── SIDEBAR filtros (desktop) ── */}
-        <aside className="hidden md:block w-52 shrink-0 space-y-5">
-          <div>
-            <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Stock</div>
-            {(['disponible','todos'] as const).map(v => (
-              <button key={v} onClick={() => setStockFiltro(v)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition font-medium
-                  ${stockFiltro === v ? 'bg-green-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
-                {v === 'disponible' ? '✅ Con stock' : '📦 Todos'}
+        {/* ── SIDEBAR filtros (desktop colapsable) ── */}
+        {sidebarOpen && (
+          <aside className="hidden md:block w-56 shrink-0 space-y-5 bg-white border border-gray-100 p-4 rounded-2xl shadow-sm self-start sticky top-24 animate-fade-in">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+              <span className="font-bold text-xs uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
+                <Filter size={13} className="text-green-600" /> Filtros
+              </span>
+              <button onClick={() => setSidebarOpen(false)} className="text-[11px] font-semibold text-gray-400 hover:text-gray-700 transition">
+                Ocultar ✕
               </button>
-            ))}
-          </div>
+            </div>
 
-          {/* Ordenamiento sidebar */}
-          <div>
-            <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Ordenar por</div>
-            {ORDENES.map(o => (
-              <button key={o.key} onClick={() => setOrden(o.key)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition font-medium
-                  ${orden === o.key ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
-                {o.label}
-              </button>
-            ))}
-          </div>
-
-          {catsCtx.length > 0 && (
             <div>
-              <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Categoría</div>
-              <div className="space-y-0.5 max-h-64 overflow-y-auto">
-                {catsCtx.map(([c, n]) => {
-                  const activa = cat.toLowerCase() === c.toLowerCase()
-                  return (
-                    <button key={c} onClick={() => { setCat(activa ? '' : c); setMarca(''); setVisibles(40) }}
+              <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Stock</div>
+              {(['disponible','todos'] as const).map(v => (
+                <button key={v} onClick={() => setStockFiltro(v)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition font-medium
+                    ${stockFiltro === v ? 'bg-green-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                  {v === 'disponible' ? '✅ Con stock' : '📦 Todos'}
+                </button>
+              ))}
+            </div>
+
+            {/* Ordenamiento sidebar */}
+            <div>
+              <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Ordenar por</div>
+              {ORDENES.map(o => (
+                <button key={o.key} onClick={() => setOrden(o.key)}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition font-medium
+                    ${orden === o.key ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+
+            {catsCtx.length > 0 && (
+              <div>
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Categoría</div>
+                <div className="space-y-0.5 max-h-64 overflow-y-auto">
+                  {catsCtx.map(([c, n]) => {
+                    const activa = cat.toLowerCase() === c.toLowerCase()
+                    return (
+                      <button key={c} onClick={() => { setCat(activa ? '' : c); setMarca(''); setVisibles(40) }}
+                        className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition flex justify-between items-center
+                          ${activa ? 'bg-green-50 text-green-700 font-semibold border border-green-200' : 'text-gray-600 hover:bg-gray-100'}`}>
+                        <span>{c}</span>
+                        <span className="text-xs text-gray-400">{n}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {marcasCtx.length > 1 && (query.trim() || cat) && (
+              <div>
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Marca</div>
+                <div className="space-y-0.5 max-h-48 overflow-y-auto">
+                  {marcasCtx.map(([m, n]) => (
+                    <button key={m} onClick={() => { setMarca(marca === m ? '' : m); setVisibles(40) }}
                       className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition flex justify-between items-center
-                        ${activa ? 'bg-green-50 text-green-700 font-semibold border border-green-200' : 'text-gray-600 hover:bg-gray-100'}`}>
-                      <span>{c}</span>
+                        ${marca === m ? 'bg-purple-50 text-purple-700 font-semibold border border-purple-200' : 'text-gray-600 hover:bg-gray-100'}`}>
+                      <span>{m}</span>
                       <span className="text-xs text-gray-400">{n}</span>
                     </button>
-                  )
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-
-          {marcasCtx.length > 1 && (query.trim() || cat) && (
-            <div>
-              <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Marca</div>
-              <div className="space-y-0.5 max-h-48 overflow-y-auto">
-                {marcasCtx.map(([m, n]) => (
-                  <button key={m} onClick={() => { setMarca(marca === m ? '' : m); setVisibles(40) }}
-                    className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition flex justify-between items-center
-                      ${marca === m ? 'bg-purple-50 text-purple-700 font-semibold border border-purple-200' : 'text-gray-600 hover:bg-gray-100'}`}>
-                    <span>{m}</span>
-                    <span className="text-xs text-gray-400">{n}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </aside>
+            )}
+          </aside>
+        )}
 
         {/* ── CONTENIDO PRINCIPAL ── */}
         <div className="flex-1 min-w-0 space-y-4">
 
+          {/* Barra estado + ordenamiento + botón alternar filtros */}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Botón Filtros Desktop */}
+              <button
+                onClick={() => setSidebarOpen(s => !s)}
+                className="hidden md:flex items-center gap-1.5 text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 px-3.5 py-1.5 rounded-xl shadow-sm transition active:scale-95 cursor-pointer"
+              >
+                <SlidersHorizontal size={13} className={sidebarOpen ? "text-green-600" : "text-gray-500"} />
+                {sidebarOpen ? 'Ocultar Filtros' : 'Filtros 🎛️'}
+              </button>
 
-          {/* Barra estado + ordenamiento — los chips de categoría/marca/stock se quitaron:
-              quedaban redundantes con la fila de "Relacionado" y ocupaban demasiado espacio
-              antes del primer producto visible. La única señal de filtro activo que queda
-              es el enlace "Quitar filtro", minimalista. */}
-          <div className="flex items-center justify-between flex-wrap gap-1.5">
-            <div className="flex items-center gap-1.5 flex-wrap">
               {(soloFrecuentes || cat || sub || marca) && (
                 <button
                   onClick={() => {
@@ -659,9 +676,10 @@ function ProductosContent() {
                 </button>
               )}
             </div>
+
             <div className="flex items-center gap-2 ml-auto">
               {!loadingState && (
-                <p className="text-xs text-gray-400">{filtrados.length.toLocaleString()} productos</p>
+                <p className="text-xs font-medium text-gray-400">{filtrados.length.toLocaleString()} productos</p>
               )}
               {(cat || sub || marca || query) && (
                 <button onClick={compartirFiltros} className="flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:text-[#25D366] hover:bg-gray-50 transition shrink-0" title="Compartir sección por WhatsApp">
@@ -671,9 +689,9 @@ function ProductosContent() {
                 </button>
               )}
               {/* Ordenar (móvil + desktop) */}
-              <div className="relative md:hidden">
+              <div className="relative">
                 <button onClick={() => setShowOrden(s => !s)}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 border border-gray-200 bg-white px-3 py-1.5 rounded-xl hover:bg-gray-50 transition">
+                  className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 border border-gray-200 bg-white px-3 py-1.5 rounded-xl hover:bg-gray-50 transition cursor-pointer">
                   <ArrowUpDown size={13} /> Ordenar
                 </button>
                 {showOrden && (
@@ -690,11 +708,34 @@ function ProductosContent() {
             </div>
           </div>
 
-          {/* Búsquedas relacionadas — pegada justo debajo del header al hacer
-              scroll, para que el cliente siga refinando sin subir de nuevo */}
+          {/* Chips horizontales de accesos rápidos a Categorías cuando hay resultados */}
+          {catsCtx.length > 0 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1.5 -mx-1 px-1">
+              <button
+                onClick={() => { setCat(''); setSub(''); setMarca(''); setVisibles(40) }}
+                className={`shrink-0 text-xs font-semibold px-3 py-1 rounded-full transition border ${!cat ? 'bg-green-600 text-white border-green-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+              >
+                Todas las categorías
+              </button>
+              {catsCtx.slice(0, 15).map(([c, n]) => {
+                const activa = cat.toLowerCase() === c.toLowerCase()
+                return (
+                  <button
+                    key={c}
+                    onClick={() => { setCat(activa ? '' : c); setMarca(''); setVisibles(40) }}
+                    className={`shrink-0 text-xs font-semibold px-3 py-1 rounded-full transition border ${activa ? 'bg-green-600 text-white border-green-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                  >
+                    {c} <span className="text-[10px] opacity-70">({n})</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Búsquedas relacionadas */}
           {busquedasRelacionadas.length > 0 && (
             <div
-              className="sticky z-30 flex items-center gap-2 overflow-x-auto scrollbar-hide py-2 -mx-3 px-3 md:mx-0 md:px-0 bg-paper/95 backdrop-blur-sm -mt-4"
+              className="sticky z-30 flex items-center gap-2 overflow-x-auto scrollbar-hide py-2 -mx-3 px-3 md:mx-0 md:px-0 bg-paper/95 backdrop-blur-sm -mt-2"
               style={{ top: 'var(--header-h, 96px)' }}
             >
               <span className="text-xs text-gray-400 shrink-0">Relacionado:</span>
@@ -710,10 +751,10 @@ function ProductosContent() {
             </div>
           )}
 
-          {/* Grid */}
+          {/* Grid de Alta Densidad */}
           {loadingState ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-4">
-              {[...Array(8)].map((_, i) => <SkeletonCard key={i} />)}
+            <div className={`grid grid-cols-2 sm:grid-cols-3 ${sidebarOpen ? 'md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 3xl:grid-cols-8'} gap-2 md:gap-3.5`}>
+              {[...Array(14)].map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : filtrados.length === 0 ? (
             <EstadoVacio query={query || cat || marca} onLimpiar={limpiar} />
@@ -764,7 +805,7 @@ function ProductosContent() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 md:gap-4">
+              <div className={`grid grid-cols-2 sm:grid-cols-3 ${sidebarOpen ? 'md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 3xl:grid-cols-8'} gap-2 md:gap-3.5`}>
                 {filtrados.slice(0, visibles).map((p) => (
                   <ProductCard key={p.codigo} p={p} tiendasMap={tiendasMap} onSelect={(prod) => openQuickView(prod, filtrados.slice(0, visibles))} />
                 ))}
