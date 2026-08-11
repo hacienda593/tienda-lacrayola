@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
@@ -10,6 +11,8 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
+
+const MapaSeguimiento = dynamic(() => import('@/components/MapaSeguimiento'), { ssr: false })
 
 function fmt(n: number) { return '$' + n.toFixed(2) }
 
@@ -56,8 +59,11 @@ interface Pedido {
 }
 
 interface Repartidor {
+  id?: string
   nombre: string
   telefono: string
+  gps_lat?: number | null
+  gps_lng?: number | null
 }
 
 interface EncabezadoConfig {
@@ -169,10 +175,11 @@ export default function PedidoPage() {
 
   useEffect(() => {
     cargar()
-    // Polling cada 30 segundos
-    const t = setInterval(cargar, 30_000)
+    // Polling cada 10 segundos en ruta, si no cada 30 segundos
+    const intervalTime = pedido?.estado === 'enviado' ? 10_000 : 30_000
+    const t = setInterval(cargar, intervalTime)
     return () => clearInterval(t)
-  }, [cargar])
+  }, [cargar, pedido?.estado])
 
   if (error) return (
     <div className="max-w-lg mx-auto px-4 py-16 text-center">
@@ -347,21 +354,34 @@ const HORARIOS_TIENDAS: Record<string, string> = {
       {/* Mapa de Entrega */}
       {['preparado', 'enviado', 'entregado'].includes(pedido.estado) && (
         <div className="bg-white border border-line rounded-2xl p-4 shadow-sm space-y-3">
-          <div className="text-xs font-bold text-ink-faint uppercase tracking-wider">Ubicación de Entrega</div>
-          <div className="relative rounded-xl overflow-hidden bg-surface-2 border border-line h-48">
-            <iframe 
-              src={`https://maps.google.com/maps?q=${pedido.geo_lat && pedido.geo_lng ? `${pedido.geo_lat},${pedido.geo_lng}` : encodeURIComponent(`${pedido.direccion ?? ''}, ${pedido.ciudad ?? ''}`)}&z=16&output=embed`} 
-              className="w-full h-full border-0" 
-              loading="lazy" 
-              referrerPolicy="no-referrer-when-downgrade" 
-            />
+          <div className="text-xs font-bold text-ink-faint uppercase tracking-wider">
+            {pedido.estado === 'enviado' && repartidor?.gps_lat ? 'Sigue a tu repartidor en tiempo real' : 'Ubicación de Entrega'}
           </div>
+          {pedido.estado === 'enviado' && repartidor?.gps_lat && repartidor?.gps_lng ? (
+            <MapaSeguimiento 
+              riderLat={Number(repartidor.gps_lat)} 
+              riderLng={Number(repartidor.gps_lng)} 
+              clienteLat={pedido.geo_lat ? Number(pedido.geo_lat) : null} 
+              clienteLng={pedido.geo_lng ? Number(pedido.geo_lng) : null} 
+            />
+          ) : (
+            <div className="relative rounded-xl overflow-hidden bg-surface-2 border border-line h-48">
+              <iframe 
+                src={`https://maps.google.com/maps?q=${pedido.geo_lat && pedido.geo_lng ? `${pedido.geo_lat},${pedido.geo_lng}` : encodeURIComponent(`${pedido.direccion ?? ''}, ${pedido.ciudad ?? ''}`)}&z=16&output=embed`} 
+                className="w-full h-full border-0" 
+                loading="lazy" 
+                referrerPolicy="no-referrer-when-downgrade" 
+              />
+            </div>
+          )}
           <div className="flex items-center gap-1.5 text-xs text-ink-faint">
             <span>📍</span>
             <span>
-              {pedido.geo_lat && pedido.geo_lng 
-                ? 'Coordenadas GPS confirmadas por el repartidor' 
-                : 'Ubicación aproximada basada en la dirección'}
+              {pedido.estado === 'enviado' && repartidor?.gps_lat
+                ? 'El repartidor está en movimiento'
+                : pedido.geo_lat && pedido.geo_lng 
+                  ? 'Coordenadas GPS confirmadas por el repartidor' 
+                  : 'Ubicación aproximada basada en la dirección'}
             </span>
           </div>
         </div>
