@@ -1035,7 +1035,7 @@ export default function ImpresionPage() {
           </div>
 
           <button 
-            onClick={loginGoogle}
+            onClick={() => loginGoogle()}
             className="w-full bg-green-600 hover:bg-green-500 text-white font-extrabold py-3.5 rounded-xl transition text-sm cursor-pointer shadow-md flex items-center justify-center gap-2"
           >
             <span>🔐 Continuar con Google</span>

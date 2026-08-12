@@ -13,5 +13,12 @@ export async function GET(req: NextRequest) {
     await supabase.auth.exchangeCodeForSession(code)
   }
 
-  return NextResponse.redirect(`${origin}/cuenta`)
+  // 'next' es opcional: si loginGoogle() se llamo sin destino (como en
+  // /cuenta y /impresion, sin cambios), esto cae al mismo /cuenta de
+  // siempre. Solo se usa una ruta interna propia -- nunca una URL externa
+  // que venga del parametro, para no abrir una redireccion abierta.
+  const next = searchParams.get('next')
+  const destino = next && next.startsWith('/') && !next.startsWith('//') ? next : '/cuenta'
+
+  return NextResponse.redirect(`${origin}${destino}`)
 }

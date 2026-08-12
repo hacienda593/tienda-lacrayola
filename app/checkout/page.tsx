@@ -89,7 +89,7 @@ function abrirWhatsApp(
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, loginGoogle } = useAuth()
   const [form, setForm] = useState({
     nombre: '', email: '', telefono: '',
     direccion: '', ciudad: 'Los Bancos', referencias: '', notas: ''
@@ -383,6 +383,11 @@ export default function CheckoutPage() {
 
   const CRAYOLA_ID = 'b7fe17b9-c3da-4c9f-9a87-169d70623566'
   const esSoloCrayola = items.every(item => !item.tienda_id || item.tienda_id === CRAYOLA_ID)
+
+  // Cuando el cliente eligio una direccion ya guardada (no "nueva"), no tiene
+  // sentido mostrarle de nuevo los campos editables ni el mapa -- se muestra
+  // un resumen compacto en su lugar, como en checkouts de apps mas maduras.
+  const direccionGuardadaActiva = direcciones.find(d => d.id === direccionSeleccionadaId)
 
   useEffect(() => {
     if (!esSoloCrayola) {
@@ -815,127 +820,192 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            {/* Botón de Obtener Ubicación GPS Destacado */}
-            <div className="flex gap-2.5 border-b border-line pb-3">
+            {/* Invitacion sutil a iniciar sesion: solo para invitados. Sin explicar
+                el motivo tecnico (RLS/privacidad), solo el beneficio para el cliente. */}
+            {!user && (
               <button
                 type="button"
-                onClick={pedirUbicacion}
-                disabled={geoMsg === 'Obteniendo...'}
-                className="flex-1 flex items-center justify-center gap-2 bg-pine-tint text-pine border border-pine/30 hover:bg-pine-deep/20 active:bg-pine/25 disabled:bg-pine-tint disabled:text-pine disabled:border-pine/10 font-bold py-2.5 px-4 rounded-xl transition text-xs shadow-sm cursor-pointer select-none"
+                onClick={() => loginGoogle('/checkout')}
+                className="w-full flex items-center justify-between gap-2 bg-surface-2 hover:bg-line/40 border border-line rounded-xl px-3 py-2 text-left transition cursor-pointer"
               >
-                {geoMsg === 'Obteniendo...' ? (
-                  <>
-                    <Loader2 className="animate-spin" size={14} />
-                    Obteniendo ubicación...
-                  </>
-                ) : (
-                  <>
-                    <MapPin className="animate-bounce" size={14} />
-                    Obtener dirección por GPS
-                  </>
-                )}
+                <span className="text-[11px] text-ink-soft">
+                  ¿Ya compraste antes? <strong className="text-pine">Inicia sesión</strong> para ver tus direcciones guardadas
+                </span>
+                <span className="text-[10px] font-bold text-pine shrink-0">🔐 Entrar</span>
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!geo) {
-                    setGeo({ lat: -0.0221, lng: -78.8983 })
-                    setGeoMsg('✓ Ubicación manual')
-                  }
-                  setVerMapa(!verMapa)
-                  setDireccionSeleccionadaId('nueva')
-                }}
-                className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-semibold transition cursor-pointer select-none ${
-                  verMapa 
-                    ? 'bg-orange-600/10 text-wheat border-orange-500/30 hover:bg-orange-600/20' 
-                    : 'bg-surface-2 text-ink-soft border-line hover:bg-line/40 hover:text-ink'
-                }`}
-              >
-                🗺️ {verMapa ? 'Ocultar mapa' : 'Ver mapa'}
-              </button>
-            </div>
+            )}
 
-            {/* Selector de direcciones guardadas */}
-            {direcciones.length > 0 && (
-              <div className="border-b border-line pb-3">
-                <label className="text-xs text-ink-faint block mb-1">📍 Mis direcciones guardadas</label>
-                <select
-                  value={direccionSeleccionadaId}
-                  onChange={e => alSeleccionarDireccion(e.target.value)}
-                  className="w-full bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:border-pine"
+            {/* Botón de Obtener Ubicación GPS Destacado: solo tiene sentido cuando se
+                esta ingresando/editando una direccion nueva, no cuando ya se eligio
+                una guardada (esa ya trae sus coordenadas). */}
+            {!direccionGuardadaActiva && (
+              <div className="flex gap-2.5 border-b border-line pb-3">
+                <button
+                  type="button"
+                  onClick={pedirUbicacion}
+                  disabled={geoMsg === 'Obteniendo...'}
+                  className="flex-1 flex items-center justify-center gap-2 bg-pine-tint text-pine border border-pine/30 hover:bg-pine-deep/20 active:bg-pine/25 disabled:bg-pine-tint disabled:text-pine disabled:border-pine/10 font-bold py-2.5 px-4 rounded-xl transition text-xs shadow-sm cursor-pointer select-none"
                 >
-                  <option value="nueva">-- Nueva dirección / Ingresar otra --</option>
-                  {direcciones.map(d => (
-                    <option key={d.id} value={d.id}>
-                      📌 {d.nombre_etiqueta} ({d.direccion_texto})
-                    </option>
-                  ))}
-                </select>
+                  {geoMsg === 'Obteniendo...' ? (
+                    <>
+                      <Loader2 className="animate-spin" size={14} />
+                      Obteniendo ubicación...
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="animate-bounce" size={14} />
+                      Obtener dirección por GPS
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!geo) {
+                      setGeo({ lat: -0.0221, lng: -78.8983 })
+                      setGeoMsg('✓ Ubicación manual')
+                    }
+                    setVerMapa(!verMapa)
+                    setDireccionSeleccionadaId('nueva')
+                  }}
+                  className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border text-xs font-semibold transition cursor-pointer select-none ${
+                    verMapa
+                      ? 'bg-orange-600/10 text-wheat border-orange-500/30 hover:bg-orange-600/20'
+                      : 'bg-surface-2 text-ink-soft border-line hover:bg-line/40 hover:text-ink'
+                  }`}
+                >
+                  🗺️ {verMapa ? 'Ocultar mapa' : 'Ver mapa'}
+                </button>
               </div>
             )}
 
-            {/* Mapa interactivo */}
-            {verMapa && (
-              <div className="space-y-1.5 border-b border-line pb-3">
-                <div className="text-[10px] text-ink-faint flex items-center justify-between">
-                  <span>📍 Arrastra la chincheta sobre tu ubicación exacta:</span>
-                  <div className="flex gap-2.5">
-                    <button type="button" onClick={pedirUbicacion} className="text-pine hover:underline">📡 Obtener GPS</button>
-                    <button type="button" onClick={() => setVerMapa(false)} className="text-sale hover:underline">Ocultar</button>
-                  </div>
-                </div>
-                {geoMsg?.includes('denegado') && (
-                  <div className="bg-wheat/10 border border-wheat/30 rounded-xl p-3 text-[11px] text-wheat leading-relaxed">
-                    💡 <strong>GPS bloqueado:</strong> Puedes activarlo tocando el candado/ajustes ⚙️ en la barra de direcciones de tu navegador (arriba) y permitiendo la ubicación. Si no sabes cómo, puedes arrastrar la chincheta azul en el mapa, o simplemente <strong>enviarnos tu ubicación de WhatsApp</strong> al finalizar el pedido.
-                  </div>
-                )}
-                <div 
-                  ref={mapContainerRef} 
-                  className="w-full h-[220px] rounded-xl border border-line bg-surface-2 overflow-hidden relative z-10" 
-                />
-                {geo && (
-                  <div className="text-[9px] text-ink-faint text-right">
-                    Lat: {geo.lat.toFixed(5)} · Lng: {geo.lng.toFixed(5)}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Guardar nueva dirección */}
-            {direccionSeleccionadaId === 'nueva' && geo && (
-              <div className="bg-surface-2 border border-line rounded-xl p-3 space-y-2">
-                <div className="text-[11px] font-semibold text-ink-soft">💾 ¿Quieres guardar esta ubicación para futuras compras?</div>
-                <div className="flex gap-2">
-                  <input 
-                    value={nombreEtiqueta} 
-                    onChange={e => setNombreEtiqueta(e.target.value)}
-                    placeholder="Nombre (ej: Casa, Trabajo, Escuela...)"
-                    className="flex-1 bg-surface-2 border border-line rounded-lg px-3 py-1.5 text-xs text-ink placeholder-ink-faint focus:outline-none focus:border-pine"
-                  />
-                  <button 
-                    type="button" 
-                    onClick={guardarDireccionNueva} 
-                    disabled={guardandoDir}
-                    className="bg-pine hover:bg-pine-deep disabled:opacity-60 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition cursor-pointer"
+            {/* Selector de direcciones guardadas: tarjetas seleccionables en vez de
+                un <select> plano, con la opcion de "nueva" como accion separada y
+                explicita en vez de mezclada dentro del mismo combo. */}
+            {direcciones.length > 0 && (
+              <div className="border-b border-line pb-3 space-y-2">
+                <label className="text-xs text-ink-faint block">📍 Mis direcciones guardadas</label>
+                <div className="grid gap-1.5">
+                  {direcciones.map(d => {
+                    const activa = direccionSeleccionadaId === d.id
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => alSeleccionarDireccion(d.id)}
+                        className={`w-full text-left px-3 py-2.5 rounded-xl border flex items-start gap-2.5 transition cursor-pointer ${
+                          activa ? 'bg-pine-tint border-pine' : 'bg-surface-2 border-line hover:bg-line/40'
+                        }`}
+                      >
+                        <span className="text-base leading-none mt-0.5">📌</span>
+                        <span className="flex-1 min-w-0">
+                          <span className={`block text-xs font-bold ${activa ? 'text-pine' : 'text-ink'}`}>{d.nombre_etiqueta}</span>
+                          <span className="block text-[11px] text-ink-faint truncate">{d.direccion_texto}</span>
+                        </span>
+                        {activa && <CheckCircle size={15} className="text-pine shrink-0 mt-0.5" />}
+                      </button>
+                    )
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => alSeleccionarDireccion('nueva')}
+                    className={`w-full text-left px-3 py-2.5 rounded-xl border-2 border-dashed flex items-center gap-2 transition cursor-pointer ${
+                      direccionSeleccionadaId === 'nueva'
+                        ? 'border-pine text-pine bg-pine-tint'
+                        : 'border-line text-ink-faint hover:border-pine/50 hover:text-pine'
+                    }`}
                   >
-                    {guardandoDir ? 'Guardando...' : 'Guardar'}
+                    <span className="text-base">➕</span>
+                    <span className="text-xs font-bold">Usar una dirección nueva</span>
                   </button>
                 </div>
-                {dirMsg && <p className="text-[10px] text-pine font-semibold">{dirMsg}</p>}
               </div>
             )}
-            {[
-              { k: 'ciudad',      label: 'Ciudad',      placeholder: 'Los Bancos' },
-              { k: 'direccion',   label: 'Dirección',   placeholder: 'Calle, número, sector...' },
-              { k: 'referencias', label: 'Referencias', placeholder: 'Cerca de, color de casa...' },
-            ].map(({ k, label, placeholder }) => (
-              <div key={k}>
-                <label className="text-xs text-ink-faint block mb-1">{label}</label>
-                <input value={(form as Record<string, string>)[k]} onChange={e => set(k, e.target.value)}
-                  placeholder={placeholder}
-                  className="w-full bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-pine" />
+
+            {direccionGuardadaActiva ? (
+              /* Resumen compacto: ya se eligio una direccion guardada, no hace
+                 falta repetirle al cliente los mismos campos que ya lleno antes.
+                 Solo "Notas del pedido" sigue editable porque es especifica de
+                 este pedido, no de la direccion. */
+              <div className="bg-pine-tint border border-pine/30 rounded-xl p-3 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-pine flex items-center gap-1.5">📌 {direccionGuardadaActiva.nombre_etiqueta}</div>
+                  <div className="text-[11px] text-ink-soft mt-0.5">{direccionGuardadaActiva.direccion_texto}</div>
+                  {direccionGuardadaActiva.referencias && (
+                    <div className="text-[10px] text-ink-faint mt-0.5">Ref: {direccionGuardadaActiva.referencias}</div>
+                  )}
+                </div>
+                <button type="button" onClick={() => alSeleccionarDireccion('nueva')}
+                  className="text-[10px] font-bold text-pine hover:underline shrink-0 cursor-pointer">
+                  Cambiar
+                </button>
               </div>
-            ))}
+            ) : (
+              <>
+                {/* Mapa interactivo */}
+                {verMapa && (
+                  <div className="space-y-1.5 border-b border-line pb-3">
+                    <div className="text-[10px] text-ink-faint flex items-center justify-between">
+                      <span>📍 Arrastra la chincheta sobre tu ubicación exacta:</span>
+                      <div className="flex gap-2.5">
+                        <button type="button" onClick={pedirUbicacion} className="text-pine hover:underline">📡 Obtener GPS</button>
+                        <button type="button" onClick={() => setVerMapa(false)} className="text-sale hover:underline">Ocultar</button>
+                      </div>
+                    </div>
+                    {geoMsg?.includes('denegado') && (
+                      <div className="bg-wheat/10 border border-wheat/30 rounded-xl p-3 text-[11px] text-wheat leading-relaxed">
+                        💡 <strong>GPS bloqueado:</strong> Puedes activarlo tocando el candado/ajustes ⚙️ en la barra de direcciones de tu navegador (arriba) y permitiendo la ubicación. Si no sabes cómo, puedes arrastrar la chincheta azul en el mapa, o simplemente <strong>enviarnos tu ubicación de WhatsApp</strong> al finalizar el pedido.
+                      </div>
+                    )}
+                    <div
+                      ref={mapContainerRef}
+                      className="w-full h-[220px] rounded-xl border border-line bg-surface-2 overflow-hidden relative z-10"
+                    />
+                    {geo && (
+                      <div className="text-[9px] text-ink-faint text-right">
+                        Lat: {geo.lat.toFixed(5)} · Lng: {geo.lng.toFixed(5)}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Guardar nueva dirección */}
+                {direccionSeleccionadaId === 'nueva' && geo && (
+                  <div className="bg-surface-2 border border-line rounded-xl p-3 space-y-2">
+                    <div className="text-[11px] font-semibold text-ink-soft">💾 ¿Quieres guardar esta ubicación para futuras compras?</div>
+                    <div className="flex gap-2">
+                      <input
+                        value={nombreEtiqueta}
+                        onChange={e => setNombreEtiqueta(e.target.value)}
+                        placeholder="Nombre (ej: Casa, Trabajo, Escuela...)"
+                        className="flex-1 bg-surface-2 border border-line rounded-lg px-3 py-1.5 text-xs text-ink placeholder-ink-faint focus:outline-none focus:border-pine"
+                      />
+                      <button
+                        type="button"
+                        onClick={guardarDireccionNueva}
+                        disabled={guardandoDir}
+                        className="bg-pine hover:bg-pine-deep disabled:opacity-60 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition cursor-pointer"
+                      >
+                        {guardandoDir ? 'Guardando...' : 'Guardar'}
+                      </button>
+                    </div>
+                    {dirMsg && <p className="text-[10px] text-pine font-semibold">{dirMsg}</p>}
+                  </div>
+                )}
+                {[
+                  { k: 'ciudad',      label: 'Ciudad',      placeholder: 'Los Bancos' },
+                  { k: 'direccion',   label: 'Dirección',   placeholder: 'Calle, número, sector...' },
+                  { k: 'referencias', label: 'Referencias', placeholder: 'Cerca de, color de casa...' },
+                ].map(({ k, label, placeholder }) => (
+                  <div key={k}>
+                    <label className="text-xs text-ink-faint block mb-1">{label}</label>
+                    <input value={(form as Record<string, string>)[k]} onChange={e => set(k, e.target.value)}
+                      placeholder={placeholder}
+                      className="w-full bg-surface-2 border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-pine" />
+                  </div>
+                ))}
+              </>
+            )}
             <div>
               <label className="text-xs text-ink-faint block mb-1">Notas del pedido</label>
               <textarea value={form.notas} onChange={e => set('notas', e.target.value)}

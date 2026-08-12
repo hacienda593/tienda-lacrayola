@@ -11,13 +11,13 @@ interface AuthCtx {
   user:    User | null
   session: Session | null
   loading: boolean
-  loginGoogle:  () => Promise<void>
+  loginGoogle:  (next?: string) => Promise<void>
   logout:       () => Promise<void>
 }
 
 const Ctx = createContext<AuthCtx>({
   user: null, session: null, loading: true,
-  loginGoogle: async () => {}, logout: async () => {},
+  loginGoogle: async (_next?: string) => {}, logout: async () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -61,10 +61,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user])
 
-  async function loginGoogle() {
+  async function loginGoogle(next?: string) {
+    // Sin 'next' se comporta exactamente igual que antes (aterriza en
+    // /cuenta via el callback). Con 'next', el callback regresa ahi en vez
+    // -- por ejemplo, de vuelta al checkout en vez de sacar al cliente del
+    // flujo de compra a mitad de camino.
+    const callbackUrl = new URL(`${window.location.origin}/auth/callback`)
+    if (next) callbackUrl.searchParams.set('next', next)
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: callbackUrl.toString() },
     })
   }
 
