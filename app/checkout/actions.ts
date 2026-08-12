@@ -171,6 +171,24 @@ export async function crearPedido(
   const total = items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0)
   const total_items = items.reduce((s, i) => s + i.cantidad, 0)
 
+  // 3.5. Prevenir fraudes: cliente sin historial de compras entregadas debe
+  // pagar por transferencia. Un pedido COD falso ("de broma") no le cuesta
+  // nada a quien lo hace -- exigir transferencia en la primera compra
+  // elimina ese vector, porque nadie transfiere dinero real solo para
+  // molestar. Esta es la validacion que de verdad importa (la del
+  // navegador es solo UX); aqui no se puede saltar sin tocar el servidor.
+  if (cliente.metodo_pago !== 'transferencia') {
+    const { data: tieneHistorial, error: errHist } = await supabaseServer
+      .rpc('cliente_tiene_historial', { p_telefono: cliente.telefono.trim() })
+    if (errHist) {
+      console.error('[CHECKOUT_ERROR] Error al verificar historial de cliente:', errHist)
+      return { ok: false, error: 'Error al verificar tu historial de compras. Intenta de nuevo.' }
+    }
+    if (!tieneHistorial) {
+      return { ok: false, error: 'Por seguridad, tu primer pedido debe pagarse por transferencia bancaria. Luego de tu primera compra entregada, podrás elegir pago contra-entrega.' }
+    }
+  }
+
   // 4. Prevenir fraudes: Validar comprobante duplicado
   if (cliente.referencia_transferencia) {
     const refLimpia = cliente.referencia_transferencia.trim()

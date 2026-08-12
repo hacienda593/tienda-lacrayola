@@ -110,6 +110,12 @@ export default function CheckoutPage() {
   const [correoFactura, setCorreoFactura] = useState('')
   const [items, setItems] = useState<ItemCarrito[]>([])
   const [cargandoCarrito, setCargandoCarrito] = useState(true)
+  // Antifraude: sin historial de compras ENTREGADAS con ese telefono, el
+  // checkout obliga a pagar por transferencia (evita pedidos COD "de
+  // broma" donde nadie recibe ni paga). Es solo la UX -- la validacion que
+  // de verdad protege corre en el servidor, en crearPedido().
+  const [esClienteNuevo, setEsClienteNuevo] = useState(false)
+  const [verificandoHistorial, setVerificandoHistorial] = useState(false)
 
   useEffect(() => {
     setItems(getCarrito())
@@ -189,6 +195,28 @@ export default function CheckoutPage() {
     }
     cargarDirecciones()
   }, [user])
+
+  // Antifraude: apenas el telefono tiene forma valida, se consulta (debounced,
+  // via RPC que no expone datos de otros pedidos) si ese numero ya tiene al
+  // menos una compra ENTREGADA. Si no, se bloquea "Efectivo al recibir" y se
+  // fuerza transferencia -- pero la garantia real esta en el servidor.
+  useEffect(() => {
+    const telefonoLimpio = form.telefono.trim()
+    if (telefonoLimpio.length < 9) { setEsClienteNuevo(false); return }
+
+    let vigente = true
+    setVerificandoHistorial(true)
+    const timer = setTimeout(async () => {
+      const { data, error } = await supabase.rpc('cliente_tiene_historial', { p_telefono: telefonoLimpio })
+      if (!vigente) return
+      setVerificandoHistorial(false)
+      const nuevo = !error && data !== true
+      setEsClienteNuevo(nuevo)
+      if (nuevo) setMetodoPago('transferencia')
+    }, 500)
+
+    return () => { vigente = false; clearTimeout(timer) }
+  }, [form.telefono])
 
   function alSeleccionarDireccion(id: string) {
     setDireccionSeleccionadaId(id)
@@ -947,18 +975,32 @@ export default function CheckoutPage() {
         {/* Forma de Pago */}
         <div className="bg-white border border-line rounded-xl p-4 space-y-3">
           <div className="text-xs font-bold text-ink-faint uppercase tracking-wider">Forma de pago</div>
+
+          {esClienteNuevo && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 text-[11px] text-amber-800 leading-relaxed">
+              🔒 Como es tu primer pedido con este número, por seguridad debe pagarse por <strong>transferencia bancaria</strong>.
+              Después de tu primera compra entregada, podrás elegir pago contra-entrega.
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => setMetodoPago('efectivo')}
-              className={`py-2.5 rounded-xl font-bold text-xs transition border flex flex-col items-center justify-center gap-1 cursor-pointer ${
-                metodoPago === 'efectivo'
-                  ? 'bg-pine text-white border-transparent'
-                  : 'bg-surface-2 text-ink-faint border-line hover:bg-line/40'
+              onClick={() => !esClienteNuevo && setMetodoPago('efectivo')}
+              disabled={esClienteNuevo || verificandoHistorial}
+              title={esClienteNuevo ? 'Disponible después de tu primera compra entregada' : undefined}
+              className={`py-2.5 rounded-xl font-bold text-xs transition border flex flex-col items-center justify-center gap-1 ${
+                esClienteNuevo || verificandoHistorial
+                  ? 'bg-surface-2 text-ink-faint/40 border-line cursor-not-allowed opacity-60'
+                  : metodoPago === 'efectivo'
+                    ? 'bg-pine text-white border-transparent cursor-pointer'
+                    : 'bg-surface-2 text-ink-faint border-line hover:bg-line/40 cursor-pointer'
               }`}
             >
-              <span>💵 Efectivo al recibir</span>
-              <span className="text-[9px] font-medium opacity-80">Paga al recibir pedido</span>
+              <span>{esClienteNuevo ? '🔒' : '💵'} Efectivo al recibir</span>
+              <span className="text-[9px] font-medium opacity-80">
+                {esClienteNuevo ? 'No disponible en tu 1ra compra' : 'Paga al recibir pedido'}
+              </span>
             </button>
             <button
               type="button"
