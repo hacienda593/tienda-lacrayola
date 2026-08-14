@@ -132,6 +132,11 @@ export default function CheckoutPage() {
   const [verMapa, setVerMapa] = useState(false)
   const [direcciones, setDirecciones] = useState<any[]>([])
   const [direccionSeleccionadaId, setDireccionSeleccionadaId] = useState<string>('nueva')
+  // Controla si la lista de tarjetas de direcciones esta abierta. Una vez hay
+  // una direccion guardada activa, la lista se colapsa y solo se ve el
+  // resumen compacto -- "Cambiar" la vuelve a abrir. Sin esto, la lista y el
+  // resumen quedaban visibles al mismo tiempo mostrando el mismo dato dos veces.
+  const [eligiendoDireccion, setEligiendoDireccion] = useState(false)
   const [nombreEtiqueta, setNombreEtiqueta] = useState('')
   const [guardandoDir, setGuardandoDir] = useState(false)
   const [dirMsg, setDirMsg] = useState('')
@@ -210,7 +215,13 @@ export default function CheckoutPage() {
       const { data, error } = await supabase.rpc('cliente_tiene_historial', { p_telefono: telefonoLimpio })
       if (!vigente) return
       setVerificandoHistorial(false)
-      const nuevo = !error && data !== true
+      // Fallar CERRADO, no abierto: si la verificacion no responde (ej. la
+      // funcion RPC no existe todavia, o hubo un corte de red), se trata
+      // igual que "cliente nuevo" -- exactamente lo mismo que ya hace el
+      // servidor en crearPedido(). Antes esto fallaba al reves (asumia que
+      // NO era nuevo), lo que dejaba ver "Efectivo" habilitado en pantalla
+      // aunque el servidor lo iba a rechazar al confirmar.
+      const nuevo = error || data !== true
       setEsClienteNuevo(nuevo)
       if (nuevo) setMetodoPago('transferencia')
     }, 500)
@@ -881,8 +892,11 @@ export default function CheckoutPage() {
 
             {/* Selector de direcciones guardadas: tarjetas seleccionables en vez de
                 un <select> plano, con la opcion de "nueva" como accion separada y
-                explicita en vez de mezclada dentro del mismo combo. */}
-            {direcciones.length > 0 && (
+                explicita en vez de mezclada dentro del mismo combo. Se colapsa
+                apenas hay una direccion guardada activa -- si no, quedaba
+                visible al mismo tiempo que el resumen de abajo, duplicando la
+                misma informacion en pantalla. */}
+            {direcciones.length > 0 && (eligiendoDireccion || !direccionGuardadaActiva) && (
               <div className="border-b border-line pb-3 space-y-2">
                 <label className="text-xs text-ink-faint block">📍 Mis direcciones guardadas</label>
                 <div className="grid gap-1.5">
@@ -892,7 +906,7 @@ export default function CheckoutPage() {
                       <button
                         key={d.id}
                         type="button"
-                        onClick={() => alSeleccionarDireccion(d.id)}
+                        onClick={() => { alSeleccionarDireccion(d.id); setEligiendoDireccion(false) }}
                         className={`w-full text-left px-3 py-2.5 rounded-xl border flex items-start gap-2.5 transition cursor-pointer ${
                           activa ? 'bg-pine-tint border-pine' : 'bg-surface-2 border-line hover:bg-line/40'
                         }`}
@@ -908,7 +922,7 @@ export default function CheckoutPage() {
                   })}
                   <button
                     type="button"
-                    onClick={() => alSeleccionarDireccion('nueva')}
+                    onClick={() => { alSeleccionarDireccion('nueva'); setEligiendoDireccion(false) }}
                     className={`w-full text-left px-3 py-2.5 rounded-xl border-2 border-dashed flex items-center gap-2 transition cursor-pointer ${
                       direccionSeleccionadaId === 'nueva'
                         ? 'border-pine text-pine bg-pine-tint'
@@ -922,11 +936,12 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            {direccionGuardadaActiva ? (
+            {direccionGuardadaActiva && !eligiendoDireccion ? (
               /* Resumen compacto: ya se eligio una direccion guardada, no hace
                  falta repetirle al cliente los mismos campos que ya lleno antes.
                  Solo "Notas del pedido" sigue editable porque es especifica de
-                 este pedido, no de la direccion. */
+                 este pedido, no de la direccion. "Cambiar" reabre la lista de
+                 arriba en vez de saltar directo al formulario de "nueva". */
               <div className="bg-pine-tint border border-pine/30 rounded-xl p-3 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-pine flex items-center gap-1.5">📌 {direccionGuardadaActiva.nombre_etiqueta}</div>
@@ -935,12 +950,12 @@ export default function CheckoutPage() {
                     <div className="text-[10px] text-ink-faint mt-0.5">Ref: {direccionGuardadaActiva.referencias}</div>
                   )}
                 </div>
-                <button type="button" onClick={() => alSeleccionarDireccion('nueva')}
+                <button type="button" onClick={() => setEligiendoDireccion(true)}
                   className="text-[10px] font-bold text-pine hover:underline shrink-0 cursor-pointer">
                   Cambiar
                 </button>
               </div>
-            ) : (
+            ) : direccionGuardadaActiva ? null : (
               <>
                 {/* Mapa interactivo */}
                 {verMapa && (
