@@ -119,7 +119,7 @@ export async function crearPedido(
   if (codigosFiltrados.length > 0) {
     const { data: prods, error: errP } = await supabaseServer
       .from('ol_productos')
-      .select('codigo, precio_con_iva, stock, iva_codigo, iva_porcentaje')
+      .select('codigo, precio_con_iva, stock, iva_codigo, iva_porcentaje, tienda_id')
       .in('codigo', codigosFiltrados)
 
     if (errP || !prods) {
@@ -170,6 +170,26 @@ export async function crearPedido(
 
   const total = items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0)
   const total_items = items.reduce((s, i) => s + i.cantidad, 0)
+
+  // Costo de envío, calculado y CONGELADO en el servidor (no confiar en lo
+  // que calculó el navegador, mismo criterio que precio/stock arriba).
+  // Antes este cálculo solo existía en el navegador para MOSTRARLE el
+  // número al cliente (ver lib/carrito.ts calcularEnvioConsolidado) y
+  // nunca se guardaba en el pedido -- la app de reparto (que usa esta
+  // misma base) no tenía forma de saber cuánto cobrar además de los
+  // productos, y terminaba adivinando un número que no coincidía con lo
+  // que el cliente realmente pagó. Fórmula idéntica a
+  // calcularEnvioConsolidado: $1.50 base + $0.75 por cada tienda adicional
+  // que compone el pedido, $0 si es retiro en tienda.
+  const esRetiro = cliente.direccion.trim() === 'RETIRO EN TIENDA'
+  const tiendasUnicas = new Set(
+    lineas.filter(l => !l.codigo.startsWith('IMP-'))
+      .map(l => mapaProductos.get(l.codigo)?.tienda_id)
+      .filter(Boolean)
+  )
+  const nTiendas = tiendasUnicas.size || (lineas.length > 0 ? 1 : 0)
+  const costo_envio = esRetiro ? 0 : Number((1.50 + Math.max(0, nTiendas - 1) * 0.75).toFixed(2))
+  const total_final = Number((total + costo_envio).toFixed(2))
 
   // 3.5. Prevenir fraudes: cliente sin historial de compras entregadas debe
   // pagar por transferencia. Un pedido COD falso ("de broma") no le cuesta
@@ -238,6 +258,8 @@ export async function crearPedido(
       user_id:        cliente.user_id ?? null,
       total,
       total_items,
+      costo_envio,
+      total_final,
       estado: 'pendiente',
       referencia_transferencia: cliente.referencia_transferencia ? cliente.referencia_transferencia.trim() : null,
       metodo_pago: cliente.metodo_pago || 'contra_entrega'
