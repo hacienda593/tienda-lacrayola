@@ -1219,7 +1219,6 @@ export default function CheckoutPage() {
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   onChange={e => {
                     const f = e.target.files?.[0] ?? null
                     setComprobanteError('')
