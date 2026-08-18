@@ -225,7 +225,7 @@ export default function CheckoutPage() {
       // servidor en crearPedido(). Antes esto fallaba al reves (asumia que
       // NO era nuevo), lo que dejaba ver "Efectivo" habilitado en pantalla
       // aunque el servidor lo iba a rechazar al confirmar.
-      const nuevo = error || data !== true
+      const nuevo = Boolean(error) || data !== true
       setEsClienteNuevo(nuevo)
       if (nuevo) setMetodoPago('transferencia')
     }, 500)
