@@ -17,7 +17,8 @@ const WA_NUMERO = '593984341953'
 function fmt(n: number) { return '$' + n.toFixed(2) }
 
 function abrirWhatsApp(
-  numero: string, 
+  ventanaPrevia: Window | null,
+  numero: string,
   nombre: string, 
   items: ItemCarrito[], 
   subtotal: number, 
@@ -84,7 +85,15 @@ function abrirWhatsApp(
     ``,
     `📍 *Forma de entrega:* ${entrega}${gpsLink}${notaUbicacion}`,
   ].filter(l => l !== undefined).join('\n')
-  window.open(`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, '_blank')
+  const url = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`
+  // Reutiliza la pestaña reservada en el clic original (ver comentario en
+  // confirmar()) en vez de abrir una nueva -- esa segunda llamada a
+  // window.open() sí sería bloqueada por el navegador.
+  if (ventanaPrevia && !ventanaPrevia.closed) {
+    ventanaPrevia.location.href = url
+  } else {
+    window.open(url, '_blank')
+  }
 }
 
 export default function CheckoutPage() {
@@ -545,6 +554,14 @@ export default function CheckoutPage() {
     setError('')
     setLoading(true)
 
+    // Se reserva la pestaña de WhatsApp AQUI MISMO, en el mismo tick del
+    // clic del usuario -- si se abre despues (tras el await de la subida
+    // del comprobante o de crearPedido), el navegador ya no lo reconoce
+    // como resultado directo de un gesto del usuario y bloquea el
+    // window.open() como si fuera un pop-up. Se le pone la URL real recien
+    // al final, cuando ya se sabe el numero de pedido.
+    const ventanaWhatsApp = window.open('', '_blank')
+
     let comprobantePath: string | null = null
     if (metodoPago === 'transferencia' && comprobanteFile) {
       setSubiendoComprobante(true)
@@ -553,6 +570,7 @@ export default function CheckoutPage() {
       } catch (err) {
         console.error('Error al subir comprobante:', err)
         setSubiendoComprobante(false)
+        ventanaWhatsApp?.close()
         setError('No se pudo subir la foto del comprobante. Verifica tu conexión e intenta de nuevo.')
         setLoading(false)
         return
@@ -597,6 +615,7 @@ export default function CheckoutPage() {
     )
 
     if (!resultado.ok) {
+      ventanaWhatsApp?.close()
       setError(resultado.error ?? 'Error al procesar pedido')
       setLoading(false)
       return
@@ -639,7 +658,8 @@ export default function CheckoutPage() {
     setPedidoCompletado(true)
 
     abrirWhatsApp(
-      WA_NUMERO, 
+      ventanaWhatsApp,
+      WA_NUMERO,
       form.nombre, 
       items, 
       total, 
