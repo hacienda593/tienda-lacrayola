@@ -90,6 +90,7 @@ export interface DatosCliente {
   geo_lng?: number | null
   user_id?: string | null
   referencia_transferencia?: string | null
+  comprobante_transferencia_path?: string | null
   metodo_pago?: string | null
 }
 
@@ -262,6 +263,7 @@ export async function crearPedido(
       total_final,
       estado: 'pendiente',
       referencia_transferencia: cliente.referencia_transferencia ? cliente.referencia_transferencia.trim() : null,
+      comprobante_transferencia_path: cliente.comprobante_transferencia_path || null,
       metodo_pago: cliente.metodo_pago || 'contra_entrega'
     })
     .select('id, numero')

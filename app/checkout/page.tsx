@@ -104,6 +104,10 @@ export default function CheckoutPage() {
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo')
   const [billeteCambio, setBilleteCambio] = useState('Pago exacto')
   const [referenciaTransferencia, setReferenciaTransferencia] = useState('')
+  const [comprobanteFile, setComprobanteFile] = useState<File | null>(null)
+  const [comprobantePreview, setComprobantePreview] = useState<string | null>(null)
+  const [comprobanteError, setComprobanteError] = useState('')
+  const [subiendoComprobante, setSubiendoComprobante] = useState(false)
   const [facturaConDatos, setFacturaConDatos] = useState(false)
   const [identificacion, setIdentificacion] = useState('')
   const [razonSocial, setRazonSocial] = useState('')
@@ -507,6 +511,16 @@ export default function CheckoutPage() {
     }
   }
 
+  async function subirComprobante(file: File): Promise<string> {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+    const path = `pendientes/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { error } = await supabase.storage
+      .from('comprobantes-clientes')
+      .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type || 'image/jpeg' })
+    if (error) throw error
+    return path
+  }
+
   async function confirmar(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!form.nombre || !form.telefono) { setError('Nombre y teléfono son obligatorios'); return }
@@ -522,9 +536,29 @@ export default function CheckoutPage() {
       setLoading(false)
       return
     }
-    
+    if (metodoPago === 'transferencia' && !comprobanteFile) {
+      setError('Por favor, adjunta una foto o captura del comprobante de tu transferencia.')
+      setLoading(false)
+      return
+    }
+
     setError('')
     setLoading(true)
+
+    let comprobantePath: string | null = null
+    if (metodoPago === 'transferencia' && comprobanteFile) {
+      setSubiendoComprobante(true)
+      try {
+        comprobantePath = await subirComprobante(comprobanteFile)
+      } catch (err) {
+        console.error('Error al subir comprobante:', err)
+        setSubiendoComprobante(false)
+        setError('No se pudo subir la foto del comprobante. Verifica tu conexión e intenta de nuevo.')
+        setLoading(false)
+        return
+      }
+      setSubiendoComprobante(false)
+    }
 
     // Formatear notas con tags de pago y facturación para no alterar el esquema de BD
     const pagoText = metodoPago === 'efectivo'
@@ -549,6 +583,7 @@ export default function CheckoutPage() {
         geo_lng: metodoEntrega === 'retiro' ? null : geo?.lng, 
         user_id: user?.id ?? null,
         referencia_transferencia: metodoPago === 'transferencia' ? referenciaTransferencia.trim() : null,
+        comprobante_transferencia_path: metodoPago === 'transferencia' ? comprobantePath : null,
         metodo_pago: metodoPago === 'transferencia' ? 'transferencia' : 'contra_entrega'
       },
       items.map(i => ({
@@ -1149,7 +1184,25 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-line space-y-1 text-left">
+              {/* Botón Deuna + monto a transferir */}
+              <div className="pt-3 border-t border-line space-y-2">
+                <div className="flex items-center justify-between gap-2 bg-[#f3e8f9] border border-purple-200 rounded-xl px-3 py-2">
+                  <div className="leading-tight">
+                    <div className="text-[9px] font-black text-purple-900/70 uppercase tracking-wide">Total a transferir</div>
+                    <div className="text-sm font-black text-purple-900">{fmt(granTotal)}</div>
+                  </div>
+                  <a
+                    href="https://pagar.deuna.app/H92p/merchant?id=828c98695b77537a52da2f2dd281b2746c019154"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="py-2.5 px-3.5 bg-[#702082] hover:bg-[#5a166a] active:scale-[0.99] text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg border border-purple-800 text-center select-none shrink-0"
+                  >
+                    <span className="text-sm">🟣</span> Pagar con Deuna
+                  </a>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-line space-y-1 text-left">
                 <label className="text-[10px] font-black text-ink-faint uppercase tracking-wide block">Nro. de Comprobante / Referencia *</label>
                 <input
                   type="text"
@@ -1161,21 +1214,36 @@ export default function CheckoutPage() {
                 />
               </div>
 
-              {/* Botón Deuna */}
-              <div className="pt-2 border-t border-line">
-                <a
-                  href="https://pagar.deuna.app/H92p/merchant?id=828c98695b77537a52da2f2dd281b2746c019154"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3 bg-[#702082] hover:bg-[#5a166a] active:scale-[0.99] text-ink font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer hover:shadow-lg border border-purple-800 text-center select-none"
-                >
-                  <span className="text-sm">🟣</span> Pagar con Deuna
-                </a>
+              <div className="pt-2 space-y-1 text-left">
+                <label className="text-[10px] font-black text-ink-faint uppercase tracking-wide block">Foto del comprobante *</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={e => {
+                    const f = e.target.files?.[0] ?? null
+                    setComprobanteError('')
+                    if (f && f.size > 5 * 1024 * 1024) {
+                      setComprobanteError('La imagen no debe superar 5 MB.')
+                      e.target.value = ''
+                      setComprobanteFile(null)
+                      setComprobantePreview(null)
+                      return
+                    }
+                    setComprobanteFile(f)
+                    setComprobantePreview(f ? URL.createObjectURL(f) : null)
+                  }}
+                  className="w-full text-[11px] text-ink-faint file:mr-2 file:rounded-lg file:border-0 file:bg-pine file:px-3 file:py-1.5 file:text-[11px] file:font-bold file:text-white file:cursor-pointer cursor-pointer"
+                />
+                {comprobantePreview && (
+                  <img src={comprobantePreview} alt="Vista previa del comprobante" className="mt-1 h-20 w-20 rounded-lg object-cover border border-line" />
+                )}
+                {comprobanteError && <p className="text-[10px] text-sale font-semibold">{comprobanteError}</p>}
               </div>
 
               <div className="text-[10px] text-ink-faint leading-relaxed border-t border-line pt-2 flex items-start gap-1">
                 <span>💡</span>
-                <span>Por favor, realiza la transferencia y envíanos el comprobante por WhatsApp al terminar. Tu pedido será procesado una vez verificado.</span>
+                <span>Adjunta la foto o captura de tu comprobante. Si tienes algún inconveniente, también puedes enviárnoslo por WhatsApp.</span>
               </div>
             </div>
           )}
@@ -1208,7 +1276,7 @@ export default function CheckoutPage() {
 
         <button type="submit" disabled={loading}
           className="w-full flex items-center justify-center gap-2 bg-pine hover:bg-pine-deep disabled:opacity-60 text-white font-bold py-3.5 rounded-xl transition text-sm cursor-pointer">
-          {loading ? <><Loader2 size={16} className="animate-spin" />Procesando...</> : <>✅ Confirmar pedido · {fmt(granTotal)}</>}
+          {loading ? <><Loader2 size={16} className="animate-spin" />{subiendoComprobante ? 'Subiendo comprobante...' : 'Procesando...'}</> : <>✅ Confirmar pedido · {fmt(granTotal)}</>}
         </button>
 
         <p className="text-center text-xs text-ink-faint">
