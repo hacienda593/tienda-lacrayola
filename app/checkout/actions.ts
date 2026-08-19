@@ -294,6 +294,7 @@ export async function crearPedido(
         cantidad:        i.cantidad,
         iva_codigo:      i.iva_codigo,
         iva_porcentaje:  i.iva_porcentaje,
+        tienda_id:       mapaDetalle.get(i.codigo)?.tienda_id ?? null,
       }
     })
   )
